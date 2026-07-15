@@ -85,4 +85,24 @@ describe('Observations CKM unificadas', () => {
     const values = extractCKMValues(singleObservation('8302-2', 170, 'cm', '2026-06-01'));
     expect(Object.keys(values)).toHaveLength(0);
   });
+
+  test('sinónimos LOINC de lab se leen como el parámetro CKM correcto', () => {
+    // eGFR CKD-EPI 2021 (98979-8) → egfr; LDL medido (2089-1) → ldlc.
+    const values = latestCKMValues([
+      singleObservation('98979-8', 62, 'mL/min/1.73m²', '2026-06-01'),
+      singleObservation('2089-1', 80, 'mg/dL', '2026-06-01'),
+      singleObservation('2160-0', 1.32, 'mg/dL', '2026-06-01'),
+    ]);
+    expect(values.egfr?.value).toBe(62);
+    expect(values.ldlc?.value).toBe(80);
+    expect(values.creatinine?.value).toBe(1.32);
+  });
+
+  test('el sinónimo más reciente pisa al primario más viejo (mismo parámetro)', () => {
+    const values = latestCKMValues([
+      singleObservation(LOINC.egfr, 90, 'mL/min/1.73m²', '2026-05-01'), // 62238-1, más viejo
+      singleObservation('98979-8', 62, 'mL/min/1.73m²', '2026-06-01'), // CKD-EPI 2021, más nuevo
+    ]);
+    expect(values.egfr?.value).toBe(62);
+  });
 });

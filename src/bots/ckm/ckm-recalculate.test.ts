@@ -70,6 +70,27 @@ describe('Bot CKM recalculate', () => {
     expect(metrics?.find((m) => m.id === 'sbp')).toMatchObject({ value: 118, status: 'healthy' });
   });
 
+  test('lectura vacía NO pisa las métricas previas (preserva el último buen cálculo)', async () => {
+    const medplum = new MockClient();
+    // Paciente con métricas ya persistidas de una corrida anterior.
+    const priorMetrics: HGraphMetric[] = [{ id: 'sbp', value: 118, status: 'healthy' } as HGraphMetric];
+    const patient = await medplum.createResource<Patient>({
+      resourceType: 'Patient',
+      gender: 'female',
+      extension: [{ url: HGRAPH_DATA_URL, valueString: JSON.stringify({ metrics: priorMetrics }) }],
+    });
+    // La Observation que dispara es CKM (pasa el early-return) pero NO está en el
+    // servidor, así que getLatestCKMObservations devuelve [] (simula lectura vacía
+    // transitoria: lag de indexación / política de acceso).
+    const trigger = labObservation(patient.id as string, LOINC.hba1c, 5.4, '%', '2026-06-01');
+
+    const result = await handler(medplum, { bot, contentType, input: trigger, secrets: {} });
+
+    const { metrics } = getExtensions(result as Patient);
+    expect(metrics).toHaveLength(1);
+    expect(metrics?.[0]).toMatchObject({ id: 'sbp', value: 118 });
+  });
+
   test('hipertensión + ERC: estadío 2, gana la última PA por fecha', async () => {
     const medplum = new MockClient();
     const patient = await medplum.createResource<Patient>({ resourceType: 'Patient', gender: 'male' });

@@ -37,6 +37,22 @@ export const LOINC = {
 export type CKMParameterId = keyof typeof LOINC;
 
 /**
+ * Códigos LOINC ALTERNATIVOS (sinónimos) que distintos laboratorios usan para el
+ * mismo parámetro CKM. La LECTURA acepta el primario (LOINC) y estos sinónimos;
+ * la ESCRITURA sigue usando el primario. Motivado por labs que codifican con el
+ * panel estándar de lipoproteínas / fórmulas nuevas:
+ * - eGFR: CKD-EPI 2021 (98979-8 creatinina, 98980-6 creatinina+cistatina C) vs
+ *   el CKD-EPI 2009 primario (62238-1). Sin esto, PREVENT no ve el eGFR.
+ * - LDL: medido/genérico (2089-1) vs calculado (13457-7).
+ * - Creatinina: 2160-0 es el LOINC de suero más frecuente, alterno de 38483-4.
+ */
+export const LOINC_SYNONYMS: Partial<Record<CKMParameterId, string[]>> = {
+  egfr: ['98979-8', '98980-6'],
+  ldlc: ['2089-1'],
+  creatinine: ['2160-0'],
+};
+
+/**
  * Panel de presión arterial (forma canónica de registro, igual en rol paciente
  * y rol médico): una sola Observation 85354-9 con componentes 8480-6
  * (sistólica) y 8462-4 (diastólica). El lector de observations.ts también

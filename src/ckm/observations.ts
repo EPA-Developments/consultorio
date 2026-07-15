@@ -11,7 +11,7 @@
 // históricos cargados antes de la unificación.
 import type { MedplumClient } from '@medplum/core';
 import type { Observation } from '@medplum/fhirtypes';
-import { LOINC, LOINC_BP_PANEL, LOINC_SYSTEM } from './constants';
+import { LOINC, LOINC_BP_PANEL, LOINC_SYNONYMS, LOINC_SYSTEM } from './constants';
 import type { CKMParameterId } from './constants';
 
 export interface CKMObservationValue {
@@ -23,12 +23,23 @@ export interface CKMObservationValue {
 
 export type CKMObservationMap = Partial<Record<CKMParameterId, CKMObservationValue>>;
 
+// Mapa código LOINC → parámetro CKM, incluyendo los sinónimos que usan distintos
+// laboratorios (ej. eGFR CKD-EPI 2021, LDL medido) para el mismo parámetro.
 const CODE_TO_PARAM = new Map<string, CKMParameterId>(
   (Object.entries(LOINC) as [CKMParameterId, string][]).map(([param, code]) => [code, param])
 );
+for (const [param, codes] of Object.entries(LOINC_SYNONYMS) as [CKMParameterId, string[]][]) {
+  for (const code of codes) {
+    CODE_TO_PARAM.set(code, param);
+  }
+}
 
-/** Todos los códigos LOINC a buscar, incluido el panel de presión arterial. */
-export const CKM_OBSERVATION_CODES: string[] = [...Object.values(LOINC), LOINC_BP_PANEL];
+/** Todos los códigos LOINC a buscar (primarios + sinónimos + panel de PA). */
+export const CKM_OBSERVATION_CODES: string[] = [
+  ...Object.values(LOINC),
+  ...Object.values(LOINC_SYNONYMS).flat(),
+  LOINC_BP_PANEL,
+];
 
 function hasCode(codes: { coding?: { system?: string; code?: string }[] } | undefined, code: string): boolean {
   return Boolean(codes?.coding?.some((c) => c.code === code && (!c.system || c.system === LOINC_SYSTEM)));
