@@ -45,11 +45,14 @@ export type CKMParameterId = keyof typeof LOINC;
  *   el CKD-EPI 2009 primario (62238-1). Sin esto, PREVENT no ve el eGFR.
  * - LDL: medido/genérico (2089-1) vs calculado (13457-7).
  * - Creatinina: 2160-0 es el LOINC de suero más frecuente, alterno de 38483-4.
+ * - HbA1c: IFCC en mmol/mol (59261-8) vs NGSP en % (4548-4). El lector la
+ *   convierte a % al leer (observations.ts), porque son escalas distintas.
  */
 export const LOINC_SYNONYMS: Partial<Record<CKMParameterId, string[]>> = {
   egfr: ['98979-8', '98980-6'],
   ldlc: ['2089-1'],
   creatinine: ['2160-0'],
+  hba1c: ['59261-8'],
 };
 
 /**
