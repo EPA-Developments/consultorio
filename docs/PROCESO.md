@@ -233,6 +233,56 @@ Bajo <50.
 presión por medicación solo si hay antihipertensivos registrados; el compuesto
 exige los 8 (sin los conductuales del paciente, queda parcial).
 
+### Operación del bot `ckm-recalculate` (troubleshooting)
+
+El score CKM/PREVENT y el radar NO se calculan en el navegador: los persiste el
+bot `ckm-recalculate` en extensiones del `Patient` (`CKM_STAGE_URL`,
+`HGRAPH_DATA_URL`), disparado por una Subscription sobre `Observation?code=<CKM>`.
+El chart (`useCKMData`) solo lee lo persistido. Si el chart muestra "Sin métricas
+CKM registradas" con datos cargados, el problema es del bot, no del front.
+
+Orden de diagnóstico (todo con un ClientApplication **admin** del proyecto):
+
+1. `npm run ckm-bots-doctor` → mirar en orden: **feature `bots`** del proyecto,
+   sección **BOTS** (¿desplegado? ¿código presente?), **SUBSCRIPTIONS**
+   (¿`status=active`? ¿`endpoint` = el Bot con código? ¿criteria = la esperada?),
+   **AUDITEVENTS** (¿corrió? ¿`outcome=0` o error?).
+2. Fallas típicas y remedio:
+   - Bots **no desplegados** → `npm run build:bots && npm run deploy-bots-server`
+     (con `CKM_BOT_RUNTIME=vmcontext` si el server self-hosted no usa AWS Lambda).
+   - Subscription apuntando a un **Bot fantasma** (por `ifNoneExist`, un deploy no
+     actualiza una sub existente) → `ckm-bots-doctor -- --recreate-subs`.
+   - Bot que **corre pero no escribe** → test decisivo `ckm-bots-doctor --
+     --reprocess <PatientId>` (ejecuta el bot por `$execute`, sin Subscription) y
+     revisar el Patient a mano. Backfill masivo: `--reprocess-all`.
+3. **Regla de oro:** el recálculo es lo único crítico y no debe fallar por una
+   feature secundaria. Por eso el bot quedó SOLO con el recálculo; las
+   notificaciones (alertas de estadío/valores críticos, tendencias, email SES)
+   se sacaron (crasheaban el bot en servers sin SES) y vuelven en una etapa
+   futura aislada. `alert-rules.ts` y `scoring.detectCriticalValues` quedan como
+   lógica pura lista para reusar.
+
+### Reconciliación de LOINC de laboratorio
+
+Distintos laboratorios codifican el mismo analito con LOINC diferentes. El lector
+CKM (`observations.ts`) acepta el código primario **+ sinónimos** por parámetro
+(`LOINC_SYNONYMS` en `constants.ts`); la escritura usa el primario. Casos
+resueltos con datos reales del lab:
+
+- **eGFR**: CKD-EPI 2021 `98979-8`/`98980-6` (además del 2009 `62238-1`). Sin
+  esto, PREVENT no ve el eGFR y falta el spoke TFGe.
+- **LDL**: medido `2089-1` (además del calculado `13457-7`). **Creatinina**:
+  `2160-0`.
+- **HbA1c**: IFCC en mmol/mol (`59261-8`) se **convierte a % (NGSP)** al leer
+  (`0.09148·IFCC + 2.152`); un valor imposible como % (>20) con unidad ambigua se
+  descarta, para no leer una diabetes severa falsa.
+- **Lp(a)** (potenciador, `biomarkers.ts`): acepta molar (`102725-2`, `43583-4`)
+  y masa (`10835-7`), y **clasifica según la unidad real** de la Observation, no
+  el código (evita confundir masa mg/dL con molar nmol/L).
+
+Al cambiar `CKM_OBSERVATION_CODES` cambia el criteria de la Subscription → tras
+desplegar, correr `ckm-bots-doctor -- --recreate-subs`.
+
 ---
 
 ## 7. Principios de "herramienta médica"
