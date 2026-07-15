@@ -62,6 +62,11 @@ describe('readEnhancers', () => {
     expect(lpaReading).toMatchObject({ value: 30, info: { level: 'optimal' } });
   });
 
+  test('Lp(a) se lee también por su LOINC molar sinónimo 43583-4 (no solo 102725-2)', () => {
+    const readings = readEnhancers([obs('43583-4', 20, '2026-06-01')]);
+    expect(readings.find((r) => r.def.id === 'lpa')).toMatchObject({ value: 20, info: { level: 'optimal' } });
+  });
+
   test('ignora entered-in-error y observaciones sin valor', () => {
     const readings = readEnhancers([
       obs('1884-6', 200, '2026-06-10', 'entered-in-error'),

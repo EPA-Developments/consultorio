@@ -28,6 +28,12 @@ export interface EnhancerDefinition {
   id: string;
   label: string;
   loinc: string;
+  /**
+   * Sinónimos LOINC aceptados en la lectura además del primario, para la MISMA
+   * unidad. Distintos laboratorios codifican el mismo analito con LOINC
+   * diferentes (Lp(a) es el caso típico: molar 102725-2 vs 43583-4).
+   */
+  altLoinc?: string[];
   unit: string;
   /** value < optimalBelow ⇒ óptimo. */
   optimalBelow: number;
@@ -60,6 +66,11 @@ export const RISK_ENHANCERS: EnhancerDefinition[] = [
     id: 'lpa',
     label: 'Lp(a)',
     loinc: '102725-2',
+    // Lp(a) tiene doble codificación MOLAR (nmol/L): 102725-2 (LOINC actual) y
+    // 43583-4 (clásico, el que usan muchos laboratorios). Ambos comparten unidad
+    // y umbrales, así que se aceptan los dos. NO se incluye el código de MASA
+    // 10835-7 (mg/dL): usa otra escala y descolocaría la clasificación.
+    altLoinc: ['43583-4'],
     unit: 'nmol/L',
     optimalBelow: 50,
     conventionalBelow: 75,
@@ -126,8 +137,13 @@ function hasLoinc(observation: Observation, code: string): boolean {
   );
 }
 
+/** Códigos LOINC aceptados para un potenciador (primario + sinónimos). */
+export function enhancerLoincCodes(def: EnhancerDefinition): string[] {
+  return def.altLoinc?.length ? [def.loinc, ...def.altLoinc] : [def.loinc];
+}
+
 /** Códigos LOINC de todos los potenciadores (para la query de Observations). */
-export const ENHANCER_LOINC_CODES: string[] = RISK_ENHANCERS.map((e) => e.loinc);
+export const ENHANCER_LOINC_CODES: string[] = RISK_ENHANCERS.flatMap(enhancerLoincCodes);
 
 /**
  * Reduce una lista de Observations a la última lectura clasificada de cada
@@ -144,8 +160,12 @@ export function readEnhancers(
   const readings: EnhancerReading[] = [];
   for (const base of RISK_ENHANCERS) {
     const def = resolveEnhancer(base, dynamicByLoinc?.get(base.loinc));
+    const codes = enhancerLoincCodes(def);
     const obs = newestFirst.find(
-      (o) => o.status !== 'entered-in-error' && hasLoinc(o, def.loinc) && o.valueQuantity?.value !== undefined
+      (o) =>
+        o.status !== 'entered-in-error' &&
+        codes.some((c) => hasLoinc(o, c)) &&
+        o.valueQuantity?.value !== undefined
     );
     if (obs?.valueQuantity?.value !== undefined) {
       const value = obs.valueQuantity.value;
