@@ -49,9 +49,47 @@ function observationDate(observation: Observation): string {
   return observation.effectiveDateTime ?? observation.issued ?? observation.meta?.lastUpdated ?? '';
 }
 
+// HbA1c: PREVENT, LE8 y el estadío esperan la escala NGSP (%). Algunos labs la
+// reportan en IFCC (mmol/mol), que es una escala DISTINTA (34 mmol/mol ≈ 5.3 %):
+// leerla como % sería una diabetes severa falsa. Se convierte por la ecuación
+// maestra NGSP; y si el valor es imposible como % (>20) pero no está claro que
+// sea mmol/mol, se descarta para no alimentar un valor peligroso.
+const HBA1C_MMOL_RE = /mmol\s*\/\s*mol/i;
+
+function normalizeHba1c(value: number, unit: string | undefined): { value: number; unit?: string } | undefined {
+  if (unit && HBA1C_MMOL_RE.test(unit)) {
+    return { value: Math.round((0.09148 * value + 2.152) * 10) / 10, unit: '%' };
+  }
+  if (value > 20) {
+    // % fisiológicamente imposible (máx ~18-20%): casi seguro mmol/mol mal
+    // etiquetado; descartar antes que arriesgar una lectura peligrosa.
+    return undefined;
+  }
+  return { value, unit };
+}
+
+/** Asigna un valor al mapa, normalizando la HbA1c a % (NGSP). */
+function setCKMValue(
+  result: CKMObservationMap,
+  param: CKMParameterId,
+  value: number,
+  unit: string | undefined,
+  date?: string
+): void {
+  if (param === 'hba1c') {
+    const norm = normalizeHba1c(value, unit);
+    if (norm) {
+      result[param] = { ...norm, date };
+    }
+    return;
+  }
+  result[param] = { value, unit, date };
+}
+
 /**
  * Extrae los valores CKM de una Observation, en cualquiera de las dos formas:
- * panel de presión arterial (componentes) u Observation individual.
+ * panel de presión arterial (componentes) u Observation individual. La HbA1c se
+ * normaliza a % (NGSP) — ver normalizeHba1c.
  */
 export function extractCKMValues(observation: Observation): CKMObservationMap {
   const result: CKMObservationMap = {};
@@ -61,7 +99,7 @@ export function extractCKMValues(observation: Observation): CKMObservationMap {
   for (const component of observation.component ?? []) {
     for (const [code, param] of CODE_TO_PARAM) {
       if (hasCode(component.code, code) && component.valueQuantity?.value !== undefined) {
-        result[param] = { value: component.valueQuantity.value, unit: component.valueQuantity.unit, date };
+        setCKMValue(result, param, component.valueQuantity.value, component.valueQuantity.unit, date);
       }
     }
   }
@@ -70,7 +108,7 @@ export function extractCKMValues(observation: Observation): CKMObservationMap {
   if (observation.valueQuantity?.value !== undefined) {
     for (const [code, param] of CODE_TO_PARAM) {
       if (hasCode(observation.code, code)) {
-        result[param] = { value: observation.valueQuantity.value, unit: observation.valueQuantity.unit, date };
+        setCKMValue(result, param, observation.valueQuantity.value, observation.valueQuantity.unit, date);
       }
     }
   }

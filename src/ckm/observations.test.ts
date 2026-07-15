@@ -105,4 +105,26 @@ describe('Observations CKM unificadas', () => {
     ]);
     expect(values.egfr?.value).toBe(62);
   });
+
+  test('HbA1c en mmol/mol (IFCC) se convierte a % (NGSP)', () => {
+    // 59261-8 = HbA1c IFCC; 34 mmol/mol ≈ 5.3 %.
+    const values = extractCKMValues(singleObservation('59261-8', 34, 'mmol/mol', '2026-06-01'));
+    expect(values.hba1c).toMatchObject({ value: 5.3, unit: '%' });
+  });
+
+  test('HbA1c en % se lee tal cual', () => {
+    const values = extractCKMValues(singleObservation(LOINC.hba1c, 5.3, '%', '2026-06-01'));
+    expect(values.hba1c?.value).toBe(5.3);
+  });
+
+  test('HbA1c con código de % pero unidad mmol/mol: se convierte (no diabetes falsa)', () => {
+    // El caso peligroso: 4548-4 (código %) pero unidad mmol/mol -> 34 NO debe leerse como 34%.
+    const values = extractCKMValues(singleObservation(LOINC.hba1c, 34, 'mmol/mol', '2026-06-01'));
+    expect(values.hba1c?.value).toBe(5.3);
+  });
+
+  test('HbA1c con valor imposible como % (34) y unidad ambigua: se descarta', () => {
+    const values = extractCKMValues(singleObservation(LOINC.hba1c, 34, '%', '2026-06-01'));
+    expect(values.hba1c).toBeUndefined();
+  });
 });
