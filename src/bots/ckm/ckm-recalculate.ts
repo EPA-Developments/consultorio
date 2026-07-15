@@ -123,11 +123,16 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Observatio
   const hasClinicalCVD = active.some(isClinicalCVD);
 
   const previousStage = getCKMStage(patient);
-  const metrics = computeMetrics(values);
+  const previous = getHGraphData(patient);
+  const computedMetrics = computeMetrics(values);
+  // Si no quedan datos evaluables (ej. lectura vacía o única lectura descartada),
+  // conservar las métricas previas en lugar de borrarlas — mismo criterio que el
+  // estadío y el PREVENT. Evita que una corrida con búsqueda vacía (lag de
+  // indexación, política de acceso, etc.) pise datos buenos con un array vacío.
+  const metrics = computedMetrics.length > 0 ? computedMetrics : (previous.metrics ?? []);
   // Si no quedan datos evaluables (ej. única lectura descartada), conservar
   // el estadío previo en lugar de borrarlo
   const stage = deriveStage(values, { hasClinicalCVD, gender: patient.gender }) ?? previousStage;
-  const previous = getHGraphData(patient);
 
   // Scores PREVENT: se recalculan sólo si los coeficientes están verificados
   // (computePrevent devuelve undefined si no). Si no, se preservan los previos.
