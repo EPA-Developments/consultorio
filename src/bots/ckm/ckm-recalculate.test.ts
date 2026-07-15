@@ -1,8 +1,7 @@
 import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import type { Bundle, Communication, Observation, Patient, SearchParameter } from '@medplum/fhirtypes';
+import type { Bundle, Observation, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { vi } from 'vitest';
 import { CKM_STAGE_URL, HGRAPH_DATA_URL, LOINC, LOINC_BP_PANEL, LOINC_SYSTEM } from '../../ckm/constants';
 import type { HGraphMetric } from '../../ckm/types';
 import { handler } from './ckm-recalculate';
@@ -48,7 +47,7 @@ function getExtensions(patient: Patient): { stage?: number; metrics?: HGraphMetr
   return { stage, metrics };
 }
 
-describe('Bot CKM recalculate', () => {
+describe('Bot CKM recalculate (solo recálculo)', () => {
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
@@ -68,27 +67,6 @@ describe('Bot CKM recalculate', () => {
     expect(stage).toBe(0);
     expect(metrics).toHaveLength(2);
     expect(metrics?.find((m) => m.id === 'sbp')).toMatchObject({ value: 118, status: 'healthy' });
-  });
-
-  test('lectura vacía NO pisa las métricas previas (preserva el último buen cálculo)', async () => {
-    const medplum = new MockClient();
-    // Paciente con métricas ya persistidas de una corrida anterior.
-    const priorMetrics: HGraphMetric[] = [{ id: 'sbp', value: 118, status: 'healthy' } as HGraphMetric];
-    const patient = await medplum.createResource<Patient>({
-      resourceType: 'Patient',
-      gender: 'female',
-      extension: [{ url: HGRAPH_DATA_URL, valueString: JSON.stringify({ metrics: priorMetrics }) }],
-    });
-    // La Observation que dispara es CKM (pasa el early-return) pero NO está en el
-    // servidor, así que getLatestCKMObservations devuelve [] (simula lectura vacía
-    // transitoria: lag de indexación / política de acceso).
-    const trigger = labObservation(patient.id as string, LOINC.hba1c, 5.4, '%', '2026-06-01');
-
-    const result = await handler(medplum, { bot, contentType, input: trigger, secrets: {} });
-
-    const { metrics } = getExtensions(result as Patient);
-    expect(metrics).toHaveLength(1);
-    expect(metrics?.[0]).toMatchObject({ id: 'sbp', value: 118 });
   });
 
   test('hipertensión + ERC: estadío 2, gana la última PA por fecha', async () => {
@@ -134,156 +112,41 @@ describe('Bot CKM recalculate', () => {
     expect(result).toBeUndefined();
   });
 
-  test('empeoramiento de estadío: crea Communication alert y manda email', async () => {
+  test('PA cruzada (sistólica <= diastólica): se descarta, estadío preservado', async () => {
     const medplum = new MockClient();
-    const sendEmail = vi.spyOn(medplum, 'sendEmail').mockResolvedValue({} as never);
     const patient = await medplum.createResource<Patient>({
       resourceType: 'Patient',
       gender: 'male',
       extension: [{ url: CKM_STAGE_URL, valueInteger: 1 }],
     });
-    // TFGe 48 -> ERC -> estadío 2 (antes 1)
-    const observation = await medplum.createResource(
-      labObservation(patient.id as string, LOINC.egfr, 48, 'mL/min/1.73m²', '2026-06-01')
-    );
-
-    const result = await handler(medplum, {
-      bot,
-      contentType,
-      input: observation,
-      secrets: { CKM_ALERT_EMAIL: { name: 'CKM_ALERT_EMAIL', valueString: 'cardio@example.com' } },
-    });
-
-    expect(getExtensions(result as Patient).stage).toBe(2);
-    const alerts = await medplum.searchResources('Communication', `subject=Patient/${patient.id}`);
-    expect(alerts).toHaveLength(1);
-    expect((alerts[0] as Communication).payload?.[0]?.contentString).toContain('pasó de 1 a 2');
-    expect(sendEmail).toHaveBeenCalledTimes(1);
-    expect(sendEmail.mock.calls[0][0]).toMatchObject({ to: 'cardio@example.com' });
-    // Por privacidad el email solo lleva el link, sin datos clínicos
-    const emailBody = JSON.stringify(sendEmail.mock.calls[0][0]);
-    expect(emailBody).not.toContain('TFGe');
-    expect(emailBody).not.toContain('estadío');
-  });
-
-  test('valor crítico sin cambio de estadío: alerta al generalPractitioner', async () => {
-    const medplum = new MockClient();
-    const sendEmail = vi.spyOn(medplum, 'sendEmail').mockResolvedValue({} as never);
-    const gp = await medplum.createResource({
-      resourceType: 'Practitioner',
-      telecom: [{ system: 'email', value: 'dra.lopez@example.com' }],
-    });
-    const patient = await medplum.createResource<Patient>({
-      resourceType: 'Patient',
-      gender: 'female',
-      generalPractitioner: [{ reference: `Practitioner/${gp.id}` }],
-      extension: [{ url: CKM_STAGE_URL, valueInteger: 2 }],
-    });
-    // PA 186/92: crítico (>=180) pero sigue siendo estadío 2
-    const observation = await medplum.createResource(bpPanel(patient.id as string, 186, 92, '2026-06-01'));
-
-    await handler(medplum, { bot, contentType, input: observation, secrets: {} });
-
-    const alerts = await medplum.searchResources('Communication', `subject=Patient/${patient.id}`);
-    expect(alerts).toHaveLength(1);
-    expect((alerts[0] as Communication).payload?.[0]?.contentString).toContain('PA sistólica 186');
-    expect(sendEmail).toHaveBeenCalledTimes(1);
-    expect(sendEmail.mock.calls[0][0]).toMatchObject({ to: 'dra.lopez@example.com' });
-  });
-
-  test('valores normales sin empeoramiento: no alerta ni manda email', async () => {
-    const medplum = new MockClient();
-    const sendEmail = vi.spyOn(medplum, 'sendEmail').mockResolvedValue({} as never);
-    const patient = await medplum.createResource<Patient>({
-      resourceType: 'Patient',
-      gender: 'female',
-      extension: [{ url: CKM_STAGE_URL, valueInteger: 2 }],
-    });
-    const observation = await medplum.createResource(bpPanel(patient.id as string, 118, 76, '2026-06-01'));
-
-    await handler(medplum, {
-      bot,
-      contentType,
-      input: observation,
-      secrets: { CKM_ALERT_EMAIL: { name: 'CKM_ALERT_EMAIL', valueString: 'cardio@example.com' } },
-    });
-
-    const alerts = await medplum.searchResources('Communication', `subject=Patient/${patient.id}`);
-    expect(alerts).toHaveLength(0);
-    expect(sendEmail).not.toHaveBeenCalled();
-  });
-
-  test('PA cruzada (87/160): alerta de carga inconsistente, sin falsos críticos, estadío preservado', async () => {
-    const medplum = new MockClient();
-    const sendEmail = vi.spyOn(medplum, 'sendEmail').mockResolvedValue({} as never);
-    const patient = await medplum.createResource<Patient>({
-      resourceType: 'Patient',
-      gender: 'male',
-      extension: [{ url: CKM_STAGE_URL, valueInteger: 1 }],
-    });
-    // Campos cruzados al cargar en Control: sistólica 87, diastólica 160
+    // Campos cruzados al cargar: sistólica 87, diastólica 160 -> lectura descartada.
     const observation = await medplum.createResource(bpPanel(patient.id as string, 87, 160, '2026-06-12'));
 
-    const result = await handler(medplum, {
-      bot,
-      contentType,
-      input: observation,
-      secrets: { CKM_ALERT_EMAIL: { name: 'CKM_ALERT_EMAIL', valueString: 'cardio@example.com' } },
-    });
+    const result = await handler(medplum, { bot, contentType, input: observation, secrets: {} });
 
-    // La lectura no debe usarse: ni métricas de PA ni cambio de estadío
     const { stage, metrics } = getExtensions(result as Patient);
-    expect(stage).toBe(1);
+    expect(stage).toBe(1); // preservado (la única lectura se descartó)
     expect(metrics?.find((m) => m.id === 'dbp')).toBeUndefined();
-
-    const alerts = await medplum.searchResources('Communication', `subject=Patient/${patient.id}`);
-    expect(alerts).toHaveLength(1);
-    const payloads = (alerts[0] as Communication).payload?.map((p) => p.contentString ?? '') ?? [];
-    expect(payloads.join(' ')).toContain('inconsistente');
-    // Sin falso "valor crítico" por la diastólica 160
-    expect(payloads.join(' ')).not.toContain('Valor crítico');
-    expect(sendEmail).toHaveBeenCalledTimes(1);
+    expect(metrics?.find((m) => m.id === 'sbp')).toBeUndefined();
   });
 
-  test('tendencia "3 strikes": 3 PA elevadas crean DetectedIssue + Task + Communication y no se duplican', async () => {
+  test('lectura vacía NO pisa las métricas previas (preserva el último buen cálculo)', async () => {
     const medplum = new MockClient();
-    const sendEmail = vi.spyOn(medplum, 'sendEmail').mockResolvedValue({} as never);
-    const gp = await medplum.createResource({
-      resourceType: 'Practitioner',
-      telecom: [{ system: 'email', value: 'dra.lopez@example.com' }],
-    });
+    const priorMetrics: HGraphMetric[] = [{ id: 'sbp', value: 118, status: 'healthy' } as HGraphMetric];
     const patient = await medplum.createResource<Patient>({
       resourceType: 'Patient',
-      gender: 'male',
-      generalPractitioner: [{ reference: `Practitioner/${gp.id}` }],
+      gender: 'female',
+      extension: [{ url: HGRAPH_DATA_URL, valueString: JSON.stringify({ metrics: priorMetrics }) }],
     });
-    // 3 PA con sistólica elevada (>=140), diastólica normal, ninguna crítica
-    await medplum.createResource(bpPanel(patient.id as string, 145, 85, '2026-06-15'));
-    await medplum.createResource(bpPanel(patient.id as string, 148, 86, '2026-06-16'));
-    const latest = await medplum.createResource(bpPanel(patient.id as string, 150, 84, '2026-06-17'));
+    // La Observation que dispara es CKM (pasa el early-return) pero NO está en el
+    // servidor, así que getLatestCKMObservations devuelve [] (lectura vacía).
+    const trigger = labObservation(patient.id as string, LOINC.hba1c, 5.4, '%', '2026-06-01');
 
-    await handler(medplum, { bot, contentType, input: latest, secrets: {} });
+    const result = await handler(medplum, { bot, contentType, input: trigger, secrets: {} });
 
-    const issues = await medplum.searchResources('DetectedIssue', `patient=Patient/${patient.id}`);
-    expect(issues).toHaveLength(1);
-    expect(issues[0].code?.coding?.[0]).toMatchObject({ code: 'sbp-high' });
-
-    const tasks = await medplum.searchResources('Task', `patient=Patient/${patient.id}`);
-    expect(tasks).toHaveLength(1);
-    expect(tasks[0]).toMatchObject({ owner: { reference: `Practitioner/${gp.id}` }, priority: 'urgent' });
-
-    const alerts = await medplum.searchResources('Communication', `subject=Patient/${patient.id}`);
-    expect(alerts).toHaveLength(1);
-    expect((alerts[0] as Communication).payload?.[0]?.contentString).toContain('Presión sistólica');
-    expect(sendEmail).toHaveBeenCalledTimes(1);
-
-    // Segunda lectura elevada dentro del cooldown: no debe duplicar la alerta
-    const again = await medplum.createResource(bpPanel(patient.id as string, 151, 85, '2026-06-17'));
-    await handler(medplum, { bot, contentType, input: again, secrets: {} });
-
-    expect(await medplum.searchResources('DetectedIssue', `patient=Patient/${patient.id}`)).toHaveLength(1);
-    expect(await medplum.searchResources('Task', `patient=Patient/${patient.id}`)).toHaveLength(1);
-    expect(sendEmail).toHaveBeenCalledTimes(1);
+    const { metrics } = getExtensions(result as Patient);
+    expect(metrics).toHaveLength(1);
+    expect(metrics?.[0]).toMatchObject({ id: 'sbp', value: 118 });
   });
 
   test('preserva los scores PREVENT ya guardados en la extensión', async () => {
