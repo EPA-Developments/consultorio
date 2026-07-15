@@ -39,13 +39,19 @@ describe('classifyEnhancer — presentación', () => {
   });
 });
 
-function obs(code: string, value: number | undefined, date: string, status: Observation['status'] = 'final'): Observation {
+function obs(
+  code: string,
+  value: number | undefined,
+  date: string,
+  status: Observation['status'] = 'final',
+  unit = 'mg/dL'
+): Observation {
   return {
     resourceType: 'Observation',
     status,
     code: { coding: [{ system: 'http://loinc.org', code }] },
     effectiveDateTime: date,
-    ...(value !== undefined ? { valueQuantity: { value, unit: 'mg/dL' } } : {}),
+    ...(value !== undefined ? { valueQuantity: { value, unit } } : {}),
   };
 }
 
@@ -54,12 +60,29 @@ describe('readEnhancers', () => {
     const readings = readEnhancers([
       obs('1884-6', 75, '2026-01-01'),
       obs('1884-6', 142, '2026-06-01'), // más nueva: gana
-      obs('102725-2', 30, '2026-05-01'),
+      obs('102725-2', 30, '2026-05-01', 'final', 'nmol/L'),
     ]);
     const apobReading = readings.find((r) => r.def.id === 'apob');
     const lpaReading = readings.find((r) => r.def.id === 'lpa');
     expect(apobReading).toMatchObject({ value: 142, info: { level: 'high' } });
     expect(lpaReading).toMatchObject({ value: 30, info: { level: 'optimal' } });
+  });
+
+  test('Lp(a) se lee por su LOINC molar sinónimo 43583-4 (no solo 102725-2)', () => {
+    const readings = readEnhancers([obs('43583-4', 20, '2026-06-01', 'final', 'nmol/L')]);
+    expect(readings.find((r) => r.def.id === 'lpa')).toMatchObject({ value: 20, info: { level: 'optimal' } });
+  });
+
+  test('Lp(a) codificado con el LOINC de masa 10835-7 pero reportado en nmol/L se grada molar', () => {
+    // Caso real del lab: usa 10835-7 (masa) pero el valor viene en nmol/L.
+    const readings = readEnhancers([obs('10835-7', 20, '2026-06-01', 'final', 'nmol/L')]);
+    expect(readings.find((r) => r.def.id === 'lpa')).toMatchObject({ value: 20, info: { level: 'optimal' } });
+  });
+
+  test('Lp(a) en masa (mg/dL) usa los cutoffs de masa (30/50), no los molares', () => {
+    expect(readEnhancers([obs('10835-7', 20, '2026-06-01', 'final', 'mg/dL')])[0].info.level).toBe('optimal');
+    expect(readEnhancers([obs('10835-7', 45, '2026-06-01', 'final', 'mg/dL')])[0].info.level).toBe('borderline');
+    expect(readEnhancers([obs('10835-7', 55, '2026-06-01', 'final', 'mg/dL')])[0].info.level).toBe('high');
   });
 
   test('ignora entered-in-error y observaciones sin valor', () => {
