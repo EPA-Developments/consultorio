@@ -102,17 +102,14 @@ async function computePreventScores(
   return inputs ? computePrevent(inputs) : undefined;
 }
 
-export async function handler(medplum: MedplumClient, event: BotEvent<Observation>): Promise<Patient | undefined> {
-  const observation = event.input;
-
-  // Solo reaccionar a Observations de parámetros CKM con sujeto Patient
-  const triggeredValues = extractCKMValues(observation);
-  const patientId = observation.subject?.reference?.match(/^Patient\/(.+)$/)?.[1];
-  if (!patientId || Object.keys(triggeredValues).length === 0) {
-    return undefined;
-  }
-
-  const patient = await medplum.readResource('Patient', patientId);
+/**
+ * Recalcula y persiste las extensiones CKM (métricas hGraph, estadío, PREVENT)
+ * de un paciente a partir de sus últimas Observations. NO genera alertas — eso
+ * queda para el handler disparado por Observation. Reutilizable por el bot cron.
+ * Si el paciente no tiene datos CKM ni cálculo previo, no escribe nada.
+ */
+export async function recomputeCKM(medplum: MedplumClient, patient: Patient): Promise<Patient> {
+  const patientId = patient.id as string;
   const values = await getLatestCKMObservations(medplum, patientId);
 
   const conditions = await medplum.searchResources('Condition', {
@@ -124,6 +121,18 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Observatio
 
   const previousStage = getCKMStage(patient);
   const previous = getHGraphData(patient);
+
+  // Sin datos CKM ni cálculo previo: nada que recalcular (evita escrituras
+  // vacías cuando el cron recorre pacientes que no son del programa CKM).
+  if (
+    Object.keys(values).length === 0 &&
+    previous.metrics === undefined &&
+    previous.prevent === undefined &&
+    previousStage === undefined
+  ) {
+    return patient;
+  }
+
   const computedMetrics = computeMetrics(values);
   // Si no quedan datos evaluables (ej. lectura vacía o única lectura descartada),
   // conservar las métricas previas en lugar de borrarlas — mismo criterio que el
@@ -138,10 +147,26 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Observatio
   // (computePrevent devuelve undefined si no). Si no, se preservan los previos.
   const prevent = (await computePreventScores(medplum, patient, values, active)) ?? previous.prevent;
 
-  const updated = await medplum.updateResource({
+  return medplum.updateResource({
     ...patient,
     extension: withCKMExtensions(patient, stage, { metrics, prevent }),
   });
+}
+
+export async function handler(medplum: MedplumClient, event: BotEvent<Observation>): Promise<Patient | undefined> {
+  const observation = event.input;
+
+  // Solo reaccionar a Observations de parámetros CKM con sujeto Patient
+  const triggeredValues = extractCKMValues(observation);
+  const patientId = observation.subject?.reference?.match(/^Patient\/(.+)$/)?.[1];
+  if (!patientId || Object.keys(triggeredValues).length === 0) {
+    return undefined;
+  }
+
+  const patient = await medplum.readResource('Patient', patientId);
+  const previousStage = getCKMStage(patient);
+  const updated = await recomputeCKM(medplum, patient);
+  const stage = getCKMStage(updated);
 
   // Alertas: empeoramiento de estadío, valor crítico en la Observation que
   // disparó el bot (solo lo recién llegado, para no re-alertar valores
