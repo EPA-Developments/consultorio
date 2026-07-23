@@ -3,8 +3,10 @@ import { LOINC_SYSTEM } from '../ckm/observation-definitions';
 import {
   approveProposals,
   buildLabOrder,
+  chunk,
   groupByRequisition,
   LABORATORY_CATEGORY,
+  MAX_WRITES_PER_TX,
   orderabilityFor,
   REQUISITION_SYSTEM,
   resolveDerivedSources,
@@ -213,6 +215,24 @@ describe('approveProposals', () => {
     });
     const [unchanged] = approveProposals({ proposals: order, requester });
     expect(unchanged).toEqual(order[0]);
+  });
+});
+
+describe('chunk (límite de escrituras por transacción)', () => {
+  test('parte en tandas de a lo sumo MAX_WRITES_PER_TX', () => {
+    const items = Array.from({ length: 51 }, (_, i) => i);
+    const groups = chunk(items);
+    expect(groups.every((g) => g.length <= MAX_WRITES_PER_TX)).toBe(true);
+    expect(groups.flat()).toEqual(items); // no pierde ni reordena
+    expect(MAX_WRITES_PER_TX).toBeLessThanOrEqual(50); // por debajo del tope del servidor
+  });
+
+  test('una tanda entera si entra en el tope', () => {
+    expect(chunk([1, 2, 3], 40)).toEqual([[1, 2, 3]]);
+  });
+
+  test('lista vacía → sin tandas', () => {
+    expect(chunk([])).toEqual([]);
   });
 });
 

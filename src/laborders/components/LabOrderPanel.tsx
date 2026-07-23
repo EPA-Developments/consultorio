@@ -37,6 +37,7 @@ import { MATRICULA_SYSTEM } from '../../ckm/argentina';
 import {
   approveProposals,
   buildLabOrder,
+  chunk,
   COBERTURAS_PRIVADAS,
   groupByRequisition,
   LABORATORY_CATEGORY,
@@ -59,6 +60,7 @@ export function LabOrderPanel(props: { patient: Patient }): JSX.Element {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [cobertura, setCobertura] = useState<string>(COBERTURAS_PRIVADAS[0]);
   const [creating, setCreating] = useState(false);
+  const [approvingId, setApprovingId] = useState<string>();
   const [reloadKey, setReloadKey] = useState(0);
   const [existing, setExisting] = useState<ServiceRequest[]>();
 
@@ -194,29 +196,40 @@ export function LabOrderPanel(props: { patient: Patient }): JSX.Element {
     printHtmlDocument(renderLabOrderHtml(data));
   }
 
-  // Aprueba una solicitud del paciente: la convierte en orden médica emitida,
-  // sellada con la matrícula del profesional logueado.
-  async function approveOrder(reqs: ServiceRequest[]): Promise<void> {
+  // Aprueba una solicitud del paciente: convierte sus propuestas en órdenes
+  // médicas emitidas, selladas con la matrícula del profesional logueado. Las
+  // actualizaciones se fragmentan en tandas (el servidor rechaza transacciones
+  // con más de 50 PUT), así una solicitud del panel completo (~50 análisis) no
+  // rebota.
+  async function approveOrder(requisitionId: string, reqs: ServiceRequest[]): Promise<void> {
     const profile = medplum.getProfile();
     if (profile?.resourceType !== 'Practitioner') {
+      return;
+    }
+    // Solo las propuestas (las ya emitidas se dejan como están).
+    const proposals = reqs.filter((r) => r.intent === 'proposal');
+    if (proposals.length === 0) {
       return;
     }
     const name = profile.name?.[0] ? formatHumanName(profile.name[0]) : 'el profesional';
     const matricula = profile.identifier?.find((i) => i.system === MATRICULA_SYSTEM)?.value;
     const fecha = new Date().toLocaleDateString('es-AR');
     const approvalNote = `Aprobada y emitida por ${name}${matricula ? ` (Matrícula ${matricula})` : ''} el ${fecha}. Originada como solicitud del paciente.`;
+    const approved = approveProposals({ proposals, requester: createReference(profile), approvalNote });
 
-    const approved = approveProposals({ proposals: reqs, requester: createReference(profile), approvalNote });
-    const bundle: Bundle = {
-      resourceType: 'Bundle',
-      type: 'transaction',
-      entry: approved.map((resource) => ({
-        request: { method: 'PUT', url: `ServiceRequest/${resource.id}` },
-        resource,
-      })),
-    };
+    setApprovingId(requisitionId);
     try {
-      await medplum.executeBatch(bundle);
+      for (const group of chunk(approved)) {
+        const bundle: Bundle = {
+          resourceType: 'Bundle',
+          type: 'transaction',
+          entry: group.map((resource) => ({
+            request: { method: 'PUT', url: `ServiceRequest/${resource.id}` },
+            resource,
+          })),
+        };
+        await medplum.executeBatch(bundle);
+      }
       showNotification({
         icon: <IconCircleCheck />,
         color: 'teal',
@@ -226,6 +239,8 @@ export function LabOrderPanel(props: { patient: Patient }): JSX.Element {
       setReloadKey((k) => k + 1);
     } catch (err) {
       showNotification({ color: 'red', title: 'Error al aprobar la solicitud', message: normalizeErrorString(err) });
+    } finally {
+      setApprovingId(undefined);
     }
   }
 
@@ -353,7 +368,13 @@ export function LabOrderPanel(props: { patient: Patient }): JSX.Element {
       </Paper>
 
       {/* Órdenes ya emitidas. */}
-      <ExistingOrders existing={existing} onPrint={printOrder} onApprove={approveOrder} canApprove={isPractitioner} />
+      <ExistingOrders
+        existing={existing}
+        onPrint={printOrder}
+        onApprove={approveOrder}
+        canApprove={isPractitioner}
+        approvingId={approvingId}
+      />
     </Stack>
   );
 }
@@ -361,8 +382,9 @@ export function LabOrderPanel(props: { patient: Patient }): JSX.Element {
 function ExistingOrders(props: {
   existing?: ServiceRequest[];
   onPrint: (requisitionId: string, reqs: ServiceRequest[]) => void | Promise<void>;
-  onApprove: (reqs: ServiceRequest[]) => void | Promise<void>;
+  onApprove: (requisitionId: string, reqs: ServiceRequest[]) => void | Promise<void>;
   canApprove: boolean;
+  approvingId?: string;
 }): JSX.Element {
   if (props.existing === undefined) {
     return <Loader size="sm" />;
@@ -415,7 +437,8 @@ function ExistingOrders(props: {
                     size="xs"
                     color="teal"
                     leftSection={<IconStethoscope size={14} />}
-                    onClick={() => void props.onApprove(reqs)}
+                    loading={props.approvingId === requisitionId}
+                    onClick={() => void props.onApprove(requisitionId, reqs)}
                   >
                     Aprobar y emitir
                   </Button>

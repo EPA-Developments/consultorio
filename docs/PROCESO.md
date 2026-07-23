@@ -343,7 +343,12 @@ profesional logueado, una solicitud del paciente (`proposal`/`draft`) se
 transforma en orden médica emitida (`order`/`active`) sellada con su matrícula,
 conservando la requisición y el `authoredOn` original, y dejando constancia en
 una nota. El badge pasa de "Solicitud del paciente" a "Orden médica". Es la
-contraparte del flujo del portal (ver `PORTAL-INTEGRATION.md`).
+contraparte del flujo del portal (ver `PORTAL-INTEGRATION.md`). Las
+actualizaciones se **fragmentan** (`chunk`, `MAX_WRITES_PER_TX`): el servidor
+Medplum rechaza una transacción con más de **50 operaciones `update` (PUT)** —los
+`create` (POST) no cuentan—, así que aprobar una solicitud del panel completo
+(~50 análisis) se parte en tandas para no rebotar con "Transaction contains more
+update operations than allowed".
 
 **Impresión / PDF** (`lab-order-print.ts`): `renderLabOrderHtml` genera un
 documento HTML autocontenido (membrete BioWellness, datos del paciente,
