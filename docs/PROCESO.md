@@ -338,6 +338,16 @@ avisa que faltará la matrícula para la emisión legal (Fase 2).
 **Cobertura del catálogo** = las mismas 50 `ObservationDefinition` del panel de
 biomarcadores (única fuente de verdad, vía `useObservationDefinitions`).
 
+**Impresión / PDF** (`lab-order-print.ts`): `renderLabOrderHtml` genera un
+documento HTML autocontenido (membrete BioWellness, datos del paciente,
+matrícula del profesional, tabla de estudios con código, indicaciones de ayuno)
+y `printHtmlDocument` lo imprime en un **iframe oculto** — el diálogo del
+navegador ofrece "Imprimir" y "Guardar como PDF" **sin agregar dependencias**.
+El botón "Imprimir / PDF" está en cada orden emitida. `buildPrintData` arma los
+datos desde los `ServiceRequest` + `Patient` + `Practitioner` (puro, testeado;
+escapa el HTML de los campos de texto). El pie aclara que es un **documento de
+trabajo** sin validez legal (la firma/emisión es Fase 2).
+
 ---
 
 ## 7. Principios de "herramienta médica"
