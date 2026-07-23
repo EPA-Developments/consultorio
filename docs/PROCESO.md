@@ -338,6 +338,13 @@ avisa que faltará la matrícula para la emisión legal (Fase 2).
 **Cobertura del catálogo** = las mismas 50 `ObservationDefinition` del panel de
 biomarcadores (única fuente de verdad, vía `useObservationDefinitions`).
 
+**Aprobar y emitir** (`approveProposals` + botón en el panel): con el
+profesional logueado, una solicitud del paciente (`proposal`/`draft`) se
+transforma en orden médica emitida (`order`/`active`) sellada con su matrícula,
+conservando la requisición y el `authoredOn` original, y dejando constancia en
+una nota. El badge pasa de "Solicitud del paciente" a "Orden médica". Es la
+contraparte del flujo del portal (ver `PORTAL-INTEGRATION.md`).
+
 **Impresión / PDF** (`lab-order-print.ts`): `renderLabOrderHtml` genera un
 documento HTML autocontenido (membrete BioWellness, datos del paciente,
 matrícula del profesional, tabla de estudios con código, indicaciones de ayuno)
