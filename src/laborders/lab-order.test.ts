@@ -1,6 +1,7 @@
 import type { BiomarkerDefinition } from '../ckm/observation-definitions';
 import { LOINC_SYSTEM } from '../ckm/observation-definitions';
 import {
+  approveProposals,
   buildLabOrder,
   groupByRequisition,
   LABORATORY_CATEGORY,
@@ -167,6 +168,51 @@ describe('buildLabOrder', () => {
     const orders = buildLabOrder({ ...base, items: toLabOrderItems([edadBiologica]) });
     expect(orders).toHaveLength(1);
     expect(orders[0].code?.coding?.[0]).toMatchObject({ code: 'edad-biologica-epigenetica' });
+  });
+});
+
+describe('approveProposals', () => {
+  const requester = { reference: 'Practitioner/dr1', display: 'Dra. X' };
+  const proposals = buildLabOrder({
+    subject: { reference: 'Patient/p1' },
+    requester: { reference: 'Patient/p1' },
+    items: toLabOrderItems([glucosa, insulina]),
+    requisitionId: 'SOL-1',
+    authoredOn: '2026-07-20T09:00:00Z',
+    intent: 'proposal',
+    note: 'Solicitud del paciente desde el portal.',
+  });
+
+  test('convierte proposal/draft en order/active sellado por el profesional', () => {
+    const approved = approveProposals({ proposals, requester });
+    for (const sr of approved) {
+      expect(sr).toMatchObject({ intent: 'order', status: 'active', requester });
+    }
+  });
+
+  test('conserva la requisición y el authoredOn original', () => {
+    const approved = approveProposals({ proposals, requester });
+    expect(approved[0].requisition).toEqual({ system: REQUISITION_SYSTEM, value: 'SOL-1' });
+    expect(approved[0].authoredOn).toBe('2026-07-20T09:00:00Z');
+  });
+
+  test('agrega la nota de aprobación sin borrar la del paciente', () => {
+    const approved = approveProposals({ proposals, requester, approvalNote: 'Aprobada por Dra. X.' });
+    expect(approved[0].note).toEqual([
+      { text: 'Solicitud del paciente desde el portal.' },
+      { text: 'Aprobada por Dra. X.' },
+    ]);
+  });
+
+  test('no toca los ServiceRequest que ya son orders', () => {
+    const order = buildLabOrder({
+      subject: { reference: 'Patient/p1' },
+      items: toLabOrderItems([glucosa]),
+      requisitionId: 'ORD-9',
+      authoredOn: '2026-07-21T09:00:00Z',
+    });
+    const [unchanged] = approveProposals({ proposals: order, requester });
+    expect(unchanged).toEqual(order[0]);
   });
 });
 

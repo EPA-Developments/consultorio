@@ -20,13 +20,22 @@ import {
   Tooltip,
 } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { createReference, normalizeErrorString } from '@medplum/core';
+import { createReference, formatHumanName, normalizeErrorString } from '@medplum/core';
 import type { Bundle, Patient, Practitioner, ServiceRequest } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
-import { IconAlertTriangle, IconCircleCheck, IconFlask, IconInfoCircle, IconPrinter } from '@tabler/icons-react';
+import {
+  IconAlertTriangle,
+  IconCircleCheck,
+  IconFlask,
+  IconInfoCircle,
+  IconPrinter,
+  IconStethoscope,
+} from '@tabler/icons-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { JSX } from 'react';
+import { MATRICULA_SYSTEM } from '../../ckm/argentina';
 import {
+  approveProposals,
   buildLabOrder,
   COBERTURAS_PRIVADAS,
   groupByRequisition,
@@ -185,11 +194,47 @@ export function LabOrderPanel(props: { patient: Patient }): JSX.Element {
     printHtmlDocument(renderLabOrderHtml(data));
   }
 
+  // Aprueba una solicitud del paciente: la convierte en orden médica emitida,
+  // sellada con la matrícula del profesional logueado.
+  async function approveOrder(reqs: ServiceRequest[]): Promise<void> {
+    const profile = medplum.getProfile();
+    if (profile?.resourceType !== 'Practitioner') {
+      return;
+    }
+    const name = profile.name?.[0] ? formatHumanName(profile.name[0]) : 'el profesional';
+    const matricula = profile.identifier?.find((i) => i.system === MATRICULA_SYSTEM)?.value;
+    const fecha = new Date().toLocaleDateString('es-AR');
+    const approvalNote = `Aprobada y emitida por ${name}${matricula ? ` (Matrícula ${matricula})` : ''} el ${fecha}. Originada como solicitud del paciente.`;
+
+    const approved = approveProposals({ proposals: reqs, requester: createReference(profile), approvalNote });
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: approved.map((resource) => ({
+        request: { method: 'PUT', url: `ServiceRequest/${resource.id}` },
+        resource,
+      })),
+    };
+    try {
+      await medplum.executeBatch(bundle);
+      showNotification({
+        icon: <IconCircleCheck />,
+        color: 'teal',
+        title: 'Solicitud aprobada',
+        message: `${approved.length} análisis emitidos como orden médica.`,
+      });
+      setReloadKey((k) => k + 1);
+    } catch (err) {
+      showNotification({ color: 'red', title: 'Error al aprobar la solicitud', message: normalizeErrorString(err) });
+    }
+  }
+
   if (loading) {
     return <Loader m="xl" />;
   }
 
-  const noPractitioner = medplum.getProfile()?.resourceType !== 'Practitioner';
+  const isPractitioner = medplum.getProfile()?.resourceType === 'Practitioner';
+  const noPractitioner = !isPractitioner;
 
   return (
     <Stack gap="md">
@@ -308,7 +353,7 @@ export function LabOrderPanel(props: { patient: Patient }): JSX.Element {
       </Paper>
 
       {/* Órdenes ya emitidas. */}
-      <ExistingOrders existing={existing} onPrint={printOrder} />
+      <ExistingOrders existing={existing} onPrint={printOrder} onApprove={approveOrder} canApprove={isPractitioner} />
     </Stack>
   );
 }
@@ -316,6 +361,8 @@ export function LabOrderPanel(props: { patient: Patient }): JSX.Element {
 function ExistingOrders(props: {
   existing?: ServiceRequest[];
   onPrint: (requisitionId: string, reqs: ServiceRequest[]) => void | Promise<void>;
+  onApprove: (reqs: ServiceRequest[]) => void | Promise<void>;
+  canApprove: boolean;
 }): JSX.Element {
   if (props.existing === undefined) {
     return <Loader size="sm" />;
@@ -363,6 +410,16 @@ function ExistingOrders(props: {
                     .filter(Boolean)
                     .join(', ')}
                 </Text>
+                {proposal && props.canApprove && (
+                  <Button
+                    size="xs"
+                    color="teal"
+                    leftSection={<IconStethoscope size={14} />}
+                    onClick={() => void props.onApprove(reqs)}
+                  >
+                    Aprobar y emitir
+                  </Button>
+                )}
                 <Button
                   size="xs"
                   variant="light"

@@ -294,7 +294,9 @@ Observations del paciente.)
 - **Hecho**: el tab "Órdenes de laboratorio" ya lista las solicitudes del
   paciente (badge naranja) junto a las órdenes médicas, agrupadas por requisición,
   con impresión/PDF.
-- **Pendiente (dashboard, en alcance de esa sesión)**: acción **"Aprobar y
-  emitir"** que toma una solicitud `proposal/draft` y crea la orden `order/active`
-  del médico (con su matrícula). Es el cierre natural del loop y se construye del
-  lado del dashboard.
+- **Hecho**: acción **"Aprobar y emitir"** — con el profesional logueado, el
+  botón sobre una solicitud `proposal/draft` la transforma en orden `order/active`
+  sellada con su matrícula (misma requisición, se preserva el `authoredOn` del
+  paciente y se deja constancia en una nota). El badge pasa a "Orden médica".
+  Es decir: apenas el portal empiece a crear solicitudes, el loop ya cierra de
+  punta a punta.

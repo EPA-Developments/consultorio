@@ -229,6 +229,35 @@ export function buildLabOrder(params: LabOrderParams): ServiceRequest[] {
     }));
 }
 
+/**
+ * Aprueba una solicitud del paciente: transforma cada ServiceRequest que venga
+ * como propuesta ('proposal'/'draft') en una orden médica emitida
+ * ('order'/'active'), sellada por el profesional (requester). Los que no sean
+ * propuestas se devuelven intactos. Conserva la requisición (misma agrupación) y
+ * el authoredOn original (cuándo lo pidió el paciente); deja constancia de la
+ * aprobación en una nota. El badge del dashboard pasa de "Solicitud del paciente"
+ * a "Orden médica" automáticamente al cambiar el intent.
+ */
+export function approveProposals(params: {
+  proposals: ServiceRequest[];
+  requester: ServiceRequest['requester'];
+  approvalNote?: string;
+}): ServiceRequest[] {
+  return params.proposals.map((sr) => {
+    if (sr.intent !== 'proposal') {
+      return sr;
+    }
+    const note = params.approvalNote ? [...(sr.note ?? []), { text: params.approvalNote }] : sr.note;
+    return {
+      ...sr,
+      status: 'active' as const,
+      intent: 'order' as const,
+      requester: params.requester,
+      ...(note ? { note } : {}),
+    };
+  });
+}
+
 /** Agrupa ServiceRequest por su requisición (para mostrar una orden como unidad). */
 export function groupByRequisition(requests: ServiceRequest[]): Map<string, ServiceRequest[]> {
   const map = new Map<string, ServiceRequest[]>();
