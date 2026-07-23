@@ -27,6 +27,25 @@ import type { BiomarkerDefinition } from '../ckm/observation-definitions';
 export const REQUISITION_SYSTEM = 'https://bio.medplum.com.ar/fhir/sid/orden-laboratorio';
 
 /**
+ * Máximo de operaciones de escritura por transacción que fragmentamos. El
+ * servidor Medplum (@medplum/fhir-router) rechaza una transacción con MÁS de 50
+ * operaciones `update` (PUT) —"Transaction contains more update operations than
+ * allowed"—; los `create` (POST) no cuentan para ese límite. Fragmentamos por
+ * debajo de 50 para dejar margen. Una solicitud del paciente con el panel
+ * completo (~50 análisis) al aprobarse son 50 PUT y hay que partirlos.
+ */
+export const MAX_WRITES_PER_TX = 40;
+
+/** Parte una lista en tandas de a lo sumo `size` elementos. */
+export function chunk<T>(items: T[], size: number = MAX_WRITES_PER_TX): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    out.push(items.slice(i, i + size));
+  }
+  return out;
+}
+
+/**
  * Coberturas privadas ABC1 objetivo de BioWellness (San Isidro). No se incluyen
  * obras sociales ni PAMI por ahora. "Particular" para pacientes sin cobertura.
  * Es un dato informativo de la orden (viaja como nota); la autorización real

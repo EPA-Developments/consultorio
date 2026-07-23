@@ -243,6 +243,16 @@ await medplum.executeBatch({
 });
 ```
 
+> **Límite de escrituras por transacción.** El servidor Medplum rechaza una
+> transacción con más de **50 operaciones `update` (PUT)** ("Transaction contains
+> more update operations than allowed"). Los **`create` (POST) NO cuentan** para
+> ese límite, así que crear ~50 solicitudes en una transacción está OK (es lo que
+> hace este envío). El límite sí aplica si alguna vez hacés PUT masivos: en ese
+> caso fragmentá en tandas de ≤50 (el dashboard ya lo hace al aprobar, con su
+> helper `chunk`). Además, asegurate de **filtrar a `orderable`** (excluí HOMA-IR,
+> eGFR y HRV): no tiene sentido "solicitar" un valor calculado o una métrica de
+> wearable.
+
 ### 5.3 Tests (vitest, espejo de `lab-order.test.ts`)
 
 - `parseStudy` marca `orderable: false` para HOMA-IR, eGFR y HRV; `true` para
