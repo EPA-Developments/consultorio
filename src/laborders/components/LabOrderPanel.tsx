@@ -21,9 +21,9 @@ import {
 } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { createReference, normalizeErrorString } from '@medplum/core';
-import type { Bundle, Patient, ServiceRequest } from '@medplum/fhirtypes';
+import type { Bundle, Patient, Practitioner, ServiceRequest } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
-import { IconAlertTriangle, IconCircleCheck, IconFlask, IconInfoCircle } from '@tabler/icons-react';
+import { IconAlertTriangle, IconCircleCheck, IconFlask, IconInfoCircle, IconPrinter } from '@tabler/icons-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { JSX } from 'react';
 import {
@@ -35,6 +35,7 @@ import {
   resolveDerivedSources,
 } from '../lab-order';
 import type { LabOrderItem } from '../lab-order';
+import { buildPrintData, printHtmlDocument, renderLabOrderHtml } from '../lab-order-print';
 import { useLabOrderCatalog } from '../hooks/useLabOrderCatalog';
 
 /** Genera un número de orden legible a partir de un UUID del navegador. */
@@ -150,6 +151,38 @@ export function LabOrderPanel(props: { patient: Patient }): JSX.Element {
     } finally {
       setCreating(false);
     }
+  }
+
+  // Imprime (o "Guardar como PDF") una orden ya emitida. Resuelve el
+  // profesional desde el requester de la orden; si no se puede, usa el perfil
+  // actual (si es Practitioner).
+  async function printOrder(requisitionId: string, reqs: ServiceRequest[]): Promise<void> {
+    let practitioner: Practitioner | undefined;
+    const ref = reqs.map((r) => r.requester).find((r) => r?.reference?.startsWith('Practitioner/'));
+    try {
+      if (ref) {
+        const res = await medplum.readReference(ref);
+        if (res.resourceType === 'Practitioner') {
+          practitioner = res;
+        }
+      }
+    } catch (err) {
+      console.warn('LabOrderPanel: no se pudo resolver el profesional de la orden', err);
+    }
+    if (!practitioner) {
+      const profile = medplum.getProfile();
+      if (profile?.resourceType === 'Practitioner') {
+        practitioner = profile;
+      }
+    }
+    const data = buildPrintData({
+      requisitionId,
+      requests: reqs,
+      patient: props.patient,
+      practitioner,
+      logoUrl: '/logo.png',
+    });
+    printHtmlDocument(renderLabOrderHtml(data));
   }
 
   if (loading) {
@@ -275,12 +308,15 @@ export function LabOrderPanel(props: { patient: Patient }): JSX.Element {
       </Paper>
 
       {/* Órdenes ya emitidas. */}
-      <ExistingOrders existing={existing} />
+      <ExistingOrders existing={existing} onPrint={printOrder} />
     </Stack>
   );
 }
 
-function ExistingOrders(props: { existing?: ServiceRequest[] }): JSX.Element {
+function ExistingOrders(props: {
+  existing?: ServiceRequest[];
+  onPrint: (requisitionId: string, reqs: ServiceRequest[]) => void | Promise<void>;
+}): JSX.Element {
   if (props.existing === undefined) {
     return <Loader size="sm" />;
   }
@@ -320,12 +356,22 @@ function ExistingOrders(props: { existing?: ServiceRequest[] }): JSX.Element {
                   {reqs.length} análisis · {authored ? new Date(authored).toLocaleDateString('es-AR') : 'sin fecha'}
                 </Text>
               </Stack>
-              <Text size="xs" c="dimmed" ta="right" style={{ maxWidth: 320 }}>
-                {reqs
-                  .map((r) => r.code?.text)
-                  .filter(Boolean)
-                  .join(', ')}
-              </Text>
+              <Group gap="sm" wrap="nowrap" align="center">
+                <Text size="xs" c="dimmed" ta="right" style={{ maxWidth: 260 }}>
+                  {reqs
+                    .map((r) => r.code?.text)
+                    .filter(Boolean)
+                    .join(', ')}
+                </Text>
+                <Button
+                  size="xs"
+                  variant="light"
+                  leftSection={<IconPrinter size={14} />}
+                  onClick={() => void props.onPrint(requisitionId, reqs)}
+                >
+                  Imprimir / PDF
+                </Button>
+              </Group>
             </Group>
           </Paper>
         );
