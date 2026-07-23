@@ -11,6 +11,7 @@ import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
 import { cleanResource } from '../utils';
 import { LE8Panel } from '../ckm/components/LE8Panel';
+import { LabOrderPanel } from '../laborders/components/LabOrderPanel';
 import { ClinicalImpressionDisplay } from './ClinicalImpressionDisplay';
 import { PatientObservations } from './PatientObservations';
 
@@ -34,6 +35,7 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
     ['clinical', 'Impresiones clínicas'],
     ['observations', 'Observaciones'],
     ['le8', 'Salud CV · LE8'],
+    ['ordenes', 'Órdenes de laboratorio'],
   ];
   // Get the current tab
   const tab = window.location.pathname.split('/').pop();
@@ -108,6 +110,9 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
         </Tabs.Panel>
         <Tabs.Panel value="le8">
           <LE8Panel patient={props.patient} />
+        </Tabs.Panel>
+        <Tabs.Panel value="ordenes">
+          <LabOrderPanel patient={props.patient} />
         </Tabs.Panel>
       </Tabs>
     </Document>

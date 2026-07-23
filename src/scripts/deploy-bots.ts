@@ -12,8 +12,6 @@ interface BotDescription {
   src: string;
   dist: string;
   criteria?: string;
-  /** Expresión cron (Bot.cronString) para bots programados; sin criteria/Subscription. */
-  cronString?: string;
   /** 'vmcontext' para servidores self-hosted sin AWS Lambda. */
   runtimeVersion?: 'awslambda' | 'vmcontext';
 }
@@ -57,16 +55,6 @@ const Bots: BotDescription[] = [
     dist: 'dist/bots/ckm/careplan-generate.js',
     runtimeVersion: CKM_RUNTIME,
   },
-  {
-    // CRON: recalcula el CKM de todos los pacientes cada 15 min. Red de seguridad
-    // para la entrega automática de Subscriptions (worker del server self-hosted).
-    // Sin criteria: se dispara por cronString, no por Subscription. Ajustá la
-    // frecuencia según la carga del proyecto.
-    src: 'src/bots/ckm/ckm-reprocess-cron.ts',
-    dist: 'dist/bots/ckm/ckm-reprocess-cron.js',
-    cronString: '*/15 * * * *',
-    runtimeVersion: CKM_RUNTIME,
-  },
 ];
 
 async function main(): Promise<void> {
@@ -88,7 +76,6 @@ async function main(): Promise<void> {
           id: botIdPlaceholder,
           name: botName,
           runtimeVersion: botDescription.runtimeVersion ?? 'awslambda',
-          ...(botDescription.cronString ? { cronString: botDescription.cronString } : {}),
           sourceCode: {
             // text/typescript no está en la ValueSet IANA de mimetypes que
             // valida el servidor self-hosted; el fuente se guarda como
