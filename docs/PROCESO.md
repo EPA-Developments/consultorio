@@ -396,18 +396,19 @@ Convenciones que atraviesan todo el código y conviene mantener:
 
 ## 9. Scripts de operación (`package.json`)
 
-| Script                                                              | Para qué                                          |
-| ------------------------------------------------------------------- | ------------------------------------------------- |
-| `dev` / `build` / `preview`                                         | desarrollo y build                                |
-| `test` / `test:coverage`                                            | suite de tests                                    |
-| `build:bots` / `deploy-bots-server`                                 | compilar y desplegar los bots al self-hosted      |
-| `ckm-doctor` / `ckm-bots-doctor`                                    | diagnóstico del panel y de los bots/subscriptions |
-| `import-vsac` / `upload-med-valueset` / `upload-condition-valueset` | terminología                                      |
-| `upload-biomarker-defs`                                             | subir las 50 ObservationDefinitions BioWellness   |
-| `upload-le8`                                                        | subir los 4 Questionnaire de Life's Essential 8   |
-| `seed-ckm-demo` / `seed-biomarkers-demo`                            | datos de demostración                             |
-| `verify-prevent` / `verify-alerts` / `verify-careplan`              | validaciones end-to-end                           |
-| `upload-access-policy` / `upload-sdoh` / `localize-argentina`       | operación                                         |
+| Script                                                              | Para qué                                                                     |
+| ------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `dev` / `build` / `preview`                                         | desarrollo y build                                                           |
+| `test` / `test:coverage`                                            | suite de tests                                                               |
+| `build:bots` / `deploy-bots-server`                                 | compilar y desplegar los bots al self-hosted                                 |
+| `ckm-doctor` / `ckm-bots-doctor`                                    | diagnóstico del panel y de los bots/subscriptions                            |
+| `dedupe-practitioners`                                              | detecta Practitioners duplicados y borra los huérfanos (dry-run por defecto) |
+| `import-vsac` / `upload-med-valueset` / `upload-condition-valueset` | terminología                                                                 |
+| `upload-biomarker-defs`                                             | subir las 50 ObservationDefinitions BioWellness                              |
+| `upload-le8`                                                        | subir los 4 Questionnaire de Life's Essential 8                              |
+| `seed-ckm-demo` / `seed-biomarkers-demo`                            | datos de demostración                                                        |
+| `verify-prevent` / `verify-alerts` / `verify-careplan`              | validaciones end-to-end                                                      |
+| `upload-access-policy` / `upload-sdoh` / `localize-argentina`       | operación                                                                    |
 
 La mayoría requieren `MEDPLUM_CLIENT_ID` y `MEDPLUM_CLIENT_SECRET` del
 ClientApplication del proyecto.

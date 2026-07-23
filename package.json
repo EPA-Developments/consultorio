@@ -9,6 +9,7 @@
     "clean": "rimraf dist",
     "ckm-doctor": "tsx src/scripts/ckm-doctor.ts",
     "ckm-bots-doctor": "tsx src/scripts/ckm-bots-doctor.ts",
+    "dedupe-practitioners": "tsx src/scripts/dedupe-practitioners.ts",
     "dev": "vite",
     "import-vsac": "tsx src/scripts/import-vsac-valuesets.ts",
     "localize-argentina": "tsx src/scripts/localize-argentina.ts",
