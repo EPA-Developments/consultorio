@@ -21,18 +21,23 @@
 //   3. Marca cada copia: LOGIN / REFERENCIADO / HUÉRFANO (seguro de borrar).
 //   4. Recomienda cuál conservar (la "original") por grupo.
 //
-// Por defecto es DRY-RUN (no borra nada). Con --delete-orphans borra SOLO los
-// duplicados huérfanos (0 logins y 0 referencias), nunca el que se conserva ni
-// uno referenciado ni una cuenta de login. Si algún conteo no se pudo verificar
-// (permisos), ese recurso NO se borra.
+// Por defecto es DRY-RUN (no borra nada). Modos de acción:
+//   --delete-orphans  borra SOLO los duplicados huérfanos (0 logins, 0 refs).
+//   --merge           CONSOLIDA: repunta al ★ las referencias de cada duplicado
+//                     (aunque esté EN USO) y luego lo borra (re-verificando que
+//                     quedó sin referencias). Previsualiza; escribe con --apply.
+// Nunca toca el que se conserva ni una cuenta de login; si un conteo no se pudo
+// verificar (permisos), ese recurso no se borra.
 //
 // Uso:
 //   MEDPLUM_CLIENT_ID=xxx MEDPLUM_CLIENT_SECRET=xxx npm run dedupe-practitioners
 //   ... npm run dedupe-organizations                          # Organizations
-//   ... npm run dedupe-practitioners -- --name="Dos Santos"   # filtrar
+//   ... npm run dedupe-organizations -- --name="Shanti"       # filtrar
 //   ... npm run dedupe-organizations -- --delete-orphans      # borrar huérfanos
+//   ... npm run dedupe-organizations -- --merge               # previsualizar consolidación
+//   ... npm run dedupe-organizations -- --merge --apply       # ejecutar consolidación
 import { MedplumClient, getReferenceString } from '@medplum/core';
-import type { Organization, Practitioner, ResourceType } from '@medplum/fhirtypes';
+import type { Organization, Practitioner, Resource, ResourceType } from '@medplum/fhirtypes';
 
 type Dedupable = Practitioner | Organization;
 type SupportedType = 'Practitioner' | 'Organization';
@@ -199,6 +204,105 @@ function pickKeeper(group: Analysis[]): Analysis {
   })[0];
 }
 
+/**
+ * Devuelve una copia del recurso con TODA referencia a `fromRef` repuntada a
+ * `toRef` (recorre el árbol completo: cubre arrays y campos anidados como
+ * generalPractitioner[], participant[].individual, performer[], etc.). Si la
+ * referencia traía `display`, lo actualiza al nombre del keeper.
+ */
+function repointReferences<T>(resource: T, fromRef: string, toRef: string, toDisplay?: string): T {
+  const clone = JSON.parse(JSON.stringify(resource));
+  const walk = (node: unknown): void => {
+    if (Array.isArray(node)) {
+      node.forEach(walk);
+      return;
+    }
+    if (node && typeof node === 'object') {
+      const obj = node as Record<string, unknown>;
+      if (obj.reference === fromRef) {
+        obj.reference = toRef;
+        if ('display' in obj && toDisplay) {
+          obj.display = toDisplay;
+        }
+      }
+      for (const key of Object.keys(obj)) {
+        walk(obj[key]);
+      }
+    }
+  };
+  walk(clone);
+  return clone;
+}
+
+/**
+ * Consolida un grupo: repunta al keeper todas las referencias de cada duplicado
+ * y luego borra el duplicado (re-verificando que quedó sin referencias). Con
+ * apply=false solo previsualiza.
+ */
+async function mergeGroup(
+  medplum: MedplumClient,
+  type: SupportedType,
+  config: TypeConfig,
+  analyses: Analysis[],
+  keeper: Analysis,
+  apply: boolean
+): Promise<void> {
+  const keeperRef = getReferenceString(keeper.resource) as string;
+  const keeperName = labelOf(keeper.resource);
+
+  for (const a of analyses) {
+    if (a.resource.id === keeper.resource.id) {
+      continue;
+    }
+    const dupRef = getReferenceString(a.resource) as string;
+
+    // Reunir (dedup por type/id) los recursos que referencian al duplicado.
+    const referencing = new Map<string, Resource>();
+    for (const { resourceType, param } of config.references) {
+      try {
+        const found = await medplum.searchResources(resourceType, `${param}=${dupRef}&_count=1000`);
+        for (const r of found) {
+          referencing.set(getReferenceString(r), r);
+        }
+      } catch {
+        /* param no soportado en este servidor: se ignora */
+      }
+    }
+
+    console.log(
+      `\n  ${apply ? 'Reasignando' : 'Reasignaría'} ${dupRef} → ${keeperRef}  (${referencing.size} recurso/s)`
+    );
+    for (const r of referencing.values()) {
+      console.log(`    ${apply ? '✓' : '·'} ${getReferenceString(r)}`);
+      if (apply) {
+        await medplum.updateResource(repointReferences(r, dupRef, keeperRef, keeperName) as Resource & { id: string });
+      }
+    }
+
+    if (!apply) {
+      continue;
+    }
+
+    // Re-verificar que el duplicado quedó sin referencias antes de borrarlo.
+    let remaining = 0;
+    for (const { resourceType, param } of config.references) {
+      try {
+        remaining += await countSearch(medplum, resourceType, `${param}=${dupRef}`);
+      } catch {
+        /* ignore */
+      }
+    }
+    if (remaining > 0) {
+      console.log(
+        `    ⚠ quedan ${remaining} referencia(s) al duplicado (campos no cubiertos): NO se borra. Revisar a mano.`
+      );
+      continue;
+    }
+    await medplum.deleteResource(type, a.resource.id as string);
+    console.log(`    🗑 borrado duplicado ${dupRef}`);
+  }
+}
+
 function parseType(): SupportedType {
   const raw = process.argv.find((a) => a.startsWith('--type='))?.slice('--type='.length);
   if (raw && raw !== 'Practitioner' && raw !== 'Organization') {
@@ -217,6 +321,8 @@ async function main(): Promise<void> {
   const type = parseType();
   const config = CONFIG[type];
   const doDelete = process.argv.includes('--delete-orphans');
+  const doMerge = process.argv.includes('--merge');
+  const doApply = process.argv.includes('--apply');
   const nameArg = process.argv.find((a) => a.startsWith('--name='))?.slice('--name='.length);
 
   const medplum = new MedplumClient({ baseUrl, fetch });
@@ -266,18 +372,34 @@ async function main(): Promise<void> {
       }
     }
     const needReassign = analyses.filter((a) => a.resource.id !== keeper.resource.id && verdict(a) !== 'HUÉRFANO');
-    if (needReassign.length > 0) {
+    if (needReassign.length > 0 && !doMerge) {
       console.log(
-        `  → ${needReassign.length} duplicado(s) están EN USO: reasigná sus referencias al ★ (${keeper.resource.id}) antes de borrarlos.`
+        `  → ${needReassign.length} duplicado(s) están EN USO: reasigná sus referencias al ★ (${keeper.resource.id}) con --merge.`
       );
+    }
+    // Modo consolidación: repunta las referencias del duplicado al ★ y lo borra.
+    if (doMerge) {
+      await mergeGroup(medplum, type, config, analyses, keeper, doApply);
     }
   }
 
-  console.log('─'.repeat(72));
+  console.log('\n' + '─'.repeat(72));
+
+  if (doMerge) {
+    console.log(
+      doApply
+        ? '\n--merge --apply: referencias reasignadas y duplicados borrados (los que quedaron con referencias no cubiertas se dejaron).'
+        : '\nPREVISUALIZACIÓN de --merge: no se escribió nada. Para ejecutar: agregá  --apply'
+    );
+    return;
+  }
+
   console.log(`\nHuérfanos seguros de borrar: ${toDelete.length}`);
 
   if (!doDelete) {
-    console.log('\nDRY-RUN: no se borró nada. Para borrar los huérfanos: agregá  -- --delete-orphans');
+    console.log('\nDRY-RUN: no se borró nada.');
+    console.log('  · Borrar huérfanos:            -- --delete-orphans');
+    console.log('  · Consolidar (reasignar+borrar): -- --merge   (y luego --merge --apply)');
     return;
   }
   console.log('\n--delete-orphans: borrando duplicados huérfanos...');
