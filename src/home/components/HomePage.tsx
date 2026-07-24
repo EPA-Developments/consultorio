@@ -5,12 +5,16 @@ import { Anchor, Badge, Button, Group, Paper, SimpleGrid, Stack, Text, Title } f
 import { useMedplumProfile } from '@medplum/react';
 import {
   IconAlertCircle,
+  IconCake,
+  IconCalendarEvent,
   IconClipboardHeart,
   IconClipboardList,
   IconClipboardText,
+  IconClipboardX,
   IconFlask,
   IconHeartRateMonitor,
   IconListCheck,
+  IconReportMedical,
   IconSearch,
   IconUsers,
 } from '@tabler/icons-react';
@@ -119,6 +123,46 @@ export function HomePage(): JSX.Element {
           emptyText="Sin tareas pendientes."
         />
         <WorklistCard
+          title="Próximos turnos"
+          icon={<IconCalendarEvent size={18} />}
+          color="blue"
+          items={data.appointments}
+          loading={data.loading}
+          emptyText="Sin turnos próximos agendados."
+        />
+        <WorklistCard
+          title="Mis evoluciones sin cerrar"
+          icon={<IconClipboardList size={18} />}
+          color="yellow"
+          items={data.unfinishedEncounters}
+          loading={data.loading}
+          emptyText="Sin evoluciones abiertas."
+        />
+        <WorklistCard
+          title="Resultados nuevos"
+          icon={<IconReportMedical size={18} />}
+          color="blue"
+          items={data.results}
+          loading={data.loading}
+          emptyText="Sin resultados recientes."
+        />
+        <WorklistCard
+          title="Cuestionarios sin responder"
+          icon={<IconClipboardX size={18} />}
+          color="gray"
+          items={data.pendingQuestionnaires}
+          loading={data.loading}
+          emptyText="Sin cuestionarios a medio completar."
+        />
+        <WorklistCard
+          title="Cumpleaños del mes"
+          icon={<IconCake size={18} />}
+          color="pink"
+          items={data.birthdays}
+          loading={data.loading}
+          emptyText="Sin cumpleaños este mes."
+        />
+        <WorklistCard
           title="Últimos pacientes"
           icon={<IconUsers size={18} />}
           color="copper"
@@ -129,8 +173,8 @@ export function HomePage(): JSX.Element {
       </SimpleGrid>
 
       <Text size="xs" c="dimmed">
-        Las solicitudes de laboratorio, alertas, planes, alto riesgo y cuestionarios son a nivel del centro; las tareas
-        son las asignadas a vos.{' '}
+        Solicitudes de lab, alertas, planes, alto riesgo, cuestionarios y resultados son a nivel del centro; tus tareas,
+        turnos y evoluciones son las tuyas.{' '}
         <Anchor component={Link} to="/ckm" size="xs">
           Ver panel CKM completo
         </Anchor>

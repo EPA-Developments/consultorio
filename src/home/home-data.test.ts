@@ -1,13 +1,27 @@
-import type { CarePlan, Patient, QuestionnaireResponse, ServiceRequest, Task } from '@medplum/fhirtypes';
+import type {
+  Appointment,
+  CarePlan,
+  DiagnosticReport,
+  Encounter,
+  Patient,
+  QuestionnaireResponse,
+  ServiceRequest,
+  Task,
+} from '@medplum/fhirtypes';
 import type { DashboardRow } from '../ckm/dashboard';
 import {
   buildAlertItems,
+  buildAppointmentItems,
+  buildBirthdayItems,
   buildCarePlanItems,
   buildHighRiskItems,
   buildLabProposalItems,
+  buildPendingQuestionnaireItems,
   buildQuestionnaireItems,
   buildRecentPatientItems,
+  buildResultItems,
   buildTaskItems,
+  buildUnfinishedEncounterItems,
   computeKpis,
   isHighRisk,
   questionnaireLabel,
@@ -175,5 +189,84 @@ describe('buildCarePlanItems / buildRecentPatientItems', () => {
     expect(items).toHaveLength(6);
     expect(items[0].primary).toBe('N Fam0');
     expect(items[0].href).toBe('/Patient/p0');
+  });
+});
+
+describe('Etapa 2', () => {
+  test('evoluciones sin cerrar: solo Encounter en estado abierto', () => {
+    const enc = (status: Encounter['status'], id: string): Encounter => ({
+      resourceType: 'Encounter',
+      id,
+      status,
+      class: { code: 'AMB' },
+      subject: { reference: 'Patient/p1', display: 'Ana' },
+    });
+    const items = buildUnfinishedEncounterItems([enc('in-progress', 'a'), enc('finished', 'b'), enc('planned', 'c')]);
+    expect(items.map((i) => i.id)).toEqual(['a', 'c']);
+    expect(items[0].href).toBe('/Encounter/a');
+    expect(items[0].badge).toBe('Sin cerrar');
+  });
+
+  test('cuestionarios sin responder: in-progress e interesantes', () => {
+    const qr = (status: QuestionnaireResponse['status'], q: string, id: string): QuestionnaireResponse => ({
+      resourceType: 'QuestionnaireResponse',
+      id,
+      status,
+      questionnaire: q,
+      subject: { reference: 'Patient/p1', display: 'Ana' },
+    });
+    const items = buildPendingQuestionnaireItems([
+      qr('in-progress', 'https://x/le8-sleep-v1', 'a'),
+      qr('completed', 'https://x/le8-sleep-v1', 'b'), // ya completo
+    ]);
+    expect(items).toHaveLength(1);
+    expect(items[0].id).toBe('a');
+    expect(items[0].secondary).toContain('incompleto');
+  });
+
+  test('cumpleaños del mes: filtra por mes y ordena por día', () => {
+    const p = (id: string, birthDate: string): Patient => ({
+      resourceType: 'Patient',
+      id,
+      name: [{ given: ['N'], family: id }],
+      birthDate,
+    });
+    const items = buildBirthdayItems(
+      [p('a', '1980-07-20'), p('b', '1975-03-02'), p('c', '1990-07-05')],
+      7 // julio
+    );
+    expect(items.map((i) => i.id)).toEqual(['c', 'a']); // 5 antes que 20
+    expect(items[0].secondary).toBe('Cumple 05/07');
+  });
+
+  test('turnos: excluye cancelados y ordena por inicio', () => {
+    const appt = (id: string, status: Appointment['status'], start: string): Appointment => ({
+      resourceType: 'Appointment',
+      id,
+      status,
+      participant: [{ status: 'accepted', actor: { reference: 'Patient/p1', display: 'Ana' } }],
+      start,
+    });
+    const items = buildAppointmentItems([
+      appt('a', 'booked', '2026-08-02T10:00:00Z'),
+      appt('b', 'cancelled', '2026-08-01T09:00:00Z'),
+      appt('c', 'booked', '2026-08-01T15:00:00Z'),
+    ]);
+    expect(items.map((i) => i.id)).toEqual(['c', 'a']);
+    expect(items[0].primary).toBe('Ana');
+  });
+
+  test('resultados nuevos: fila por DiagnosticReport con badge Nuevo', () => {
+    const dr: DiagnosticReport = {
+      resourceType: 'DiagnosticReport',
+      id: 'r1',
+      status: 'final',
+      code: { text: 'Perfil lipídico' },
+      subject: { reference: 'Patient/p1', display: 'Ana' },
+      effectiveDateTime: '2026-07-20T10:00:00Z',
+    };
+    const items = buildResultItems([dr]);
+    expect(items[0]).toMatchObject({ primary: 'Ana', href: '/Patient/p1', badge: 'Nuevo' });
+    expect(items[0].secondary).toContain('Perfil lipídico');
   });
 });
