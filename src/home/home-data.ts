@@ -1,7 +1,16 @@
 // Núcleo del Home del médico: transforma los recursos FHIR ya cargados en
 // "ítems de worklist" (una fila clickeable con título, subtítulo y badge) y
 // calcula los KPIs del encabezado. Capa pura, sin UI ni I/O: fácil de testear.
-import type { CarePlan, Patient, QuestionnaireResponse, ServiceRequest, Task } from '@medplum/fhirtypes';
+import type {
+  Appointment,
+  CarePlan,
+  DiagnosticReport,
+  Encounter,
+  Patient,
+  QuestionnaireResponse,
+  ServiceRequest,
+  Task,
+} from '@medplum/fhirtypes';
 import type { DashboardRow } from '../ckm/dashboard';
 import { groupByRequisition } from '../laborders/lab-order';
 
@@ -216,8 +225,108 @@ export function buildQuestionnaireItems(responses: QuestionnaireResponse[]): Wor
 export function buildRecentPatientItems(patients: Patient[], limit = 6): WorklistItem[] {
   return patients.slice(0, limit).map((p) => ({
     id: p.id as string,
-    primary: p.name?.[0] ? [p.name[0].given?.join(' '), p.name[0].family].filter(Boolean).join(' ') : '(sin nombre)',
+    primary: patientName(p),
     secondary: p.birthDate ? `Nac. ${fmtDate(p.birthDate)}` : undefined,
     href: `/Patient/${p.id}`,
   }));
+}
+
+function patientName(p: Patient): string {
+  return p.name?.[0] ? [p.name[0].given?.join(' '), p.name[0].family].filter(Boolean).join(' ') : '(sin nombre)';
+}
+
+// ── Etapa 2 ──────────────────────────────────────────────────────────────────
+
+// Estados de Encounter que siguen "abiertos" (evolución sin cerrar/finalizar).
+const OPEN_ENCOUNTER_STATUSES = new Set(['planned', 'arrived', 'triaged', 'in-progress', 'onleave']);
+
+/** Evoluciones (Encounter) del médico que quedaron sin cerrar. */
+export function buildUnfinishedEncounterItems(encounters: Encounter[]): WorklistItem[] {
+  return encounters
+    .filter((e) => e.status && OPEN_ENCOUNTER_STATUSES.has(e.status))
+    .map((e) => ({
+      id: e.id as string,
+      primary: e.subject?.display ?? e.subject?.reference ?? 'Paciente',
+      secondary: `Evolución ${e.status} · ${fmtDate(e.period?.start)}`,
+      href: `/Encounter/${e.id}`,
+      badge: 'Sin cerrar',
+      badgeColor: 'yellow',
+    }));
+}
+
+/** Cuestionarios que el paciente empezó pero no terminó (status in-progress). */
+export function buildPendingQuestionnaireItems(responses: QuestionnaireResponse[]): WorklistItem[] {
+  return responses
+    .filter((qr) => qr.status === 'in-progress' && isInteresting(qr.questionnaire))
+    .map((qr) => {
+      const patientId = patientIdFromRef(qr.subject?.reference);
+      return {
+        id: qr.id as string,
+        primary: qr.subject?.display ?? qr.subject?.reference ?? 'Paciente',
+        secondary: `${questionnaireLabel(qr.questionnaire)} · incompleto`,
+        href: patientId ? `/Patient/${patientId}` : `/QuestionnaireResponse/${qr.id}`,
+        badge: 'Sin responder',
+        badgeColor: 'gray',
+      };
+    });
+}
+
+/** Pacientes que cumplen años en el mes dado (1–12), ordenados por día. */
+export function buildBirthdayItems(patients: Patient[], month: number): WorklistItem[] {
+  return patients
+    .filter((p) => p.birthDate && Number(p.birthDate.slice(5, 7)) === month)
+    .sort((a, b) => (a.birthDate as string).slice(8, 10).localeCompare((b.birthDate as string).slice(8, 10)))
+    .map((p) => {
+      const bd = p.birthDate as string;
+      return {
+        id: p.id as string,
+        primary: patientName(p),
+        secondary: `Cumple ${bd.slice(8, 10)}/${bd.slice(5, 7)}`,
+        href: `/Patient/${p.id}`,
+        badge: '🎂',
+      };
+    });
+}
+
+function appointmentPatientRef(a: Appointment): { reference?: string; display?: string } | undefined {
+  return a.participant?.map((p) => p.actor).find((actor) => actor?.reference?.startsWith('Patient/'));
+}
+
+/** Próximos turnos (Appointment), ordenados por horario de inicio. */
+export function buildAppointmentItems(appointments: Appointment[]): WorklistItem[] {
+  return appointments
+    .filter((a) => a.status !== 'cancelled' && a.status !== 'entered-in-error')
+    .sort((a, b) => (a.start ?? '').localeCompare(b.start ?? ''))
+    .map((a) => {
+      const patient = appointmentPatientRef(a);
+      const patientId = patientIdFromRef(patient?.reference);
+      const start = a.start ? new Date(a.start) : undefined;
+      const when =
+        start && !Number.isNaN(start.getTime())
+          ? start.toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })
+          : 's/hora';
+      return {
+        id: a.id as string,
+        primary: patient?.display ?? patient?.reference ?? a.description ?? 'Turno',
+        secondary: when,
+        href: patientId ? `/Patient/${patientId}` : `/Appointment/${a.id}`,
+        badge: a.status,
+        badgeColor: 'blue',
+      };
+    });
+}
+
+/** Resultados de laboratorio recientes para revisar (DiagnosticReport). */
+export function buildResultItems(reports: DiagnosticReport[]): WorklistItem[] {
+  return reports.map((r) => {
+    const patientId = patientIdFromRef(r.subject?.reference);
+    return {
+      id: r.id as string,
+      primary: r.subject?.display ?? r.subject?.reference ?? 'Paciente',
+      secondary: `${r.code?.text ?? r.code?.coding?.[0]?.display ?? 'Resultado'} · ${fmtDate(r.effectiveDateTime ?? r.issued)}`,
+      href: patientId ? `/Patient/${patientId}` : `/DiagnosticReport/${r.id}`,
+      badge: 'Nuevo',
+      badgeColor: 'blue',
+    };
+  });
 }

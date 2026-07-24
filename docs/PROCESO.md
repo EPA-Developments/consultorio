@@ -386,11 +386,18 @@ CKM 3–4) + accesos rápidos. **Worklists** (tarjetas, `WorklistCard` genérico
 | Últimos pacientes              | `Patient` recientes                                    | centro         |
 
 Umbral de alto riesgo: ASCVD 10a ≥ 20 %, ECV 30a ≥ 30 %, o estadío CKM ≥ 3
-(`isHighRisk`). **Etapa 2 (pendiente)**: próximos turnos (`Appointment`),
-resultados nuevos / órdenes sin resultado (`DiagnosticReport`), mis evoluciones
-sin cerrar, cuestionarios sin responder, cumpleaños del mes. **Consentimiento**
-(pacientes sin `Consent` firmado) queda como fase aparte: requiere modelar el
-recurso `Consent` + un flujo de firma.
+(`isHighRisk`).
+
+**Etapa 2** (hecha): próximos turnos (`Appointment`, por médico), mis evoluciones
+sin cerrar (`Encounter` en estado abierto, por médico), resultados nuevos
+(`DiagnosticReport` recientes), cuestionarios sin responder
+(`QuestionnaireResponse` in-progress) y cumpleaños del mes (`Patient.birthDate`
+filtrado por mes). Los turnos y evoluciones aparecerán a medida que se carguen
+`Appointment`/`Encounter`.
+
+**Fuera de scope** (los resuelve otra app, no el dashboard): **alta de paciente**
+(Recepción / autoregistro con enlaces por redes/mail/WhatsApp) y
+**consentimiento** (repo de Recepcionistas, `recepcion.biowellness.ar`).
 
 ---
 
