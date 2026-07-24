@@ -362,6 +362,38 @@ trabajo** sin validez legal (la firma/emisión es Fase 2).
 
 ---
 
+### Home del médico — tablero de trabajo (`src/home`, Etapa 1)
+
+La landing del médico (`/`) dejó de ser el buscador de pacientes y pasó a ser un
+**tablero accionable**. `home-data.ts` (puro, testeado) transforma los recursos
+FHIR ya cargados en "ítems de worklist" (fila clickeable: paciente + contexto +
+badge) y calcula los KPIs; `useHomeData` los trae en paralelo
+(`Promise.allSettled`, ninguna búsqueda que falle tumba el home) reutilizando
+`loadDashboardRows` (pacientes + riesgo + alertas) y `groupByRequisition` de las
+órdenes.
+
+**Encabezado**: saludo + KPIs (pacientes, alto riesgo CV, con alertas, estadío
+CKM 3–4) + accesos rápidos. **Worklists** (tarjetas, `WorklistCard` genérico):
+
+| Widget                         | Fuente                                                 | Alcance        |
+| ------------------------------ | ------------------------------------------------------ | -------------- |
+| Solicitudes de laboratorio     | `ServiceRequest` intent=proposal                       | centro         |
+| Alertas CKM                    | `Communication` category=alert (vía panel)             | centro         |
+| Planes de cuidado en borrador  | `CarePlan` status=draft                                | centro         |
+| Pacientes de alto riesgo       | PREVENT ≥ umbral / estadío CKM 3–4                     | centro         |
+| Cuestionarios para interpretar | `QuestionnaireResponse` completed (LE8/PSQI/MEPA/SDOH) | centro         |
+| Mis tareas                     | `Task` owner = yo                                      | **por médico** |
+| Últimos pacientes              | `Patient` recientes                                    | centro         |
+
+Umbral de alto riesgo: ASCVD 10a ≥ 20 %, ECV 30a ≥ 30 %, o estadío CKM ≥ 3
+(`isHighRisk`). **Etapa 2 (pendiente)**: próximos turnos (`Appointment`),
+resultados nuevos / órdenes sin resultado (`DiagnosticReport`), mis evoluciones
+sin cerrar, cuestionarios sin responder, cumpleaños del mes. **Consentimiento**
+(pacientes sin `Consent` firmado) queda como fase aparte: requiere modelar el
+recurso `Consent` + un flujo de firma.
+
+---
+
 ## 7. Principios de "herramienta médica"
 
 Convenciones que atraviesan todo el código y conviene mantener:

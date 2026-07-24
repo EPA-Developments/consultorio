@@ -1,16 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { AppShell, ErrorBoundary, Loading, useMedplum, useMedplumProfile } from '@medplum/react';
-import {
-  IconClipboardHeart,
-  IconClipboardList,
-  IconHeartRateMonitor,
-  IconUser,
-} from '@tabler/icons-react';
+import { IconClipboardHeart, IconClipboardList, IconHeartRateMonitor, IconHome, IconUser } from '@tabler/icons-react';
 import { Suspense } from 'react';
 import type { JSX } from 'react';
 import { Route, Routes } from 'react-router';
 import { BioWellnessLogo } from './components/BioWellnessLogo';
+import { HomePage } from './home/components/HomePage';
 import { BiomarkerPanelPage } from './pages/BiomarkerPanelPage';
 import { CKMDashboard } from './pages/CKMDashboard';
 import { EncounterPage } from './pages/EncounterPage';
@@ -36,6 +32,10 @@ export function App(): JSX.Element | null {
       logo={<BioWellnessLogo height={26} />}
       menus={[
         {
+          title: 'Inicio',
+          links: [{ icon: <IconHome />, label: 'Mi tablero', href: '/' }],
+        },
+        {
           title: 'CKM',
           links: [{ icon: <IconHeartRateMonitor />, label: 'Panel CKM', href: '/ckm' }],
         },
@@ -59,7 +59,7 @@ export function App(): JSX.Element | null {
       <ErrorBoundary>
         <Suspense fallback={<Loading />}>
           <Routes>
-            <Route path="/" element={profile ? <SearchPage /> : <LandingPage />} />
+            <Route path="/" element={profile ? <HomePage /> : <LandingPage />} />
             <Route path="/signin" element={<SignInPage />} />
             <Route path="/ckm" element={<CKMDashboard />} />
             <Route path="/ckm/biomarkers/:patientId" element={<BiomarkerPanelPage />} />
