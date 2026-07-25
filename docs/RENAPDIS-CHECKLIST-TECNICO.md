@@ -104,11 +104,11 @@ Leyenda: ✅ presente · 🟡 parcial · ❌ ausente · ❔ no verificable desde
 
 ### 3.2 Contenido (datos estructurados) 🟡
 
-|             |                                                                                                                                                                                                      |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Exige**   | Secciones tipadas: paciente, profesional firmante **con matrícula/Licencia Sanitaria Federal**, **diagnóstico**, fecha de emisión y prescripción. Validación de campos obligatorios antes de firmar. |
-| **Tenemos** | 🟡 Modelo estructurado FHIR: paciente (nombre, DNI, nacimiento, **sexo**, cobertura), profesional (**matrícula, especialidad, domicilio**), fecha, ítems con LOINC y **diagnóstico** (`reasonCode`). Es nuestro punto más fuerte. |
-| **Falta**   | ❌ Validación de matrícula contra **REFEPS** antes de permitir emitir *(requisito de aprobación, ver §5.2)*. ❌ Validación server-side que impida emitir con secciones vacías. ❌ **UI para cargar el diagnóstico** (el modelo lo soporta, falta el campo en pantalla). |
+|             |                                                                                                                                                                                                                                                                         |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Exige**   | Secciones tipadas: paciente, profesional firmante **con matrícula/Licencia Sanitaria Federal**, **diagnóstico**, fecha de emisión y prescripción. Validación de campos obligatorios antes de firmar.                                                                    |
+| **Tenemos** | 🟡 Modelo estructurado FHIR: paciente (nombre, DNI, nacimiento, **sexo**, cobertura), profesional (**matrícula, especialidad, domicilio**), fecha, ítems con LOINC y **diagnóstico** (`reasonCode`). Es nuestro punto más fuerte.                                       |
+| **Falta**   | ❌ Validación de matrícula contra **REFEPS** antes de permitir emitir _(requisito de aprobación, ver §5.2)_. ❌ Validación server-side que impida emitir con secciones vacías. ❌ **UI para cargar el diagnóstico** (el modelo lo soporta, falta el campo en pantalla). |
 
 ### 3.3 Vigencia ❌
 
