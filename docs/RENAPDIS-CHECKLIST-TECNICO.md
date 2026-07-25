@@ -37,7 +37,17 @@ paráfrasis. Por lo tanto:
 Anexo del Decreto 98/2023 (y sus modificatorias) desde una red sin restricciones, y validarlo
 con el abogado. Este documento **enmarca** el trabajo técnico; no lo sustituye.
 
-### 1.2 Sobre la auditoría del código (esta parte sí es confiable)
+### 1.2 ✅ Actualización: instructivo oficial incorporado (08.24)
+
+Posteriormente **sí se obtuvo el instructivo oficial** _"Instructivo para la Inscripción de
+Recetarios Electrónicos" (08.24)_, aportado por el equipo. Todo lo marcado como **✅
+CONFIRMADO** en §5 proviene de esa fuente oficial y **ya no es paráfrasis**. El resto del
+documento (el articulado del art. 4 propiamente dicho) sigue sin verificar.
+
+Dato adicional del instructivo: el marco citado incluye la **Ley 27.553** y los **Decretos
+98/2023 y 63/2024** (este último no había aparecido en el relevamiento previo).
+
+### 1.3 Sobre la auditoría del código (esta parte sí es confiable)
 
 La auditoría del repositorio sí pudo hacerse a fondo. Se aplicó una regla estricta: **solo se
 marca "presente" citando `archivo:línea`**, y después cada afirmación pasó por un auditor
@@ -94,11 +104,11 @@ Leyenda: ✅ presente · 🟡 parcial · ❌ ausente · ❔ no verificable desde
 
 ### 3.2 Contenido (datos estructurados) 🟡
 
-|             |                                                                                                                                                                                                      |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Exige**   | Secciones tipadas: paciente, profesional firmante **con matrícula/Licencia Sanitaria Federal**, **diagnóstico**, fecha de emisión y prescripción. Validación de campos obligatorios antes de firmar. |
-| **Tenemos** | 🟡 Modelo estructurado FHIR: paciente, profesional con matrícula, fecha, ítems con LOINC. Es nuestro punto más fuerte.                                                                               |
-| **Falta**   | ❌ **Diagnóstico asociado a la orden** (no se registra). ❌ Validación de matrícula contra **REFEPS** antes de permitir emitir. ❌ Validación server-side que impida emitir con secciones vacías.    |
+|             |                                                                                                                                                                                                                                                                         |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Exige**   | Secciones tipadas: paciente, profesional firmante **con matrícula/Licencia Sanitaria Federal**, **diagnóstico**, fecha de emisión y prescripción. Validación de campos obligatorios antes de firmar.                                                                    |
+| **Tenemos** | 🟡 Modelo estructurado FHIR: paciente (nombre, DNI, nacimiento, **sexo**, cobertura), profesional (**matrícula, especialidad, domicilio**), fecha, ítems con LOINC y **diagnóstico** (`reasonCode`). Es nuestro punto más fuerte.                                       |
+| **Falta**   | ❌ Validación de matrícula contra **REFEPS** antes de permitir emitir _(requisito de aprobación, ver §5.2)_. ❌ Validación server-side que impida emitir con secciones vacías. ❌ **UI para cargar el diagnóstico** (el modelo lo soporta, falta el campo en pantalla). |
 
 ### 3.3 Vigencia ❌
 
@@ -224,24 +234,78 @@ electrónica vs. digital (§4.3.8 del informe legal).
 
 ---
 
-## 5. Trámite TAD — documentación (⚠️ sin verificar)
+## 5. Trámite TAD — ✅ CONFIRMADO con el instructivo oficial (08.24)
 
-Se completa en **TAD (Trámites a Distancia)**, buscando "receta"/"recetario". Requiere
-**Clave Fiscal AFIP/ARCA** de nivel suficiente y apoderamiento electrónico.
+Se inicia en **[TAD](https://tramitesadistancia.gob.ar/tramitesadistancia/tad-publico)**
+buscando "receta" o "recetario", con **AFIP o Mi Argentina**.
 
-Bloques declarados: **solicitante** (nombre y apellido concordante con CUIL/CUIT) · **entidad
-/ razón social** · **referente técnico** (bloque obligatorio separado, con CUIT/CUIL) ·
-**plataforma** (nombre del software, **versión en producción**, tipo de prescripción) ·
-**Declaración Jurada** de cumplimiento (Leyes 25.326, 26.529, 27.553, 25.649) · **informe de
-cumplimiento del art. 4** · **documentación respaldatoria**.
+**Tipo de trámite a elegir:** `RECETARIO`, `RECETARIO + REPOSITORIO` o `REPOSITORIO`.
+BioWellness sería **RECETARIO + REPOSITORIO** si además almacena y gestiona las órdenes —
+**a definir**, porque el rol de "repositorio" arrastra las exigencias de alta disponibilidad y
+backup. ⚠️ **Cada software con dominio distinto se inscribe por separado.**
 
-⚠️ **La lista concreta de documentos a adjuntar no pudo verificarse.** Está en el Anexo
-IF-2024-66861967-APN-DNSISA#MS de la Disposición 1/2024, inaccesible en este relevamiento.
+✅ **Los profesionales no hacen ningún trámite adicional**: prescriben cumpliendo los mismos
+requisitos que en papel.
 
-🔎 **Dato nuevo a confirmar con prioridad:** la **Disposición 1/2025** habría incorporado la
-exigencia de acreditar un **entorno de fiscalización y control (sandbox espejo de producción)**
-accesible a la DNSIS. Si se confirma, es un requisito de infraestructura de peso que no está
-contemplado en ninguna estimación previa.
+### 5.1 Campos del formulario (todos obligatorios y requisito de aprobación)
+
+| Sección               | Campos                                                                                                                                                                                          |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Solicitante**       | Nombre y apellido (concordante con CUIL), CUIL/CUIT, tipo y N° de documento, sexo, teléfono, CP, provincia, función (propietario / apoderado / funcionario / otro). **Persona física.**         |
+| **Referente técnico** | Ídem datos personales. **Persona física.** Se declara si es o no la misma persona que el solicitante.                                                                                           |
+| **Entidad**           | Nombre (concordante con CUIT), naturaleza (privada/pública), CUIT.                                                                                                                              |
+| **Aplicación**        | Nombre del software · **versión implementada en producción** · tipo de prescripción · **¿usa REFEPS?** · **URL del sitio** · **estándar de la receta** · inscripción de bases de datos en AAIP. |
+
+### 5.2 Hallazgos que impactan directo en el producto
+
+1. ✅ **HL7 FHIR es un estándar aceptado.** Las opciones son **ADESFA · HL7 FHIR · JSON no
+   FHIR**. Nuestra arquitectura ya está alineada — **es la mejor noticia del relevamiento**.
+   _(Si se declarara "JSON no FHIR" habría que enviar además el conjunto de datos mínimos.)_
+2. 🔴 **REFEPS es requisito de aprobación.** Los datos de los profesionales **deben validarse
+   contra los servicios web de REFEPS** (`https://sisa.msal.gov.ar/sisa/` → Servicios web /
+   REFEPS; soporte: `soporte@sisa.msal.gov.ar`). **Hoy no lo hacemos.**
+3. 🔴 **Inscripción de bases de datos ante la AAIP**: es un **campo del formulario** y un
+   **adjunto**. Trámite previo con tiempos propios → **conviene iniciarlo ya**.
+
+### 5.3 Documentación a adjuntar ✅ CONFIRMADO
+
+| Adjunto                                                                     | Obligatorio          |
+| --------------------------------------------------------------------------- | -------------------- |
+| Documentación que acredite la **personería invocada**                       | Sí                   |
+| **Inscripción en el Registro Nacional de Bases de Datos Personales** (AAIP) | Sí                   |
+| **Imagen de la/s pantalla/s** que ve el profesional al prescribir           | Sí                   |
+| **Una receta generada por la solución**                                     | Sí (para recetarios) |
+
+### 5.4 Conjunto mínimo de datos de la receta ✅ CONFIRMADO
+
+Definido en el [anexo oficial](https://www.boletinoficial.gob.ar/detalleAviso/primera/301967/20240122anexo_7056119_1.pdf).
+Estado en nuestro PDF **después del ajuste de julio 2026**:
+
+| Bloque          | Campo                                                                 | Estado                                                                                    |
+| --------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| **Profesional** | Nombre y apellido                                                     | ✅                                                                                        |
+|                 | **Código de barras**                                                  | ❌ **pendiente** (requiere el CUIR y definir la simbología)                               |
+|                 | Profesión / especialidad                                              | ✅ _(desde `Practitioner.qualification`)_                                                 |
+|                 | Matrícula                                                             | ✅                                                                                        |
+|                 | Domicilio                                                             | ✅ _(desde `Practitioner.address`)_                                                       |
+| **Paciente**    | Nombre y apellido · Fecha de nacimiento · DNI                         | ✅                                                                                        |
+|                 | OOSS / plan médico                                                    | ✅ _(cobertura)_                                                                          |
+|                 | Sexo                                                                  | ✅                                                                                        |
+| **RP**          | Medicamento: genérico/DCI, presentación, forma farmacéutica, cantidad | ➖ **no aplica** (ver nota)                                                               |
+|                 | Diagnóstico                                                           | ✅ _(desde `ServiceRequest.reasonCode`; si falta, imprime el rótulo con línea en blanco)_ |
+|                 | Fecha                                                                 | ✅                                                                                        |
+|                 | Firma del profesional                                                 | 🟡 espacio impreso; **firma electrónica real pendiente**                                  |
+|                 | **Leyenda de inscripción en el registro**                             | ⚠️ **soportada pero NO se imprime** hasta tener inscripción real                          |
+
+> ⚠️ **Nota crítica sobre el conjunto mínimo:** está redactado para **recetas de
+> medicamentos**. BioWellness emite **órdenes de estudios**, no prescripciones
+> medicamentosas. **Hay que preguntarle a la DNSIS si el recetario de prácticas se inscribe
+> bajo este mismo trámite y con qué conjunto de datos** — es una pregunta abierta que puede
+> cambiar el encuadre entero. _(Ver también §6.)_
+
+🔎 **Sigue pendiente de confirmar:** la **Disposición 1/2025** habría incorporado la exigencia
+de acreditar un **entorno de fiscalización (sandbox espejo de producción)** accesible a la
+DNSIS. No aparece en el instructivo 08.24 (que es anterior).
 
 ---
 
@@ -262,11 +326,18 @@ Llevar esta lista junto al informe legal:
    nuestra, no cita.)
 7. **Período de conservación** exigido a los repositorios (¿3 años? ¿10 por analogía con
    historia clínica?).
-8. Contenido textual de la **DDJJ** y lista de **documentación adjunta** (Anexo de la Disp.
-   1/2024).
-9. Rol y **responsabilidad personal del referente técnico**.
+8. ~~Lista de documentación adjunta~~ — ✅ **resuelto** (§5.3). Falta solo el texto literal de
+   la DDJJ.
+9. Rol y **responsabilidad personal del referente técnico** (el instructivo confirma que es
+   obligatorio y persona física, pero no detalla su responsabilidad legal).
 10. **Arancel** del trámite: no se encontró ninguna mención (ni de costo ni de gratuidad).
 11. **Disposición 1/2025**: ¿exige el sandbox de fiscalización?
+12. 🔴 **Encuadre de las órdenes de estudios.** El conjunto mínimo de datos está escrito para
+    medicamentos. **Consultar a la DNSIS** si un recetario de **prácticas/laboratorio** se
+    inscribe por este trámite y con qué dataset. Puede cambiar todo el encuadre.
+13. ¿Nos inscribimos como **RECETARIO** o **RECETARIO + REPOSITORIO**? Define si nos aplican
+    las exigencias de alta disponibilidad y backup.
+14. **Simbología del código de barras** exigida (Code128, QR, otra) y qué debe codificar.
 
 ---
 

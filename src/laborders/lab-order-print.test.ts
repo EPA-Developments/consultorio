@@ -3,7 +3,13 @@ import { DNI_SYSTEM, MATRICULA_SYSTEM } from '../ckm/argentina';
 import { buildLabOrder, toLabOrderItems } from './lab-order';
 import type { BiomarkerDefinition } from '../ckm/observation-definitions';
 import { LOINC_SYSTEM } from '../ckm/observation-definitions';
-import { buildPrintData, coverageFromNote, renderLabOrderHtml } from './lab-order-print';
+import {
+  buildPrintData,
+  coverageFromNote,
+  diagnosisFromRequests,
+  renderLabOrderHtml,
+  specialtyOf,
+} from './lab-order-print';
 
 function def(partial: Partial<BiomarkerDefinition>): BiomarkerDefinition {
   return { label: partial.label ?? 'X', conventional: [], optimal: [], ...partial };
@@ -92,6 +98,57 @@ describe('buildPrintData', () => {
   });
 });
 
+describe('Conjunto mínimo de datos (instructivo ReNaPDiS 08.24)', () => {
+  const patientFull: Patient = { ...patient, gender: 'female' };
+  const practitionerFull: Practitioner = {
+    ...practitioner,
+    qualification: [{ code: { coding: [{ display: 'Medicina Interna' }] } }],
+    address: [{ line: ['Av. Centenario 1234'], city: 'San Isidro', state: 'Buenos Aires' }],
+  };
+
+  test('sexo del paciente se traduce al español', () => {
+    const d = buildPrintData({ requisitionId: 'O', requests: order('order'), patient: patientFull });
+    expect(d.patientSex).toBe('Femenino');
+  });
+
+  test('especialidad se resuelve desde coding.display cuando no hay text', () => {
+    expect(specialtyOf(practitionerFull)).toBe('Medicina Interna');
+    expect(specialtyOf(practitioner)).toBeUndefined();
+  });
+
+  test('domicilio profesional se formatea', () => {
+    const d = buildPrintData({
+      requisitionId: 'O',
+      requests: order('order'),
+      patient,
+      practitioner: practitionerFull,
+    });
+    expect(d.practitionerAddress).toContain('Av. Centenario 1234');
+  });
+
+  test('diagnóstico se toma de ServiceRequest.reasonCode', () => {
+    const reqs = order('order').map((r) => ({ ...r, reasonCode: [{ text: 'Dislipemia' }] }));
+    expect(diagnosisFromRequests(reqs)).toBe('Dislipemia');
+    expect(diagnosisFromRequests(order('order'))).toBeUndefined();
+  });
+
+  test('el HTML incluye sexo, especialidad, domicilio y diagnóstico', () => {
+    const reqs = order('order').map((r) => ({ ...r, reasonCode: [{ text: 'Dislipemia' }] }));
+    const html = renderLabOrderHtml(
+      buildPrintData({
+        requisitionId: 'ORD-1',
+        requests: reqs,
+        patient: patientFull,
+        practitioner: practitionerFull,
+      })
+    );
+    expect(html).toContain('Femenino');
+    expect(html).toContain('Medicina Interna');
+    expect(html).toContain('Av. Centenario 1234');
+    expect(html).toContain('Dislipemia');
+  });
+});
+
 describe('renderLabOrderHtml', () => {
   const data = buildPrintData({
     requisitionId: 'ORD-ABC123',
@@ -151,6 +208,20 @@ describe('renderLabOrderHtml', () => {
     expect(html).toContain('Sello de integridad');
     expect(html).toContain('verificar?orden=ORD-1');
     expect(html).toContain('abcdef0123456789'); // abreviado a 16 chars
+  });
+
+  test('imprime el rótulo de diagnóstico aunque no haya dato (línea para completar)', () => {
+    expect(html).toContain('Diagnóstico:');
+    expect(html).toContain('class="blank"');
+  });
+
+  test('NO inventa leyenda de inscripción en el registro si no hay inscripción', () => {
+    expect(html).not.toMatch(/inscripto|inscripta|Registro Nacional de Plataformas/i);
+  });
+
+  test('imprime la leyenda de registro solo cuando se la pasan', () => {
+    const conRegistro = renderLabOrderHtml({ ...data, registryLegend: 'Recetario inscripto en ReNaPDiS N° 1234.' });
+    expect(conRegistro).toContain('ReNaPDiS N° 1234');
   });
 
   test('escapa HTML de campos de texto (no rompe el markup)', () => {
