@@ -360,6 +360,37 @@ datos desde los `ServiceRequest` + `Patient` + `Practitioner` (puro, testeado;
 escapa el HTML de los campos de texto). El pie aclara que es un **documento de
 trabajo** sin validez legal (la firma/emisión es Fase 2).
 
+### Recetario Fase 2 — emisión legal (`lab-order-emission.ts`)
+
+**Contexto normativo** (relevado en julio 2026, ver `RECETARIO-FASE2-LEGAL.md`): la
+**Res. 2214/2025** extendió la receta electrónica obligatoria a **estudios y prácticas**
+—o sea, nuestras órdenes de laboratorio— con 120 días de adecuación **vencidos en
+noviembre de 2025**. La emisión debe hacerse por una plataforma inscripta en el
+**ReNaPDiS**. Decisión de la dirección: **Camino A**, inscribir nuestra propia plataforma.
+
+**Estado de emisión explícito** — la pieza central, por honestidad regulatoria:
+
+| Estado            | Qué significa                        | Leyenda impresa                                                |
+| ----------------- | ------------------------------------ | -------------------------------------------------------------- |
+| `draft`           | Documento de trabajo, sin firma      | "No constituye una orden electrónica con validez legal"        |
+| `signed-internal` | Firmada por el profesional + sellada | "Pendiente de emisión por plataforma inscripta en el ReNaPDiS" |
+| `legally-emitted` | Inscripta + **CUIR** asignado        | "Emitida por plataforma inscripta en el ReNaPDiS"              |
+
+El PDF imprime **la leyenda del estado real**: nunca declara una validez que no tiene.
+`emissionStatusOf` deriva el estado de los datos (no se setea a mano) y el **CUIR** solo se
+guarda cuando lo asigna el sistema nacional — **no se inventa localmente**.
+
+**Sello de integridad**: `canonicalOrderContent` serializa lo jurídicamente relevante
+(paciente, profesional, requisición, fecha, estudios ordenados) y `sealOrder` lo hashea con
+**SHA-256** (Web Crypto). `verifySeal` detecta cualquier adulteración —agregar un estudio o
+cambiar el paciente cambia el sello—, que es el requisito de **integridad e inmutabilidad**
+del Decreto 98/23. El sello y la URL de verificación se imprimen en la orden.
+
+**Firma**: se modela con **FHIR `Provenance` + `Signature`** (quién, cuándo, sobre qué, con
+qué sello). La misma estructura sirve para **firma electrónica** o **digital** (Ley 25.506):
+cambia `Signature.type`/`data`, no el modelo. **Cuál corresponde es la consulta legal
+bloqueante** (§4.3.8 del informe) — por eso todavía no hay acción de firma en la UI.
+
 ---
 
 ### Home del médico — tablero de trabajo (`src/home`, Etapa 1)
