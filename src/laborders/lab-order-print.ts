@@ -10,7 +10,7 @@
 // orden —firma electrónica del médico, inscripción/receta digital (ReNaPDiS,
 // Res. 2214/2025)— corresponde a la Fase 2 y todavía no está implementada; el
 // pie lo aclara para no inducir a error.
-import { formatHumanName, getDisplayString } from '@medplum/core';
+import { formatAddress, formatHumanName, getDisplayString } from '@medplum/core';
 import type { Patient, Practitioner, ServiceRequest } from '@medplum/fhirtypes';
 import { DNI_SYSTEM, getIdentifierValue, MATRICULA_SYSTEM } from '../ckm/argentina';
 import { EMISSION_STATUS, getSello, verificationUrl } from './lab-order-emission';
@@ -30,9 +30,22 @@ export interface LabOrderPrintData {
   patientName: string;
   patientDni?: string;
   patientBirthDate?: string;
+  /** Sexo del paciente, ya traducido a español (conjunto mínimo de datos). */
+  patientSex?: string;
   coverage?: string;
   practitionerName?: string;
   practitionerMatricula?: string;
+  /** Profesión / especialidad del profesional (conjunto mínimo de datos). */
+  practitionerSpecialty?: string;
+  /** Domicilio profesional (conjunto mínimo de datos). */
+  practitionerAddress?: string;
+  /** Diagnóstico que motiva la solicitud (conjunto mínimo de datos). */
+  diagnosis?: string;
+  /**
+   * Leyenda de inscripción en el registro (ReNaPDiS). Solo se imprime cuando hay
+   * una inscripción REAL: declarar un registro inexistente sería falso.
+   */
+  registryLegend?: string;
   /** Número de orden (requisition). */
   requisitionId: string;
   /** Fecha de autoría en ISO. */
@@ -57,6 +70,44 @@ const CLINIC_SUBTITLE = 'Medicina Funcional y Longevidad · San Isidro, PBA';
 const DEFAULT_FASTING =
   'Ayuno de 8 a 12 h para el perfil metabólico y lipídico. Concurrir con esta orden y credencial.';
 
+/** Traducción del `Patient.gender` de FHIR (código en inglés) a español. */
+const SEX_ES: Record<string, string> = {
+  male: 'Masculino',
+  female: 'Femenino',
+  other: 'Otro',
+  unknown: 'Sin especificar',
+};
+
+/**
+ * Profesión / especialidad del profesional. En FHIR vive en
+ * `Practitioner.qualification[].code`; acepta `text` o el `display` del coding.
+ */
+export function specialtyOf(practitioner: Practitioner | undefined): string | undefined {
+  for (const q of practitioner?.qualification ?? []) {
+    const text = q.code?.text ?? q.code?.coding?.find((c) => c.display)?.display;
+    if (text) {
+      return text;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Diagnóstico que motiva la orden. En FHIR el lugar canónico es
+ * `ServiceRequest.reasonCode`; se toma el primero que tenga texto.
+ */
+export function diagnosisFromRequests(requests: ServiceRequest[]): string | undefined {
+  for (const req of requests) {
+    for (const reason of req.reasonCode ?? []) {
+      const text = reason.text ?? reason.coding?.find((c) => c.display)?.display;
+      if (text) {
+        return text;
+      }
+    }
+  }
+  return undefined;
+}
+
 /** Extrae la cobertura de la nota "Cobertura: X" de un ServiceRequest. */
 export function coverageFromNote(req: ServiceRequest | undefined): string | undefined {
   const text = req?.note?.[0]?.text;
@@ -77,9 +128,15 @@ export function buildPrintData(params: {
   logoUrl?: string;
   /** Estado de emisión real; por defecto 'draft' (documento de trabajo). */
   emissionStatus?: EmissionStatus;
+  /**
+   * Leyenda de inscripción en ReNaPDiS. Se pasa desde afuera y SOLO cuando la
+   * inscripción exista de verdad; el core nunca la inventa.
+   */
+  registryLegend?: string;
 }): LabOrderPrintData {
   const { requests, patient, practitioner } = params;
   const first = requests[0];
+  const address = practitioner?.address?.[0];
   return {
     clinicName: CLINIC_NAME,
     clinicSubtitle: CLINIC_SUBTITLE,
@@ -87,6 +144,7 @@ export function buildPrintData(params: {
     patientName: patient.name?.[0] ? formatHumanName(patient.name[0]) : getDisplayString(patient),
     patientDni: getIdentifierValue(patient, DNI_SYSTEM),
     patientBirthDate: patient.birthDate,
+    patientSex: patient.gender ? (SEX_ES[patient.gender] ?? patient.gender) : undefined,
     coverage: coverageFromNote(first),
     practitionerName: practitioner?.name?.[0]
       ? formatHumanName(practitioner.name[0])
@@ -94,6 +152,10 @@ export function buildPrintData(params: {
         ? getDisplayString(practitioner)
         : undefined,
     practitionerMatricula: practitioner?.identifier?.find((i) => i.system === MATRICULA_SYSTEM)?.value,
+    practitionerSpecialty: specialtyOf(practitioner),
+    practitionerAddress: address ? formatAddress(address) : undefined,
+    diagnosis: diagnosisFromRequests(requests),
+    registryLegend: params.registryLegend,
     requisitionId: params.requisitionId,
     authoredOn: first?.authoredOn ?? '',
     intent: requests.some((r) => r.intent === 'proposal') ? 'proposal' : 'order',
@@ -145,11 +207,19 @@ export function renderLabOrderHtml(data: LabOrderPrintData): string {
     ['Paciente', data.patientName],
     ['DNI', data.patientDni],
     ['Nacimiento', fmtDate(data.patientBirthDate)],
+    ['Sexo', data.patientSex],
     ['Cobertura', data.coverage],
   ]
     .filter(([, v]) => v)
     .map(([k, v]) => `<div><span class="k">${k}:</span> <span class="v">${esc(v)}</span></div>`)
     .join('');
+
+  // Diagnóstico: exigido por el conjunto mínimo de datos. Si no está cargado se
+  // imprime el rótulo con una línea vacía para completar a mano, en vez de
+  // omitirlo (así el documento evidencia el faltante en lugar de disimularlo).
+  const diagnosisBlock = `<div class="dx"><span class="k">Diagnóstico:</span> ${
+    data.diagnosis ? esc(data.diagnosis) : '<span class="blank"></span>'
+  }</div>`;
 
   const proposalBanner = isProposal
     ? `<div class="banner">Solicitud generada por el paciente. Requiere revisión y emisión del médico.</div>`
@@ -193,6 +263,9 @@ export function renderLabOrderHtml(data: LabOrderPrintData): string {
   .count { margin-top: 8px; color: #555; font-size: 12px; }
   .fasting { margin-top: 16px; font-size: 12px; color: #444; }
   .fasting .k { font-weight: 600; }
+  .dx { margin-top: 16px; font-size: 12px; color: #444; }
+  .dx .k { font-weight: 600; }
+  .dx .blank { display: inline-block; min-width: 280px; border-bottom: 1px solid #bbb; }
   .sign { margin-top: 48px; display: flex; justify-content: flex-end; }
   .sign .box { text-align: center; min-width: 260px; border-top: 1px solid #333; padding-top: 6px; }
   .sign .name { font-weight: 600; }
@@ -232,12 +305,16 @@ export function renderLabOrderHtml(data: LabOrderPrintData): string {
   </table>
   <div class="count">${data.items.length} ${data.items.length === 1 ? 'estudio solicitado' : 'estudios solicitados'}</div>
 
+  ${diagnosisBlock}
+
   ${data.fastingNote ? `<div class="fasting"><span class="k">Indicaciones:</span> ${esc(data.fastingNote)}</div>` : ''}
 
   <div class="sign">
     <div class="box">
       <div class="name">${esc(data.practitionerName) || '&nbsp;'}</div>
       <div class="mat">${data.practitionerMatricula ? 'Matrícula ' + esc(data.practitionerMatricula) : 'Firma y sello del profesional'}</div>
+      ${data.practitionerSpecialty ? `<div class="mat">${esc(data.practitionerSpecialty)}</div>` : ''}
+      ${data.practitionerAddress ? `<div class="mat">${esc(data.practitionerAddress)}</div>` : ''}
     </div>
   </div>
 
@@ -245,7 +322,7 @@ export function renderLabOrderHtml(data: LabOrderPrintData): string {
 
   <div class="disclaimer">
     ${esc(EMISSION_STATUS[data.emissionStatus ?? 'draft'].legend)}
-    Generado desde BioWellness · Seguimiento.
+    Generado desde BioWellness · Seguimiento.${data.registryLegend ? ' ' + esc(data.registryLegend) : ''}
   </div>
 </body>
 </html>`;
