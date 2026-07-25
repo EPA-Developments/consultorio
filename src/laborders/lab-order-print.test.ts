@@ -127,6 +127,32 @@ describe('renderLabOrderHtml', () => {
     expect(p).toContain('Requiere revisión y emisión del médico');
   });
 
+  test('la leyenda legal refleja el estado de emisión (no miente sobre la validez)', () => {
+    const firmada = renderLabOrderHtml({ ...data, emissionStatus: 'signed-internal' });
+    expect(firmada).toContain('Pendiente de emisión');
+    expect(firmada).not.toContain('No constituye');
+
+    const emitida = renderLabOrderHtml({ ...data, emissionStatus: 'legally-emitted' });
+    expect(emitida).toContain('ReNaPDiS');
+    expect(emitida).not.toContain('Pendiente de emisión');
+  });
+
+  test('sin sello NO se imprime el bloque de verificación', () => {
+    expect(renderLabOrderHtml(data)).not.toContain('Sello de integridad');
+  });
+
+  test('con sello y URL se imprime la verificación', () => {
+    const html = renderLabOrderHtml({
+      ...data,
+      emissionStatus: 'signed-internal',
+      verificationUrl: 'https://bio.medplum.com.ar/verificar?orden=ORD-1',
+      seal: 'abcdef0123456789abcdef',
+    });
+    expect(html).toContain('Sello de integridad');
+    expect(html).toContain('verificar?orden=ORD-1');
+    expect(html).toContain('abcdef0123456789'); // abreviado a 16 chars
+  });
+
   test('escapa HTML de campos de texto (no rompe el markup)', () => {
     const evil = renderLabOrderHtml({
       ...data,

@@ -13,6 +13,8 @@
 import { formatHumanName, getDisplayString } from '@medplum/core';
 import type { Patient, Practitioner, ServiceRequest } from '@medplum/fhirtypes';
 import { DNI_SYSTEM, getIdentifierValue, MATRICULA_SYSTEM } from '../ckm/argentina';
+import { EMISSION_STATUS, getSello, verificationUrl } from './lab-order-emission';
+import type { EmissionStatus } from './lab-order-emission';
 
 export interface LabOrderPrintItem {
   label: string;
@@ -39,6 +41,15 @@ export interface LabOrderPrintData {
   items: LabOrderPrintItem[];
   /** Indicaciones (ej. ayuno). */
   fastingNote?: string;
+  /**
+   * Estado de emisión real de la orden (Fase 2). Determina la leyenda legal del
+   * pie: el documento NUNCA debe declarar una validez que no tiene.
+   */
+  emissionStatus?: EmissionStatus;
+  /** URL de verificación (se imprime para que el laboratorio pueda validarla). */
+  verificationUrl?: string;
+  /** Sello de integridad (hash) abreviado, para cotejo manual. */
+  seal?: string;
 }
 
 const CLINIC_NAME = 'BioWellness';
@@ -64,6 +75,8 @@ export function buildPrintData(params: {
   patient: Patient;
   practitioner?: Practitioner;
   logoUrl?: string;
+  /** Estado de emisión real; por defecto 'draft' (documento de trabajo). */
+  emissionStatus?: EmissionStatus;
 }): LabOrderPrintData {
   const { requests, patient, practitioner } = params;
   const first = requests[0];
@@ -86,6 +99,9 @@ export function buildPrintData(params: {
     intent: requests.some((r) => r.intent === 'proposal') ? 'proposal' : 'order',
     items: requests.map((r) => ({ label: r.code?.text ?? '(sin nombre)', code: r.code?.coding?.[0]?.code })),
     fastingNote: DEFAULT_FASTING,
+    emissionStatus: params.emissionStatus ?? 'draft',
+    verificationUrl: verificationUrl(requests),
+    seal: first ? getSello(first) : undefined,
   };
 }
 
@@ -139,6 +155,16 @@ export function renderLabOrderHtml(data: LabOrderPrintData): string {
     ? `<div class="banner">Solicitud generada por el paciente. Requiere revisión y emisión del médico.</div>`
     : '';
 
+  // Bloque de verificación: URL para cotejar la orden y sello de integridad
+  // abreviado. Solo aparece si la orden fue sellada (o sea, ya firmada).
+  const verificationBlock =
+    data.verificationUrl && data.seal
+      ? `<div class="verify">
+    <span class="k">Verificación:</span> ${esc(data.verificationUrl)}
+    <br /><span class="k">Sello de integridad:</span> <span class="mono">${esc(data.seal.slice(0, 16))}…</span>
+  </div>`
+      : '';
+
   return `<!doctype html>
 <html lang="es">
 <head>
@@ -171,6 +197,9 @@ export function renderLabOrderHtml(data: LabOrderPrintData): string {
   .sign .box { text-align: center; min-width: 260px; border-top: 1px solid #333; padding-top: 6px; }
   .sign .name { font-weight: 600; }
   .sign .mat { color: #555; font-size: 12px; }
+  .verify { margin-top: 20px; background: #f7f4f1; border-radius: 6px; padding: 8px 12px; font-size: 11px; color: #444; line-height: 1.6; }
+  .verify .k { font-weight: 600; }
+  .verify .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
   .disclaimer { margin-top: 28px; border-top: 1px dashed #ccc; padding-top: 8px; color: #999; font-size: 10.5px; line-height: 1.5; }
   @media print { body { padding: 0; } @page { margin: 16mm; } }
 </style>
@@ -212,10 +241,11 @@ export function renderLabOrderHtml(data: LabOrderPrintData): string {
     </div>
   </div>
 
+  ${verificationBlock}
+
   <div class="disclaimer">
-    Documento de trabajo generado desde BioWellness · Seguimiento. La validez legal de la orden
-    (firma electrónica del profesional e inscripción en el sistema de recetas/órdenes digitales, Ley 27.553 y
-    Res. 2214/2025) corresponde a una etapa posterior y no está garantizada por este documento.
+    ${esc(EMISSION_STATUS[data.emissionStatus ?? 'draft'].legend)}
+    Generado desde BioWellness · Seguimiento.
   </div>
 </body>
 </html>`;
