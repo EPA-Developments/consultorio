@@ -24,3 +24,7 @@ data/core/example-bots.json
 *.njsproj
 *.sln
 *.sw?
+
+# Variables de entorno locales (solo se versiona .env.defaults como plantilla)
+.env
+.env.local
