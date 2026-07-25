@@ -174,13 +174,26 @@ sin campo libre).
 | **Resguardo de credenciales y accesos** (MFA, expiración/revocación de sesión, menor privilegio, rotación de secretos) | ❌ Sin MFA, sin timeout de sesión, sin logout propio                                                    |
 | **Servidores en lugar seguro**; constituirse **responsable del tratamiento en territorio argentino**                   | ❔ No documentado. **Verificar si implica residencia local del dato** (incertidumbre normativa abierta) |
 
-### 3.9 Obligaciones de repositorio ❌ / ❔
+### 3.9 Obligaciones de repositorio — ➖ **fuera de alcance por decisión** (ver §5)
 
-| Requisito                                                                               | Estado                                                                                                                  |
-| --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| **Alta disponibilidad** conforme al estado del arte (redundancia, failover, SLA medido) | ❔ No verificable desde el código; no hay evidencia de arquitectura redundante ni métricas                              |
-| **Persistencia con backup y recuperación probada**                                      | ❌ **Sin evidencia de backups** en el repositorio                                                                       |
-| **Retención por el período correspondiente**                                            | ❌ Existe la constante `RETENTION_YEARS = 3`, pero **ningún mecanismo la hace cumplir**, ni impide el borrado prematuro |
+**Decisión tomada: nos inscribimos como `RECETARIO`, no como `RECETARIO + REPOSITORIO`.**
+Por lo tanto **las obligaciones específicas del rol "repositorio" no nos aplican** en el
+marco de ReNaPDiS.
+
+| Requisito (como repositorio)                                | Estado       |
+| ----------------------------------------------------------- | ------------ |
+| **Alta disponibilidad** (redundancia, failover, SLA medido) | ➖ No aplica |
+| **Persistencia con backup** como repositorio de recetas     | ➖ No aplica |
+
+> ⚠️ **Atención — esto NO elimina los deberes de backup y conservación.** Siguen vigentes
+> por **otra vía legal**: la **Ley 26.529** (conservación de documentación clínica) y la
+> **Ley 25.326** (seguridad de datos personales). Cambia el fundamento, no la obligación.
+> Se mantienen en **P2** (§4).
+
+| Requisito (por otra vía legal)               | Estado                                                                                                                  |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| **Backups con recuperación probada**         | ❌ **Sin evidencia de backups** en el repositorio                                                                       |
+| **Retención por el período correspondiente** | ❌ Existe la constante `RETENTION_YEARS = 3`, pero **ningún mecanismo la hace cumplir**, ni impide el borrado prematuro |
 
 ### 3.10 Firma del profesional ❌ — _bloqueante legal_
 
@@ -239,10 +252,28 @@ electrónica vs. digital (§4.3.8 del informe legal).
 Se inicia en **[TAD](https://tramitesadistancia.gob.ar/tramitesadistancia/tad-publico)**
 buscando "receta" o "recetario", con **AFIP o Mi Argentina**.
 
-**Tipo de trámite a elegir:** `RECETARIO`, `RECETARIO + REPOSITORIO` o `REPOSITORIO`.
-BioWellness sería **RECETARIO + REPOSITORIO** si además almacena y gestiona las órdenes —
-**a definir**, porque el rol de "repositorio" arrastra las exigencias de alta disponibilidad y
-backup. ⚠️ **Cada software con dominio distinto se inscribe por separado.**
+### ✅ DECISIÓN: nos inscribimos como `RECETARIO`
+
+De las tres opciones (`RECETARIO` · `RECETARIO + REPOSITORIO` · `REPOSITORIO`), **el equipo
+definió inscribirse como `RECETARIO`** (julio 2026).
+
+**Fundamento:** BioWellness _prescribe_ y guarda la orden en su propia historia clínica
+electrónica, pero **no presta el servicio de repositorio del circuito nacional** — ningún
+tercero (farmacia, laboratorio) consulta nuestra plataforma para validar o marcar la dispensa.
+Almacenar la propia historia clínica es una función de EHR, no de "repositorio de recetas".
+
+**Qué implica:**
+
+- ✅ **No nos aplican** las exigencias de repositorio de ReNaPDiS (alta disponibilidad, SLA,
+  persistencia como repositorio) → ver §3.9.
+- ⚠️ **Sigue pendiente definir a qué repositorio inscripto van las órdenes**, si el circuito
+  lo exige para que el laboratorio pueda validarlas. **Es la pregunta abierta #15.**
+- ⚠️ Conviene **confirmar el encuadre con la DNSIS**: el instructivo dice que la opción
+  combinada aplica a los softwares "que además guardan y gestionan (validan)". Nosotros
+  guardamos pero no validamos frente a terceros — es defendible, pero **es una interpretación
+  nuestra**, no una confirmación del organismo.
+
+⚠️ **Cada software con dominio distinto se inscribe por separado.**
 
 ✅ **Los profesionales no hacen ningún trámite adicional**: prescriben cumpliendo los mismos
 requisitos que en papel.
@@ -335,9 +366,14 @@ Llevar esta lista junto al informe legal:
 12. 🔴 **Encuadre de las órdenes de estudios.** El conjunto mínimo de datos está escrito para
     medicamentos. **Consultar a la DNSIS** si un recetario de **prácticas/laboratorio** se
     inscribe por este trámite y con qué dataset. Puede cambiar todo el encuadre.
-13. ¿Nos inscribimos como **RECETARIO** o **RECETARIO + REPOSITORIO**? Define si nos aplican
-    las exigencias de alta disponibilidad y backup.
+13. ~~¿RECETARIO o RECETARIO + REPOSITORIO?~~ — ✅ **decidido: `RECETARIO`** (§5). Falta
+    **confirmar el encuadre con la DNSIS**: guardamos la orden en nuestra HCE pero no
+    validamos frente a terceros; que eso no configure "repositorio" es interpretación nuestra.
 14. **Simbología del código de barras** exigida (Code128, QR, otra) y qué debe codificar.
+15. 🔴 **Como RECETARIO: ¿a qué repositorio inscripto van las órdenes?** ¿El circuito exige
+    depositarlas en un repositorio de terceros para que el laboratorio las valide? Si la
+    respuesta es sí, hay que **elegir el repositorio e integrarse por API** — trabajo no
+    contemplado en ninguna estimación previa.
 
 ---
 
