@@ -42,6 +42,33 @@ describe('careplan — prompt', () => {
     expect(user).toContain('58 años');
     expect(user).toContain('ASCVD 10a 12.3%');
   });
+
+  // Guardarraíl de privacidad (P0). El contexto que se manda a un proveedor
+  // externo de IA debe ir SIEMPRE despersonalizado: sin nombre, documento,
+  // fecha de nacimiento exacta, contacto, domicilio ni identificadores FHIR.
+  // Si alguien agrega un campo identificatorio a CarePlanContext, este test
+  // falla y obliga a revisar la decisión (base legal, Ley 25.326).
+  test('el prompt NO contiene identificadores del paciente', () => {
+    const { system, user } = buildCarePlanMessages({
+      stage: 3,
+      ageYears: 58,
+      sex: 'female',
+      metrics: [{ id: 'sbp', label: 'Presión sistólica', value: 148, unit: 'mmHg', status: 'concerning' } as never],
+      conditions: ['Hipertensión arterial'],
+      medications: ['enalapril'],
+      sdohScore: 4,
+    });
+    const enviado = `${system}\n${user}`;
+
+    // Solo se manda la EDAD derivada, nunca la fecha de nacimiento.
+    expect(enviado).not.toMatch(/\d{4}-\d{2}-\d{2}/);
+    // Ni referencias FHIR que permitan reidentificar al paciente.
+    expect(enviado).not.toMatch(/Patient\/|Practitioner\//);
+    // Ni documentos, contacto o correo.
+    expect(enviado).not.toMatch(/DNI|CUIL|CUIT|@/i);
+    // Y el prompt declara explícitamente que los datos van anonimizados.
+    expect(user).toContain('anonimizados');
+  });
 });
 
 describe('careplan — conversión a FHIR', () => {
