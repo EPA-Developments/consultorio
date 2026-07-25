@@ -3,7 +3,7 @@
 import { Paper } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { formatSearchQuery, parseSearchRequest } from '@medplum/core';
-import type { Filter, SearchRequest, SortRule } from '@medplum/core';
+import type { SearchRequest, SortRule } from '@medplum/core';
 import type { UserConfiguration } from '@medplum/fhirtypes';
 import { Loading, SearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
@@ -11,6 +11,8 @@ import type { JSX } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { CKMPatientList } from '../ckm/components/CKMPatientList';
 import { CreateEncounter } from '../components/actions/CreateEncounter';
+import { parseStoredSearch, serializeSearchForStorage } from '../security/search-storage';
+import type { StorableSearch } from '../security/search-storage';
 import classes from './SearchPage.module.css';
 
 export function SearchPage(): JSX.Element {
@@ -74,7 +76,9 @@ export function SearchPage(): JSX.Element {
 function addSearchValues(search: SearchRequest, config: UserConfiguration | undefined): SearchRequest {
   const resourceType = search.resourceType || getDefaultResourceType(config);
   const fields = search.fields ?? getDefaultFields(search.resourceType);
-  const filters = search.filters ?? (!search.resourceType ? getDefaultFilters(resourceType) : undefined);
+  // Los filtros NO se restauran desde el navegador: no se persisten porque
+  // pueden contener datos del paciente (ver security/search-storage.ts).
+  const filters = search.filters;
   const sortRules = search.sortRules ?? getDefaultSortRules(resourceType);
 
   return {
@@ -94,10 +98,6 @@ function getDefaultResourceType(config: UserConfiguration | undefined): string {
   );
 }
 
-function getDefaultFilters(resourceType: string): Filter[] | undefined {
-  return getLastSearch(resourceType)?.filters;
-}
-
 function getDefaultSortRules(resourceType: string): SortRule[] {
   const lastSearch = getLastSearch(resourceType);
   if (lastSearch?.sortRules) {
@@ -106,14 +106,17 @@ function getDefaultSortRules(resourceType: string): SortRule[] {
   return [{ code: '_lastUpdated', descending: true }];
 }
 
-function getLastSearch(resourceType: string): SearchRequest | undefined {
-  const value = localStorage.getItem(resourceType + '-defaultSearch');
-  return value ? (JSON.parse(value) as SearchRequest) : undefined;
+// La búsqueda persistida se sanea al leer Y al escribir: nunca guarda filtros,
+// porque pueden contener datos del paciente (apellido, DNI, referencias) y
+// localStorage sobrevive al cierre de sesión en una máquina compartida.
+// Ver src/security/search-storage.ts.
+function getLastSearch(resourceType: string): StorableSearch | undefined {
+  return parseStoredSearch(localStorage.getItem(resourceType + '-defaultSearch'));
 }
 
 function saveLastSearch(search: SearchRequest): void {
   localStorage.setItem('defaultResourceType', search.resourceType);
-  localStorage.setItem(search.resourceType + '-defaultSearch', JSON.stringify(search));
+  localStorage.setItem(search.resourceType + '-defaultSearch', serializeSearchForStorage(search));
 }
 
 function getDefaultFields(resourceType: string): string[] {
