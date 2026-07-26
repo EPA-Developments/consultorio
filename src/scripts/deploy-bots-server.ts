@@ -107,12 +107,33 @@ async function main(): Promise<void> {
     const botId = botIds[botName];
     const wanted = (entry.resource as Bot).runtimeVersion ?? 'awslambda';
     try {
-      // Forzar el runtimeVersion del bundle: un bot creado antes como
-      // 'vmcontext' falla con "Bots not enabled" si el servidor no los habilita.
+      // Reconciliar los metadatos del Bot uno por uno, acá y no en la
+      // transacción del paso 3: esa transacción falla en servidores que limitan
+      // las entradas con aislamiento estricto ("Transaction requires strict
+      // isolation but has too many entries"), y entonces cambios como el
+      // timeout nunca llegaban al servidor aunque el código sí se desplegara.
+      // - runtimeVersion: un bot creado antes como 'vmcontext' falla con
+      //   "Bots not enabled" si el servidor no los habilita.
+      // - timeout: sin esto, un bot que llama a una API externa muere con
+      //   "Sandbox.Timedout" a los 10 s (default del runtime).
+      const wantedTimeout = (entry.resource as Bot).timeout;
       const serverBot = await medplum.readResource('Bot', botId);
+      const changes: Partial<Bot> = {};
       if (serverBot.runtimeVersion !== wanted) {
-        await medplum.updateResource({ ...serverBot, runtimeVersion: wanted });
-        console.log(`  · ${botName}: runtimeVersion ${serverBot.runtimeVersion ?? '(sin)'} -> ${wanted}`);
+        changes.runtimeVersion = wanted;
+      }
+      if (wantedTimeout !== undefined && serverBot.timeout !== wantedTimeout) {
+        changes.timeout = wantedTimeout;
+      }
+      if (Object.keys(changes).length > 0) {
+        await medplum.updateResource({ ...serverBot, ...changes });
+        const detalle = [
+          changes.runtimeVersion ? `runtimeVersion ${serverBot.runtimeVersion ?? '(sin)'} -> ${wanted}` : undefined,
+          changes.timeout ? `timeout ${serverBot.timeout ?? '(default)'}s -> ${wantedTimeout}s` : undefined,
+        ]
+          .filter(Boolean)
+          .join(', ');
+        console.log(`  · ${botName}: ${detalle}`);
       }
 
       const distUrl = (entry.resource as Bot).executableCode?.url;

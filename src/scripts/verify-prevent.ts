@@ -160,6 +160,11 @@ async function main(): Promise<void> {
   console.log(`hGraph metrics escritas por el bot: ${finalData.metrics?.length ?? 0}`);
   console.log(`Scores PREVENT del servidor: ${serverPrevent ? JSON.stringify(serverPrevent) : 'undefined'}`);
 
+  // Dato decisivo: distingue "la Subscription no disparó" (sin AuditEvents) de
+  // "disparó y el bot falló" (AuditEvents con outcome de error). Sin esto el
+  // diagnóstico se queda en "no se ejecutó" sin decir por qué.
+  await dumpBotAudits(medplum, bot?.id);
+
   const ok =
     serverPrevent?.ascvd10y === expected?.ascvd10y &&
     serverPrevent?.hf10y === expected?.hf10y &&
@@ -181,6 +186,38 @@ async function main(): Promise<void> {
   }
   if (!ok) {
     process.exit(1);
+  }
+}
+
+/**
+ * Vuelca los AuditEvents recientes del bot. Es el dato que separa las dos
+ * causas posibles de "el bot no escribió":
+ * - SIN AuditEvents  -> la Subscription no está disparando (problema de entrega).
+ * - CON AuditEvents  -> el bot sí corrió; el outcome/outcomeDesc dice por qué falló.
+ */
+async function dumpBotAudits(medplum: MedplumClient, botId: string | undefined): Promise<void> {
+  if (!botId) {
+    return;
+  }
+  try {
+    const audits = await medplum.searchResources('AuditEvent', {
+      entity: `Bot/${botId}`,
+      _count: '5',
+      _sort: '-_lastUpdated',
+    });
+    console.log(`\nAuditEvents recientes del bot: ${audits.length}`);
+    for (const a of audits) {
+      console.log(
+        `  ${a.recorded} outcome=${a.outcome ?? '?'}${a.outcomeDesc ? ' — ' + a.outcomeDesc.slice(0, 400) : ''}`
+      );
+    }
+    if (audits.length === 0) {
+      console.log('  (sin AuditEvents: el bot NO se está ejecutando — el problema es la ENTREGA de la');
+      console.log('   Subscription, no el código del bot. Probar el disparo directo con:');
+      console.log('   npm run ckm-bots-doctor -- --reprocess <PatientId>)');
+    }
+  } catch (err) {
+    console.log(`\nNo pude leer AuditEvents del bot: ${(err as Error).message}`);
   }
 }
 
