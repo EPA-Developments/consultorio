@@ -9,6 +9,7 @@ import type { JSX } from 'react';
 import { Link } from 'react-router';
 import { getPREVENTInputs } from '../extensions';
 import { useCKMData } from '../hooks/useCKMData';
+import { useCKMLive } from '../hooks/useCKMLive';
 import { CAC_RECLASS_LEGEND, isProvisional, PROVISIONAL_NOTE } from '../risk';
 import type { PreventOutcome } from '../risk';
 import { CKMStageBadge } from './CKMStageBadge';
@@ -21,11 +22,23 @@ export interface PREVENTPanelProps {
 }
 
 export function PREVENTPanel(props: PREVENTPanelProps): JSX.Element {
-  const { patient, stage, hGraphMetrics, preventScores, loading } = useCKMData(props.patient);
+  const persisted = useCKMData(props.patient);
+  const { patient, loading } = persisted;
+
+  // Si el bot todavía no persistió métricas, calcularlas en vivo con el mismo
+  // módulo que usa el bot. Así el panel muestra los datos que YA están cargados
+  // aunque la Subscription no haya disparado (ver hooks/useCKMLive.ts).
+  const needsLive = !loading && (persisted.hGraphMetrics?.length ?? 0) === 0;
+  const live = useCKMLive(patient, needsLive);
 
   if (loading) {
     return <Loading />;
   }
+
+  const isLive = needsLive && !live.loading && live.metrics.length > 0;
+  const hGraphMetrics = isLive ? live.metrics : persisted.hGraphMetrics;
+  const stage = isLive ? (live.stage ?? persisted.stage) : persisted.stage;
+  const preventScores = isLive ? (live.prevent ?? persisted.preventScores) : persisted.preventScores;
 
   const sdoh = getPREVENTInputs(patient).sdoh;
   // El CAC (si existe entre las métricas) reclasifica la categoría de ASCVD.
@@ -38,6 +51,16 @@ export function PREVENTPanel(props: PREVENTPanelProps): JSX.Element {
           <Title order={4}>Salud CKM</Title>
           {stage !== undefined && <CKMStageBadge stage={stage} size="md" />}
         </Group>
+        {needsLive && live.loading && (
+          <Text size="xs" c="dimmed">
+            Calculando…
+          </Text>
+        )}
+        {isLive && (
+          <Text size="xs" c="dimmed">
+            Calculado en vivo a partir de las observaciones cargadas (el recálculo automático todavía no lo guardó).
+          </Text>
+        )}
         <HGraph metrics={hGraphMetrics ?? []} />
         <SimpleGrid cols={3}>
           <ScoreStat label="ASCVD 10 años" outcome="ascvd10y" value={preventScores?.ascvd10y} cac={cac} />

@@ -15,56 +15,11 @@
 // y frágiles (dependen de SES) que no deben poder interrumpir el recálculo.
 // Volverán en una etapa futura, aisladas en su propio bot/handler.
 import type { BotEvent, MedplumClient } from '@medplum/core';
-import type { Condition, Observation, Patient } from '@medplum/fhirtypes';
-import type { CKMObservationMap } from '../../ckm/observations';
-import type { PREVENTScores } from '../../ckm/types';
-import {
-  ageFromBirthDate,
-  deriveMedicationFlags,
-  hasDiabetes,
-  hasSmoking,
-  isActiveCondition,
-  isClinicalCVD,
-  patientPreventSex,
-} from '../../ckm/clinical';
+import type { Observation, Patient } from '@medplum/fhirtypes';
+import { isActiveCondition } from '../../ckm/clinical';
+import { computeCKMSnapshot } from '../../ckm/compute';
 import { getCKMStage, getHGraphData, withCKMExtensions } from '../../ckm/extensions';
 import { extractCKMValues, getLatestCKMObservations } from '../../ckm/observations';
-import { buildPreventInputs, computePrevent } from '../../ckm/prevent';
-import { computeMetrics, deriveStage } from '../../ckm/scoring';
-
-/**
- * Recolecta las variables PREVENT del paciente y calcula los scores.
- * Devuelve undefined si faltan datos o si los coeficientes no están
- * verificados (computePrevent lo decide).
- */
-async function computePreventScores(
-  medplum: MedplumClient,
-  patient: Patient,
-  values: CKMObservationMap,
-  activeConditions: Condition[]
-): Promise<PREVENTScores | undefined> {
-  const sex = patientPreventSex(patient);
-  if (!sex) {
-    return undefined;
-  }
-
-  const medications = await medplum.searchResources('MedicationRequest', {
-    subject: `Patient/${patient.id}`,
-    status: 'active',
-    _count: '100',
-  });
-  const { onStatin, onAntihypertensive } = deriveMedicationFlags(medications);
-
-  const inputs = buildPreventInputs(values, {
-    sex,
-    ageYears: ageFromBirthDate(patient.birthDate),
-    diabetes: hasDiabetes(activeConditions),
-    smoking: hasSmoking(activeConditions),
-    onAntihypertensive,
-    onStatin,
-  });
-  return inputs ? computePrevent(inputs) : undefined;
-}
 
 /**
  * Recalcula y persiste las extensiones CKM (métricas hGraph, estadío, scores
@@ -80,7 +35,6 @@ export async function recomputeCKM(medplum: MedplumClient, patient: Patient): Pr
     _count: '200',
   });
   const active = conditions.filter(isActiveCondition);
-  const hasClinicalCVD = active.some(isClinicalCVD);
 
   const previousStage = getCKMStage(patient);
   const previous = getHGraphData(patient);
@@ -96,17 +50,22 @@ export async function recomputeCKM(medplum: MedplumClient, patient: Patient): Pr
     return patient;
   }
 
-  const computedMetrics = computeMetrics(values);
+  const medications = await medplum.searchResources('MedicationRequest', {
+    subject: `Patient/${patientId}`,
+    status: 'active',
+    _count: '100',
+  });
+
+  // El cálculo vive en ckm/compute.ts, compartido con la UI: así el panel del
+  // chart y lo que persiste el bot no pueden dar números distintos.
+  const snapshot = computeCKMSnapshot(values, patient, active, medications);
+
   // Si no quedan datos evaluables (ej. lectura vacía o única lectura descartada),
-  // conservar las métricas previas en lugar de borrarlas — mismo criterio que el
-  // estadío y el PREVENT. Evita que una corrida con búsqueda vacía (lag de
-  // indexación, política de acceso, etc.) pise datos buenos con un array vacío.
-  const metrics = computedMetrics.length > 0 ? computedMetrics : (previous.metrics ?? []);
-  // Si no quedan datos evaluables, conservar el estadío previo en lugar de borrarlo.
-  const stage = deriveStage(values, { hasClinicalCVD, gender: patient.gender }) ?? previousStage;
-  // Scores PREVENT: se recalculan sólo si los coeficientes están verificados
-  // (computePrevent devuelve undefined si no). Si no, se preservan los previos.
-  const prevent = (await computePreventScores(medplum, patient, values, active)) ?? previous.prevent;
+  // conservar lo previo en lugar de borrarlo. Evita que una corrida con búsqueda
+  // vacía (lag de indexación, política de acceso, etc.) pise datos buenos.
+  const metrics = snapshot.metrics.length > 0 ? snapshot.metrics : (previous.metrics ?? []);
+  const stage = snapshot.stage ?? previousStage;
+  const prevent = snapshot.prevent ?? previous.prevent;
 
   return medplum.updateResource({
     ...patient,
