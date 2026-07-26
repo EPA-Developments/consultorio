@@ -14,6 +14,14 @@ interface BotDescription {
   criteria?: string;
   /** 'vmcontext' para servidores self-hosted sin AWS Lambda. */
   runtimeVersion?: 'awslambda' | 'vmcontext';
+  /**
+   * Tiempo máximo de ejecución EN SEGUNDOS (Bot.timeout). El default del
+   * runtime es 10 s, que alcanza para los bots de cálculo pero NO para los que
+   * llaman a una API externa: el Lambda muere con "Sandbox.Timedout" antes de
+   * que la llamada vuelva. Se declara acá para que quede versionado y se
+   * aplique en cada despliegue, en vez de tocarlo a mano en la consola.
+   */
+  timeout?: number;
 }
 
 // Runtime de los bots CKM. Por defecto awslambda; con CKM_BOT_RUNTIME=vmcontext
@@ -54,6 +62,10 @@ const Bots: BotDescription[] = [
     src: 'src/bots/ckm/careplan-generate.ts',
     dist: 'dist/bots/ckm/careplan-generate.js',
     runtimeVersion: CKM_RUNTIME,
+    // Llama a la API de Anthropic para redactar el plan: el bot se da 55 s de
+    // margen internamente, así que el runtime necesita MÁS que eso o lo mata
+    // antes ("Sandbox.Timedout: Task timed out after 10.00 seconds").
+    timeout: 90,
   },
 ];
 
@@ -76,6 +88,7 @@ async function main(): Promise<void> {
           id: botIdPlaceholder,
           name: botName,
           runtimeVersion: botDescription.runtimeVersion ?? 'awslambda',
+          ...(botDescription.timeout ? { timeout: botDescription.timeout } : {}),
           sourceCode: {
             // text/typescript no está en la ValueSet IANA de mimetypes que
             // valida el servidor self-hosted; el fuente se guarda como
