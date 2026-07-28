@@ -28,3 +28,5 @@ data/core/example-bots.json
 # Variables de entorno locales (solo se versiona .env.defaults como plantilla)
 .env
 .env.local
+.env
+.env.*
