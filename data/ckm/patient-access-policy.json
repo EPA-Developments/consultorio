@@ -96,8 +96,17 @@
       "readonly": true
     },
     {
+      "resourceType": "ServiceRequest",
+      "readonly": true,
+      "criteria": "ServiceRequest?subject=%patient"
+    },
+    {
+      "resourceType": "ServiceRequest",
+      "criteria": "ServiceRequest?subject=%patient&intent=proposal&status=draft"
+    },
+    {
       "resourceType": "Subscription",
-      "criteria": "Subscription?type=websocket&author=%profile"
+      "criteria": "Subscription?type=websocket&author=%patient"
     }
   ]
 }

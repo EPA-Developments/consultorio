@@ -119,6 +119,52 @@ El espejo de referencia está en el repo `portal`:
 
 ---
 
+---
+
+## Estado — hecho en el repo `dashboard` (julio 2026)
+
+### 1. Loteo de `upload-biomarker-defs` ✅
+
+`src/scripts/upload-biomarker-definitions.ts` parte el bundle en lotes de 50, cada
+uno como su propia transacción, y **revisa el `response` de cada entrada** (no solo
+el global). Si una transacción entera es rechazada, lo reporta como
+"N sin aplicar" y sigue con el resto, resumiendo al final y saliendo con código 1.
+
+Probado sin tocar producción: `upload-biomarker-definitions.test.ts` (7 tests)
+verifica el caso real —107 → **50/50/7**—, que ningún lote supere el tope, que no
+se pierdan ni reordenen entradas, y que cada lote siga siendo `transaction`.
+
+También se agregó una guarda para que importar el módulo no dispare el upload
+(sin ella, correr los tests hubiera intentado escribir en el servidor real).
+
+### 2. Reglas de la AccessPolicy ✅ (con una verificación pendiente)
+
+Se agregaron a `data/ckm/patient-access-policy.json` las tres reglas del handoff:
+las dos de `ServiceRequest` (lectura propia + creación de propuestas) y la de
+`Subscription`, que además se **alineó de `author=%profile` a `author=%patient`**
+según lo que el handoff reporta como estado real del servidor.
+
+> ⚠️ **VERIFICAR ANTES DE CORRER `upload-access-policy`.**
+>
+> El script hace **upsert por NOMBRE**: `name=HeartInnovations — Patient Self
+Access v1.2` (así se llama el archivo versionado). Pero el handoff se refiere a
+> la policy del servidor como **"Paciente — Portal"**, id
+> `45ff9a4e-e1c6-48d8-aaae-1932aadf216c`.
+>
+> Si son **dos recursos distintos**, el upload no toca la policy que usa el
+> paciente: arregla un archivo que apunta a otro lado, y el riesgo que describe el
+> handoff sigue abierto. Si es **la misma** (renombrada en algún momento), está
+> todo bien.
+>
+> Cómo resolverlo: `GET /fhir/R4/AccessPolicy/45ff9a4e-e1c6-48d8-aaae-1932aadf216c`
+> y mirar su `name`. Si no coincide, hay que decidir cuál es la buena y unificar
+> el nombre **antes** de correr el upload — si no, se puede terminar con dos
+> policies parecidas y sin saber cuál está aplicada.
+>
+> No se pudo verificar desde acá por falta de credenciales del servidor.
+
+---
+
 ## Verificación final
 
 Con las dos cosas hechas:

@@ -1,5 +1,7 @@
+import type { ObservationDefinition } from '@medplum/fhirtypes';
+import biomarkerBundle from '../../data/ckm/biomarker-definitions.json';
 import type { BiomarkerDefinition } from '../ckm/observation-definitions';
-import { LOINC_SYSTEM } from '../ckm/observation-definitions';
+import { LOINC_SYSTEM, parseObservationDefinition } from '../ckm/observation-definitions';
 import {
   approveProposals,
   buildLabOrder,
@@ -37,7 +39,9 @@ const glucosa = def({
   panelCode: 'metabolico',
   panelDisplay: 'Metabolismo',
 });
-const insulina = def({ biomarcadorId: 'insulina-en-ayunas', label: 'Insulina', code: '27353-2', system: LOINC_SYSTEM });
+// Código real del catálogo (insulina basal): las fuentes de los derivados se
+// declaran por LOINC, así que el fixture tiene que usar el mismo.
+const insulina = def({ biomarcadorId: 'insulina-en-ayunas', label: 'Insulina', code: '20448-7', system: LOINC_SYSTEM });
 const homaIr = def({ biomarcadorId: 'homa-ir', label: 'HOMA-IR', code: 'homa-ir', system: LOCAL_SYSTEM });
 const creatinina = def({ biomarcadorId: 'creatinina', label: 'Creatinina', code: '2160-0', system: LOINC_SYSTEM });
 const egfr = def({ biomarcadorId: 'egfr-tfg-estimada', label: 'eGFR', code: '98979-8', system: LOINC_SYSTEM });
@@ -94,10 +98,10 @@ describe('Normalización a ítems de orden', () => {
     expect(byId.get('hrv-variabilidad-frecuencia-cardiaca')?.orderable).toBe(false);
   });
 
-  test('expone las fuentes de los derivados', () => {
+  test('expone las fuentes de los derivados (por código LOINC)', () => {
     const byId = new Map(items.map((i) => [i.biomarcadorId, i]));
-    expect(byId.get('egfr-tfg-estimada')?.derivedFrom).toEqual(['creatinina']);
-    expect(byId.get('homa-ir')?.derivedFrom).toEqual(['glucosa-en-ayunas', 'insulina-en-ayunas']);
+    expect(byId.get('egfr-tfg-estimada')?.derivedFrom).toEqual(['2160-0']); // creatinina
+    expect(byId.get('homa-ir')?.derivedFrom).toEqual(['1558-6', '20448-7']); // glucosa + insulina
     expect(byId.get('glucosa-en-ayunas')?.derivedFrom).toBeUndefined();
   });
 });
@@ -215,6 +219,53 @@ describe('approveProposals', () => {
     });
     const [unchanged] = approveProposals({ proposals: order, requester });
     expect(unchanged).toEqual(order[0]);
+  });
+});
+
+// Guarda contra el catálogo REAL. Los identificadores del bundle mezclan
+// convenciones (86 de 107 usan el código LOINC como identifier, 21 un slug),
+// así que las fuentes de los derivados se declaran por código. Si alguien las
+// cambia y dejan de resolver, el análisis desaparecería de la orden EN SILENCIO
+// —el médico pide HOMA-IR y la glucosa no se pide—. Este test lo impide.
+describe('Derivados contra el catálogo real', () => {
+  const bundle = biomarkerBundle as unknown as { entry: { resource: ObservationDefinition }[] };
+  const catalogo = toLabOrderItems(bundle.entry.map((e) => parseObservationDefinition(e.resource)));
+
+  test('las fuentes declaradas existen en el catálogo', () => {
+    for (const item of catalogo) {
+      for (const source of item.derivedFrom ?? []) {
+        const encontrada = catalogo.find((i) => i.code === source || i.biomarcadorId === source);
+        expect(encontrada, `fuente "${source}" de "${item.biomarcadorId}" no está en el catálogo`).toBeDefined();
+      }
+    }
+  });
+
+  test('pedir HOMA-IR agrega glucosa e insulina a la orden', () => {
+    const expandido = resolveDerivedSources(['homa-ir'], catalogo);
+    const etiquetas = expandido
+      .map((id) => catalogo.find((i) => i.biomarcadorId === id)?.label.toLowerCase())
+      .filter(Boolean)
+      .join(' | ');
+    expect(etiquetas).toContain('glucosa');
+    expect(etiquetas).toContain('insulina');
+  });
+
+  test('pedir eGFR agrega creatinina a la orden', () => {
+    const expandido = resolveDerivedSources(['egfr-tfg-estimada'], catalogo);
+    const etiquetas = expandido
+      .map((id) => catalogo.find((i) => i.biomarcadorId === id)?.label.toLowerCase())
+      .filter(Boolean)
+      .join(' | ');
+    expect(etiquetas).toContain('creatinina');
+  });
+
+  test('las fuentes agregadas son solicitables (si no, no llegarían al laboratorio)', () => {
+    for (const id of resolveDerivedSources(['homa-ir', 'egfr-tfg-estimada'], catalogo)) {
+      const item = catalogo.find((i) => i.biomarcadorId === id);
+      if (item && item.orderability !== 'derived') {
+        expect(item.orderable, `la fuente "${id}" no es solicitable`).toBe(true);
+      }
+    }
   });
 });
 

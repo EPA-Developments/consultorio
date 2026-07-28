@@ -76,10 +76,19 @@ export const LABORATORY_CATEGORY: CodeableConcept = {
  */
 export type LabOrderability = 'lab' | 'specialized' | 'derived' | 'device';
 
-/** Marcadores que son un cálculo derivado de otros (y sus fuentes a pedir). */
+/**
+ * Marcadores que son un cálculo derivado de otros, y las FUENTES que hay que
+ * pedir en su lugar.
+ *
+ * Las fuentes se referencian por **código LOINC**, no por slug: el catálogo
+ * mezcla convenciones de identificador (86 de 107 usan el LOINC como
+ * identifier, 21 conservan un slug descriptivo), así que el LOINC es la clave
+ * estable. `resolveDerivedSources` resuelve contra el identifier O el código,
+ * para tolerar las dos.
+ */
 const DERIVED_SOURCES: Record<string, string[]> = {
-  'homa-ir': ['glucosa-en-ayunas', 'insulina-en-ayunas'],
-  'egfr-tfg-estimada': ['creatinina'],
+  'homa-ir': ['1558-6', '20448-7'], // glucosa en ayunas + insulina basal
+  'egfr-tfg-estimada': ['2160-0'], // creatinina sérica
 };
 
 /** Marcadores que se miden con dispositivo, no en laboratorio. */
@@ -182,11 +191,21 @@ export function toLabOrderItems(defs: BiomarkerDefinition[]): LabOrderItem[] {
  */
 export function resolveDerivedSources(selectedIds: string[], catalog: LabOrderItem[]): string[] {
   const byId = new Map(catalog.map((i) => [i.biomarcadorId ?? '', i]));
+  // Índice auxiliar por código LOINC: las fuentes de los derivados se declaran
+  // por código (clave estable), pero la selección viaja por identifier. Sin
+  // este segundo índice, la fuente no se encontraba y el análisis quedaba
+  // FUERA de la orden en silencio.
+  const byCode = new Map(catalog.filter((i) => i.code).map((i) => [i.code as string, i]));
+
   const result = new Set(selectedIds);
   for (const id of selectedIds) {
-    const item = byId.get(id);
-    for (const source of item?.derivedFrom ?? []) {
-      result.add(source);
+    for (const source of byId.get(id)?.derivedFrom ?? []) {
+      // La fuente puede venir como código o como identifier: se agrega con el
+      // identifier real del catálogo, que es la clave con la que se selecciona.
+      const item = byCode.get(source) ?? byId.get(source);
+      if (item) {
+        result.add(item.biomarcadorId ?? source);
+      }
     }
   }
   return [...result];
