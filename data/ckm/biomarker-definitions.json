@@ -9,7 +9,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "2285-5"
+            "value": "acido-folico-eritrocitario"
           }
         ],
         "code": {
@@ -85,7 +85,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "2284-8"
+            "value": "acido-folico-serico"
           }
         ],
         "code": {
@@ -161,7 +161,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "3084-1"
+            "value": "acido-urico"
           }
         ],
         "code": {
@@ -284,7 +284,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "1751-7"
+            "value": "albumina"
           }
         ],
         "code": {
@@ -384,7 +384,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "1742-6"
+            "value": "alt-tgp"
           }
         ],
         "code": {
@@ -479,7 +479,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "8098-6"
+            "value": "anticuerpos-anti-tiroglobulina"
           }
         ],
         "code": {
@@ -551,7 +551,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "8099-4"
+            "value": "anticuerpos-anti-tpo"
           }
         ],
         "code": {
@@ -623,7 +623,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "1869-7"
+            "value": "apolipoproteina-a1"
           }
         ],
         "code": {
@@ -722,7 +722,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "1884-6"
+            "value": "apob"
           }
         ],
         "code": {
@@ -813,7 +813,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "1920-8"
+            "value": "ast-got"
           }
         ],
         "code": {
@@ -889,7 +889,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "706-2"
+            "value": "basofilos"
           }
         ],
         "code": {
@@ -971,7 +971,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "704-7"
+            "value": "basofilos-valor-absoluto"
           }
         ],
         "code": {
@@ -1053,7 +1053,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "1968-7"
+            "value": "bilirrubina-directa"
           }
         ],
         "code": {
@@ -1125,7 +1125,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "1971-1"
+            "value": "bilirrubina-indirecta"
           }
         ],
         "code": {
@@ -1201,7 +1201,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "1975-2"
+            "value": "bilirrubina-total"
           }
         ],
         "code": {
@@ -1301,7 +1301,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "17861-6"
+            "value": "calcio-serico"
           }
         ],
         "code": {
@@ -1487,7 +1487,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "786-4"
+            "value": "chcm"
           }
         ],
         "code": {
@@ -1569,7 +1569,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "33863-2"
+            "value": "cistatina-c"
           }
         ],
         "code": {
@@ -1645,7 +1645,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "5631-7"
+            "value": "cobre-serico"
           }
         ],
         "code": {
@@ -1721,7 +1721,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "2085-9"
+            "value": "hdl-colesterol"
           }
         ],
         "code": {
@@ -1831,7 +1831,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "2089-1"
+            "value": "ldl-colesterol"
           }
         ],
         "code": {
@@ -2009,7 +2009,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "2093-3"
+            "value": "colesterol-total"
           }
         ],
         "code": {
@@ -2081,7 +2081,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "2143-6"
+            "value": "cortisol-am"
           }
         ],
         "code": {
@@ -2181,7 +2181,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "2160-0"
+            "value": "creatinina"
           }
         ],
         "code": {
@@ -2304,7 +2304,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "2191-5"
+            "value": "dhea-s"
           }
         ],
         "code": {
@@ -2410,7 +2410,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "48065-7"
+            "value": "dimero-d"
           }
         ],
         "code": {
@@ -2749,7 +2749,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "713-8"
+            "value": "eosinofilos"
           }
         ],
         "code": {
@@ -2831,7 +2831,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "711-2"
+            "value": "eosinofilos-valor-absoluto"
           }
         ],
         "code": {
@@ -2913,7 +2913,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "2243-4"
+            "value": "estradiol-e2"
           }
         ],
         "code": {
@@ -3014,7 +3014,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "2276-4"
+            "value": "ferritina"
           }
         ],
         "code": {
@@ -3137,7 +3137,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "3255-7"
+            "value": "fibrinogeno"
           }
         ],
         "code": {
@@ -3213,7 +3213,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "6768-6"
+            "value": "fosfatasa-alcalina"
           }
         ],
         "code": {
@@ -3399,7 +3399,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "15067-2"
+            "value": "fsh"
           }
         ],
         "code": {
@@ -3475,7 +3475,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "2324-2"
+            "value": "ggt"
           }
         ],
         "code": {
@@ -3703,7 +3703,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "6690-2"
+            "value": "globulos-blancos"
           }
         ],
         "code": {
@@ -3785,7 +3785,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "789-8"
+            "value": "globulos-rojos"
           }
         ],
         "code": {
@@ -3890,7 +3890,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "1558-6"
+            "value": "glucosa-en-ayunas"
           }
         ],
         "code": {
@@ -4005,7 +4005,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "785-6"
+            "value": "hcm"
           }
         ],
         "code": {
@@ -4087,7 +4087,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "4544-3"
+            "value": "hematocrito"
           }
         ],
         "code": {
@@ -4192,7 +4192,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "718-7"
+            "value": "hemoglobina"
           }
         ],
         "code": {
@@ -4337,7 +4337,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "4548-4"
+            "value": "hba1c"
           }
         ],
         "code": {
@@ -4433,7 +4433,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "58410-2"
+            "value": "hemograma-completo"
           }
         ],
         "code": {
@@ -4475,7 +4475,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "2498-4"
+            "value": "hierro-serico-ferremia"
           }
         ],
         "code": {
@@ -4574,7 +4574,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "13965-9"
+            "value": "homocisteina"
           }
         ],
         "code": {
@@ -4760,7 +4760,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "15013-6"
+            "value": "igf-1"
           }
         ],
         "code": {
@@ -4972,7 +4972,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "20448-7"
+            "value": "insulina-en-ayunas"
           }
         ],
         "code": {
@@ -5058,7 +5058,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "26881-3"
+            "value": "il-6"
           }
         ],
         "code": {
@@ -5155,7 +5155,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "14804-9"
+            "value": "ldh-lactato-deshidrogenasa"
           }
         ],
         "code": {
@@ -5356,7 +5356,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "10501-5"
+            "value": "lh"
           }
         ],
         "code": {
@@ -5432,7 +5432,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "736-9"
+            "value": "linfocitos"
           }
         ],
         "code": {
@@ -5514,7 +5514,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "731-0"
+            "value": "linfocitos-valor-absoluto"
           }
         ],
         "code": {
@@ -5596,7 +5596,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "43583-4"
+            "value": "lpa"
           }
         ],
         "code": {
@@ -5768,7 +5768,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "2596-5"
+            "value": "magnesio-eritrocitario-rbc"
           }
         ],
         "code": {
@@ -5874,7 +5874,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "2601-3"
+            "value": "magnesio-serico"
           }
         ],
         "code": {
@@ -6069,7 +6069,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "5905-5"
+            "value": "monocitos"
           }
         ],
         "code": {
@@ -6151,7 +6151,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "742-7"
+            "value": "monocitos-valor-absoluto"
           }
         ],
         "code": {
@@ -6303,7 +6303,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "770-8"
+            "value": "neutrofilos"
           }
         ],
         "code": {
@@ -6385,7 +6385,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "751-8"
+            "value": "neutrofilos-valor-absoluto"
           }
         ],
         "code": {
@@ -6467,7 +6467,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "764-1"
+            "value": "neutrofilos-en-cayado"
           }
         ],
         "code": {
@@ -6549,7 +6549,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "753-4"
+            "value": "neutrofilos-en-cayado-valor-absoluto"
           }
         ],
         "code": {
@@ -6625,13 +6625,185 @@
       }
     },
     {
+      "fullUrl": "urn:uuid:fa786c75-dcef-41d1-9477-de343024c7f8",
+      "resource": {
+        "resourceType": "ObservationDefinition",
+        "identifier": [
+          {
+            "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
+            "value": "neutrofilos-segmentados"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "769-0",
+              "display": "Neutrófilos segmentados"
+            }
+          ],
+          "text": "Neutrófilos segmentados"
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "https://biowellness.ar/fhir/CodeSystem/panel",
+                "code": "hematologia",
+                "display": "Hematología, inmunidad e inflamación básica"
+              }
+            ],
+            "text": "Hematología, inmunidad e inflamación básica"
+          }
+        ],
+        "permittedDataType": [
+          "Quantity"
+        ],
+        "quantitativeDetails": {
+          "unit": {
+            "coding": [
+              {
+                "system": "http://unitsofmeasure.org",
+                "code": "%"
+              }
+            ],
+            "text": "%"
+          }
+        },
+        "qualifiedInterval": [
+          {
+            "category": "reference",
+            "range": {
+              "low": {
+                "value": 34,
+                "unit": "%"
+              },
+              "high": {
+                "value": 68,
+                "unit": "%"
+              }
+            },
+            "context": {
+              "coding": [
+                {
+                  "system": "https://biowellness.ar/fhir/CodeSystem/tipo-rango",
+                  "code": "convencional"
+                }
+              ]
+            }
+          }
+        ],
+        "extension": [
+          {
+            "url": "https://biowellness.ar/fhir/StructureDefinition/no-solicitable",
+            "valueBoolean": true
+          },
+          {
+            "url": "https://biowellness.ar/fhir/StructureDefinition/rango-a-validar",
+            "valueBoolean": true
+          }
+        ],
+        "id": "fa786c75-dcef-41d1-9477-de343024c7f8"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ObservationDefinition/fa786c75-dcef-41d1-9477-de343024c7f8"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:6d334657-fc2b-43c7-b21b-35e8b3f1c422",
+      "resource": {
+        "resourceType": "ObservationDefinition",
+        "identifier": [
+          {
+            "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
+            "value": "neutrofilos-segmentados-valor-absoluto"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "30451-9",
+              "display": "Neutrófilos segmentados (valor absoluto)"
+            }
+          ],
+          "text": "Neutrófilos segmentados (valor absoluto)"
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "https://biowellness.ar/fhir/CodeSystem/panel",
+                "code": "hematologia",
+                "display": "Hematología, inmunidad e inflamación básica"
+              }
+            ],
+            "text": "Hematología, inmunidad e inflamación básica"
+          }
+        ],
+        "permittedDataType": [
+          "Quantity"
+        ],
+        "quantitativeDetails": {
+          "unit": {
+            "coding": [
+              {
+                "system": "http://unitsofmeasure.org",
+                "code": "10*9/L"
+              }
+            ],
+            "text": "10*9/L"
+          }
+        },
+        "qualifiedInterval": [
+          {
+            "category": "reference",
+            "range": {
+              "low": {
+                "value": 1.8,
+                "unit": "10*9/L"
+              },
+              "high": {
+                "value": 5.4,
+                "unit": "10*9/L"
+              }
+            },
+            "context": {
+              "coding": [
+                {
+                  "system": "https://biowellness.ar/fhir/CodeSystem/tipo-rango",
+                  "code": "convencional"
+                }
+              ]
+            }
+          }
+        ],
+        "extension": [
+          {
+            "url": "https://biowellness.ar/fhir/StructureDefinition/no-solicitable",
+            "valueBoolean": true
+          },
+          {
+            "url": "https://biowellness.ar/fhir/StructureDefinition/rango-a-validar",
+            "valueBoolean": true
+          }
+        ],
+        "id": "6d334657-fc2b-43c7-b21b-35e8b3f1c422"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "ObservationDefinition/6d334657-fc2b-43c7-b21b-35e8b3f1c422"
+      }
+    },
+    {
       "fullUrl": "urn:uuid:9b77d58b-5473-4a97-82ba-4a1686e94c02",
       "resource": {
         "resourceType": "ObservationDefinition",
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "33762-6"
+            "value": "nt-probnp"
           }
         ],
         "code": {
@@ -6800,7 +6972,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "30522-7"
+            "value": "pcr-ultrasensible-hs-crp"
           }
         ],
         "code": {
@@ -6896,7 +7068,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "1986-9"
+            "value": "peptido-c"
           }
         ],
         "code": {
@@ -7068,7 +7240,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "777-3"
+            "value": "plaquetas"
           }
         ],
         "code": {
@@ -7260,7 +7432,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "2842-3"
+            "value": "prolactina"
           }
         ],
         "code": {
@@ -7359,7 +7531,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "2885-2"
+            "value": "proteinas-totales"
           }
         ],
         "code": {
@@ -7435,7 +7607,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "10886-0"
+            "value": "psa-libre"
           }
         ],
         "code": {
@@ -7494,7 +7666,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "2857-1"
+            "value": "psa-total"
           }
         ],
         "code": {
@@ -7738,7 +7910,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "788-0"
+            "value": "rdw"
           }
         ],
         "code": {
@@ -7820,7 +7992,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "21000-5"
+            "value": "rdw-sd"
           }
         ],
         "code": {
@@ -7988,7 +8160,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "5710-9"
+            "value": "selenio"
           }
         ],
         "code": {
@@ -8069,7 +8241,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "13967-5"
+            "value": "shbg"
           }
         ],
         "code": {
@@ -8176,7 +8348,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "3051-0"
+            "value": "t3-libre"
           }
         ],
         "code": {
@@ -8276,7 +8448,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "30055-8"
+            "value": "rt3-t3-reversa"
           }
         ],
         "code": {
@@ -8377,7 +8549,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "3024-7"
+            "value": "t4-libre"
           }
         ],
         "code": {
@@ -8453,7 +8625,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "2991-8"
+            "value": "testosterona-libre"
           }
         ],
         "code": {
@@ -8589,7 +8761,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "2986-8"
+            "value": "testosterona-total"
           }
         ],
         "code": {
@@ -8665,7 +8837,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "2500-7"
+            "value": "tibc-transferrina"
           }
         ],
         "code": {
@@ -8746,7 +8918,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "2571-8"
+            "value": "trigliceridos"
           }
         ],
         "code": {
@@ -8837,7 +9009,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "3016-3"
+            "value": "tsh"
           }
         ],
         "code": {
@@ -8937,7 +9109,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "3094-0"
+            "value": "urea"
           }
         ],
         "code": {
@@ -9013,7 +9185,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "787-2"
+            "value": "vcm"
           }
         ],
         "code": {
@@ -9095,7 +9267,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "2132-9"
+            "value": "vitamina-b12"
           }
         ],
         "code": {
@@ -9195,7 +9367,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "1989-3"
+            "value": "vitamina-d3-25-oh"
           }
         ],
         "code": {
@@ -9300,7 +9472,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "4537-7"
+            "value": "vsg"
           }
         ],
         "code": {
@@ -9545,7 +9717,7 @@
         "identifier": [
           {
             "system": "https://bio.medplum.com.ar/fhir/sid/biomarcador",
-            "value": "5763-8"
+            "value": "zinc"
           }
         ],
         "code": {
