@@ -8733,7 +8733,8 @@
                 "system": "http://unitsofmeasure.org",
                 "code": "pg/mL"
               }
-            }
+            },
+            "gender": "male"
           },
           {
             "category": "reference",
@@ -8765,6 +8766,73 @@
             "context": {
               "coding": [
                 {
+                  "system": "https://biowellness.ar/fhir/CodeSystem/tipo-rango",
+                  "code": "convencional"
+                }
+              ]
+            },
+            "range": {
+              "low": {
+                "value": 1.0,
+                "system": "http://unitsofmeasure.org",
+                "code": "pg/mL"
+              },
+              "high": {
+                "value": 8.5,
+                "system": "http://unitsofmeasure.org",
+                "code": "pg/mL"
+              }
+            },
+            "gender": "female",
+            "age": {
+              "low": {
+                "value": 18,
+                "system": "http://unitsofmeasure.org",
+                "code": "a"
+              },
+              "high": {
+                "value": 49,
+                "system": "http://unitsofmeasure.org",
+                "code": "a"
+              }
+            }
+          },
+          {
+            "category": "reference",
+            "context": {
+              "coding": [
+                {
+                  "system": "https://biowellness.ar/fhir/CodeSystem/tipo-rango",
+                  "code": "convencional"
+                }
+              ]
+            },
+            "range": {
+              "low": {
+                "value": 0.5,
+                "system": "http://unitsofmeasure.org",
+                "code": "pg/mL"
+              },
+              "high": {
+                "value": 4.0,
+                "system": "http://unitsofmeasure.org",
+                "code": "pg/mL"
+              }
+            },
+            "gender": "female",
+            "age": {
+              "low": {
+                "value": 50,
+                "system": "http://unitsofmeasure.org",
+                "code": "a"
+              }
+            }
+          },
+          {
+            "category": "reference",
+            "context": {
+              "coding": [
+                {
                   "system": "https://bio.medplum.com.ar/fhir/CodeSystem/contexto-rango",
                   "code": "funcional-optimo",
                   "display": "Funcional / óptimo (Medicina 3.0)"
@@ -8773,17 +8841,29 @@
             },
             "range": {
               "low": {
-                "value": 15,
+                "value": 3.25,
                 "system": "http://unitsofmeasure.org",
                 "code": "pg/mL"
               },
               "high": {
-                "value": 40,
+                "value": 4.6,
                 "system": "http://unitsofmeasure.org",
                 "code": "pg/mL"
               }
             },
-            "gender": "female"
+            "gender": "female",
+            "age": {
+              "low": {
+                "value": 18,
+                "system": "http://unitsofmeasure.org",
+                "code": "a"
+              },
+              "high": {
+                "value": 49,
+                "system": "http://unitsofmeasure.org",
+                "code": "a"
+              }
+            }
           }
         ],
         "extension": [
@@ -8793,7 +8873,7 @@
           },
           {
             "url": "https://biowellness.ar/fhir/StructureDefinition/formula-derivado",
-            "valueString": "Total + SHBG + Albúmina (solo si el laboratorio no la informa; normalmente viene medida)"
+            "valueString": "Calcular con la fórmula de Vermeulen a partir de Testosterona Total, SHBG y Albúmina, o medir por diálisis en equilibrio / cromatografía. Se desaconseja el inmunoensayo directo comercial: es impreciso, sobre todo en mujeres."
           }
         ],
         "id": "89843d8b-b903-519a-a597-639c873955d0"

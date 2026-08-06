@@ -2,7 +2,7 @@
 // propósito en una banda (óptimo / normal / fuera de rango) según los rangos de
 // cada ObservationDefinition, para poblar el panel con todos los estados. Puro
 // (sin Medplum): lo usa el script seed-biomarkers-demo y se testea solo.
-import { rangeForGender } from './observation-definitions';
+import { rangeFor } from './observation-definitions';
 import type { BiomarkerDefinition } from './observation-definitions';
 
 /** Banda deseada para el valor sembrado. */
@@ -15,13 +15,18 @@ export function roundSeedValue(value: number): number {
 
 /**
  * Devuelve un valor que cae en la banda pedida según los rangos del biomarcador
- * (respetando el rango por género), o undefined si esa banda no es construible
+ * (respetando el rango por género y edad), o undefined si esa banda no es construible
  * (ej. no hay rango convencional para generar un "fuera de rango"). Agnóstico a
  * la dirección: usa los límites low/high disponibles.
  */
-export function seedValueFor(def: BiomarkerDefinition, gender: string | undefined, band: SeedBand): number | undefined {
-  const optimal = rangeForGender(def.optimal, gender);
-  const conventional = rangeForGender(def.conventional, gender);
+export function seedValueFor(
+  def: BiomarkerDefinition,
+  gender: string | undefined,
+  band: SeedBand,
+  ageYears?: number
+): number | undefined {
+  const optimal = rangeFor(def.optimal, gender, ageYears);
+  const conventional = rangeFor(def.conventional, gender, ageYears);
   const oLo = optimal?.low;
   const oHi = optimal?.high;
   const cLo = conventional?.low;
@@ -87,11 +92,12 @@ export interface ResolvedSeed {
 export function resolveSeedValue(
   def: BiomarkerDefinition,
   gender: string | undefined,
-  preferred: SeedBand
+  preferred: SeedBand,
+  ageYears?: number
 ): ResolvedSeed | undefined {
   const order: SeedBand[] = [preferred, 'optimal', 'normal', 'out'];
   for (const band of order) {
-    const value = seedValueFor(def, gender, band);
+    const value = seedValueFor(def, gender, band, ageYears);
     if (value !== undefined) {
       return { value, band };
     }
@@ -129,13 +135,14 @@ export function seedSeries(
   def: BiomarkerDefinition,
   gender: string | undefined,
   key: string,
-  points = 5
+  points = 5,
+  ageYears?: number
 ): number[] | undefined {
-  const target = resolveSeedValue(def, gender, bandForKey(key));
+  const target = resolveSeedValue(def, gender, bandForKey(key), ageYears);
   if (!target) {
     return undefined;
   }
-  const start = resolveSeedValue(def, gender, startBandFor(key, target.band));
+  const start = resolveSeedValue(def, gender, startBandFor(key, target.band), ageYears);
   if (!start || points < 2) {
     return [target.value];
   }

@@ -4,6 +4,7 @@
 import type { Observation, Patient } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react';
 import { useEffect, useMemo, useState } from 'react';
+import { ageFromBirthDate } from '../clinical';
 import { groupByPanel, latestValueByCode, valuesByCodeHistory } from '../observation-definitions';
 import type { BiomarkerPanelGroup, CodedValue } from '../observation-definitions';
 import { useObservationDefinitions } from './useObservationDefinitions';
@@ -14,6 +15,7 @@ export interface BiomarkerPanelData {
   valuesByCode: Map<string, CodedValue>;
   historyByCode: Map<string, CodedValue[]>;
   gender?: string;
+  ageYears?: number;
   loading: boolean;
 }
 
@@ -75,12 +77,17 @@ export function useBiomarkerPanel(patientId: string | undefined): BiomarkerPanel
   const valuesByCode = useMemo(() => latestValueByCode(observations ?? EMPTY_OBSERVATIONS), [observations]);
   const historyByCode = useMemo(() => valuesByCodeHistory(observations ?? EMPTY_OBSERVATIONS), [observations]);
 
+  const edad = ageFromBirthDate(patient?.birthDate);
+
   return {
     patient,
     groups,
     valuesByCode,
     historyByCode,
     gender: patient?.gender,
+    // ageFromBirthDate devuelve NaN si no hay fecha de nacimiento; el
+    // clasificador espera undefined para "no sé la edad".
+    ageYears: Number.isFinite(edad) ? edad : undefined,
     loading: defsLoading || observations === undefined,
   };
 }

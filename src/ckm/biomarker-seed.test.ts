@@ -5,7 +5,7 @@ import {
   classifyBiomarkerValue,
   indexByBiomarcador,
   parseObservationDefinition,
-  rangeForGender,
+  rangeFor,
 } from './observation-definitions';
 
 const defs = ((bundleJson as unknown as Bundle).entry ?? [])
@@ -13,6 +13,13 @@ const defs = ((bundleJson as unknown as Bundle).entry ?? [])
   .filter((r) => r?.resourceType === 'ObservationDefinition')
   .map(parseObservationDefinition);
 const byId = indexByBiomarcador(defs);
+
+/**
+ * Edad de referencia para sembrar. Hace falta porque algunos rangos son por
+ * franja etaria (testosterona libre en mujeres, pre y posmenopausia) y sin
+ * edad no hay rango aplicable.
+ */
+const EDAD_ADULTA = 40;
 
 describe('seedValueFor — cae en la banda pedida (sobre las 109 reales)', () => {
   test('banda "optimal" clasifica como Óptimo en toda def con rango óptimo', () => {
@@ -55,12 +62,21 @@ describe('coherencia de los rangos del catálogo', () => {
   // que los dos están escritos en unidades distintas, y con eso no hay valor
   // que se pueda clasificar bien. Pasó con Zinc sérico (µg/mL vs µg/dL) y con
   // Testosterona Libre (pg/mL vs ng/dL): el panel los mostraba mal.
+  // Se recorren varias edades además de los dos géneros para que también entren
+  // los rangos por franja etaria.
+  const PERFILES: [string, number][] = [
+    ['male', 30],
+    ['male', 65],
+    ['female', 30],
+    ['female', 65],
+  ];
+
   test('ninguna definición tiene el óptimo fuera del convencional', () => {
     const incoherentes = defs
       .filter((d) =>
-        ['male', 'female'].some((g) => {
-          const c = rangeForGender(d.conventional, g);
-          const o = rangeForGender(d.optimal, g);
+        PERFILES.some(([g, edad]) => {
+          const c = rangeFor(d.conventional, g, edad);
+          const o = rangeFor(d.optimal, g, edad);
           if (!c || !o) {
             return false;
           }
@@ -108,7 +124,7 @@ describe('resolveSeedValue', () => {
   test('siempre resuelve un valor para defs con algún rango', () => {
     for (const def of defs) {
       if (def.optimal.length > 0 || def.conventional.length > 0) {
-        expect(resolveSeedValue(def, 'female', 'normal'), def.label).toBeDefined();
+        expect(resolveSeedValue(def, 'female', 'normal', EDAD_ADULTA), def.label).toBeDefined();
       }
     }
   });
@@ -137,9 +153,9 @@ describe('seedSeries', () => {
         continue;
       }
       const key = `pZ|${def.biomarcadorId}`;
-      const series = seedSeries(def, 'female', key, 5);
+      const series = seedSeries(def, 'female', key, 5, EDAD_ADULTA);
       expect(series, def.label).toBeDefined();
-      const expected = resolveSeedValue(def, 'female', bandForKey(key))!.value;
+      const expected = resolveSeedValue(def, 'female', bandForKey(key), EDAD_ADULTA)!.value;
       expect(series![series!.length - 1], def.label).toBe(expected);
     }
   });
