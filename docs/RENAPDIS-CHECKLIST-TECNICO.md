@@ -363,19 +363,86 @@ las preguntas #12, #13 y #15 — siguen necesitando la consulta a la DNSIS.
 | `accessToken` / `token` | Se obtienen; no se cargan a mano                                     |
 | `appName` / `appPassword` / `appAccessToken` | Segundo juego de credenciales, de uso todavía no confirmado |
 
-QA y PROD comparten `busUrl`: **el ambiente lo define la credencial, no la URL.** Cuidado
-al configurar — apuntar a producción con la credencial equivocada no va a fallar por la URL.
+🔴 **Corrección (con las colecciones de Practitioner a la vista).** Lo anterior decía que QA
+y PROD comparten `busUrl` y que "el ambiente lo define la credencial, no la URL". **Es
+falso**, y salió de creerle al archivo de variables:
 
-⚠️ **Las colecciones de Practitioner/REFEPS todavía no las tenemos.** Lo descargado hasta
-ahora fue de Pacientes/Federador, y además los dos archivos de colección vinieron como
-HTML (la página del portal) en vez de JSON: la descarga se hizo sin sesión válida.
+| Ambiente | Host real (colección)      | Lo que dice el environment |
+| -------- | -------------------------- | -------------------------- |
+| QA       | `https://bus-test.msal.gob.ar` | `https://bus.msal.gob.ar` ❌ |
+| PROD     | `https://bus.msal.gob.ar`      | `https://bus.msal.gob.ar` ✅ |
+
+Las colecciones traen la URL escrita y **no usan `{{busUrl}}`**, así que esa variable no se
+ejecuta nunca y quedó mal en el environment de QA: apunta a producción. Quien la tome como
+fuente va a pegarle a PROD creyendo que está probando.
+
+⚠️ La guía escribe el host como `bus.msal.**gov**.ar` y las colecciones como
+`bus.msal.**gob**.ar`. Se usa el de las colecciones, que es el artefacto ejecutable.
+**Confirmar con soporte@sisa.msal.gov.ar.**
 
 #### Estado de la validación de matrícula
 
 | Mitad                    | Estado                                                                    |
 | ------------------------ | ------------------------------------------------------------------------- |
 | **Local** (forma, presencia) | ✅ `practitioner-validation.ts`. Bloquea emitir sin nombre o sin matrícula. Un formato fuera de MN/MP avisa pero no bloquea: no tenemos la lista de todas las jurisdicciones y rechazarlo dejaría afuera matrículas válidas |
-| **Contra REFEPS** (existe y está vigente) | ❌ Falta el contrato del servicio Practitioner del Bus |
+| **Contra REFEPS** (existe y está vigente) | 🟡 Lógica escrita y testeada (`refeps.ts`, 34 tests contra los payloads oficiales v1 y v2). **Falta ponerla en el circuito**: necesita un Bot, porque el secreto no puede ir al navegador |
+
+#### El contrato de REFEPS (guía v2.0 · 09/2025 + colecciones)
+
+**Autenticación.** `POST {bus}/bus-auth/v2/auth` con
+`grantType: client_credentials`, `scope: Practitioner/*.read`, `clientAssertionType:
+urn:ietf:params:oauth:client-assertion-type:jwt-bearer` y un JWT HS256 firmado con el
+Domain Secret, con `iss` = nuestro issuer y los literales `aud/sub/name/ident/role`.
+
+**Consultas** (`Authorization: Bearer`): por DNI+género, por CUIL (sin guiones), por código
+REFEPS, y por id interno —esta última **la guía la desaconseja**, porque ese id no tiene
+garantía de persistir—. Las tres primeras devuelven Bundle con **exactamente 1** entry; la
+de id devuelve el Practitioner suelto.
+
+**Dónde está la matrícula.** En `qualification[]`, y cambió entre versiones:
+
+| | v1 (colecciones) | v2 (guía 09/2025) |
+| --- | --- | --- |
+| Identificar la matrícula | `identifier.type.text === 'PRO'` | `identifier.system` empieza con `.../REFEPS` |
+| Estado de habilitación | no existía | extensión `MatriculaHabilitada` (booleano) |
+| Especialidades | qualifications con `type.text === 'ESP'` | extensión `especialidadMatricula` en la matrícula |
+| Jurisdicción | — | extensión `jurisdMatricula` |
+| Vencimiento | solo `period.start` | `period.end` cuando existe |
+
+El lector acepta **las dos**, porque no sabemos con cuál responde hoy cada ambiente.
+
+#### Tres trampas que ya están cubiertas
+
+1. **Un profesional puede tener varias matrículas.** El ejemplo oficial trae dos, de años
+   distintos. Validar contra la primera rechazaría matrículas legítimas.
+2. **El prefijo MN/MP es nuestro, no de REFEPS**: el registro devuelve el número pelado y la
+   jurisdicción por separado. La comparación es por dígitos.
+3. **Que el Bus no conteste NO es "matrícula inválida".** Son cosas distintas y confundirlas
+   bloquearía a un profesional legítimo por una caída del servicio.
+
+#### Contradicciones en la documentación oficial
+
+Están resueltas en el código, pero conviene confirmarlas con soporte:
+
+- **El atributo del token.** La guía dice que la respuesta trae `token`; el script de la
+  colección lee `accessToken`. Se aceptan los dos.
+- **`iat`/`exp` en segundos o milisegundos.** La guía dice "milisegundos desde 1970", pero su
+  propio JWT de ejemplo decodifica a segundos. En milisegundos el token quedaría fechado en
+  1970. Se usan segundos.
+- **Vigencia de la aserción.** El texto dice `+6000000` (unos 69 días); el JWT de ejemplo de
+  la misma guía tiene exactamente **1 hora**. Se usa 1 hora.
+- **Bug en la colección PROD**: la búsqueda por id está escrita `Practitioner%7CXXXX` (pipe)
+  en vez de `Practitioner/XXXX`. En QA está bien.
+
+#### Por qué esto necesita un Bot y no puede ir en el front
+
+El Domain Secret es un **secreto compartido**: quien lo tiene emite tokens a nombre de
+BioWellness. En una app Vite terminaría en el bundle, legible por cualquiera con las
+herramientas de desarrollo. La consulta tiene que salir de un Bot de Medplum o de un
+backend, con el secreto en variables de entorno del servidor.
+
+Por eso `refeps.ts` no firma ni hace red: arma los pedidos e interpreta las respuestas, y la
+firma queda del lado que tiene el secreto.
 
 La local **no reemplaza** a la de REFEPS: una matrícula bien formada puede no existir. Pero
 emitir sin matrícula alguna era un defecto propio, no una brecha regulatoria, y ese ya está
