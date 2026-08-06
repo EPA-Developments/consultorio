@@ -2346,16 +2346,6 @@
         "qualifiedInterval": [
           {
             "category": "reference",
-            "range": {
-              "low": {
-                "value": 20,
-                "unit": "ug/dL"
-              },
-              "high": {
-                "value": 300,
-                "unit": "ug/dL"
-              }
-            },
             "context": {
               "coding": [
                 {
@@ -2363,7 +2353,44 @@
                   "code": "convencional"
                 }
               ]
-            }
+            },
+            "range": {
+              "low": {
+                "value": 80,
+                "system": "http://unitsofmeasure.org",
+                "code": "ug/dL"
+              },
+              "high": {
+                "value": 560,
+                "system": "http://unitsofmeasure.org",
+                "code": "ug/dL"
+              }
+            },
+            "gender": "male"
+          },
+          {
+            "category": "reference",
+            "context": {
+              "coding": [
+                {
+                  "system": "https://biowellness.ar/fhir/CodeSystem/tipo-rango",
+                  "code": "convencional"
+                }
+              ]
+            },
+            "range": {
+              "low": {
+                "value": 35,
+                "system": "http://unitsofmeasure.org",
+                "code": "ug/dL"
+              },
+              "high": {
+                "value": 430,
+                "system": "http://unitsofmeasure.org",
+                "code": "ug/dL"
+              }
+            },
+            "gender": "female"
           },
           {
             "category": "reference",
@@ -2387,13 +2414,33 @@
                 "system": "http://unitsofmeasure.org",
                 "code": "ug/dL"
               }
-            }
-          }
-        ],
-        "extension": [
+            },
+            "gender": "male"
+          },
           {
-            "url": "https://biowellness.ar/fhir/StructureDefinition/rango-a-validar",
-            "valueBoolean": true
+            "category": "reference",
+            "context": {
+              "coding": [
+                {
+                  "system": "https://bio.medplum.com.ar/fhir/CodeSystem/contexto-rango",
+                  "code": "funcional-optimo",
+                  "display": "Funcional / óptimo (Medicina 3.0)"
+                }
+              ]
+            },
+            "range": {
+              "low": {
+                "value": 250,
+                "system": "http://unitsofmeasure.org",
+                "code": "ug/dL"
+              },
+              "high": {
+                "value": 380,
+                "system": "http://unitsofmeasure.org",
+                "code": "ug/dL"
+              }
+            },
+            "gender": "female"
           }
         ],
         "id": "2da025cd-cb1c-567c-a1e6-61afe922666c"
@@ -8667,16 +8714,6 @@
         "qualifiedInterval": [
           {
             "category": "reference",
-            "range": {
-              "low": {
-                "value": 38,
-                "unit": "pg/mL"
-              },
-              "high": {
-                "value": 190,
-                "unit": "pg/mL"
-              }
-            },
             "context": {
               "coding": [
                 {
@@ -8684,6 +8721,18 @@
                   "code": "convencional"
                 }
               ]
+            },
+            "range": {
+              "low": {
+                "value": 38,
+                "system": "http://unitsofmeasure.org",
+                "code": "pg/mL"
+              },
+              "high": {
+                "value": 190,
+                "system": "http://unitsofmeasure.org",
+                "code": "pg/mL"
+              }
             }
           },
           {
@@ -8699,14 +8748,14 @@
             },
             "range": {
               "low": {
-                "value": 15,
+                "value": 150,
                 "system": "http://unitsofmeasure.org",
-                "code": "ng/dL"
+                "code": "pg/mL"
               },
               "high": {
-                "value": 25,
+                "value": 250,
                 "system": "http://unitsofmeasure.org",
-                "code": "ng/dL"
+                "code": "pg/mL"
               }
             },
             "gender": "male"
@@ -8724,14 +8773,14 @@
             },
             "range": {
               "low": {
-                "value": 1.5,
+                "value": 15,
                 "system": "http://unitsofmeasure.org",
-                "code": "ng/dL"
+                "code": "pg/mL"
               },
               "high": {
-                "value": 4,
+                "value": 40,
                 "system": "http://unitsofmeasure.org",
-                "code": "ng/dL"
+                "code": "pg/mL"
               }
             },
             "gender": "female"
@@ -9755,25 +9804,15 @@
             "coding": [
               {
                 "system": "http://unitsofmeasure.org",
-                "code": "ug/mL"
+                "code": "ug/dL"
               }
             ],
-            "text": "ug/mL"
+            "text": "ug/dL"
           }
         },
         "qualifiedInterval": [
           {
             "category": "reference",
-            "range": {
-              "low": {
-                "value": 0.6,
-                "unit": "ug/mL"
-              },
-              "high": {
-                "value": 1.06,
-                "unit": "ug/mL"
-              }
-            },
             "context": {
               "coding": [
                 {
@@ -9781,6 +9820,18 @@
                   "code": "convencional"
                 }
               ]
+            },
+            "range": {
+              "low": {
+                "value": 60,
+                "system": "http://unitsofmeasure.org",
+                "code": "ug/dL"
+              },
+              "high": {
+                "value": 106,
+                "system": "http://unitsofmeasure.org",
+                "code": "ug/dL"
+              }
             }
           },
           {
