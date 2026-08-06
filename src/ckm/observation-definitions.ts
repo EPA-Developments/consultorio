@@ -3,8 +3,8 @@
 //
 // Cada ObservationDefinition trae: identifier (slug del biomarcador), code
 // (LOINC o código local), category (panel: metabolico/lipidico/inflamacion/…),
-// unidad, rangos por contexto ('normal' = convencional, 'funcional-optimo' =
-// óptimo, opcionalmente por género) y extensiones de texto (rango convencional/
+// unidad, rangos por contexto (convencional u óptimo, opcionalmente por
+// género — ver RANGE_CONTEXT_CODES) y extensiones de texto (rango convencional/
 // óptimo, interpretación, fuente). Este módulo las normaliza a una forma plana
 // y fácil de consumir. Sin dependencias de UI.
 import type { MedplumClient } from '@medplum/core';
@@ -20,8 +20,21 @@ export const EXT_INTERPRETACION = EXT_BASE + 'interpretacion';
 export const EXT_FUENTE = EXT_BASE + 'fuente';
 export const LOINC_SYSTEM = 'http://loinc.org';
 
-/** Contexto de un rango: convencional ('normal') u óptimo ('funcional-optimo'). */
-export type RangeContext = 'normal' | 'funcional-optimo';
+/** Contexto de un rango: convencional u óptimo. */
+export type RangeContext = 'conventional' | 'optimal';
+
+/**
+ * Códigos con los que el catálogo marca cada tipo de rango. Hay dos por el
+ * convencional porque el catálogo tiene dos generaciones de definiciones: las
+ * primeras usan 'normal' y las que se sumaron después usan 'convencional'.
+ * Leer una sola dejaba sin rango convencional a la mayoría del panel, y con
+ * ello el valor se clasificaba contra el rango óptimo (mucho más angosto),
+ * marcando como alto/bajo lo que en realidad estaba dentro de referencia.
+ */
+const RANGE_CONTEXT_CODES: Record<RangeContext, string[]> = {
+  conventional: ['normal', 'convencional'],
+  optimal: ['funcional-optimo'],
+};
 
 export interface BiomarkerRange {
   low?: number;
@@ -58,8 +71,9 @@ function extString(od: ObservationDefinition, url: string): string | undefined {
 }
 
 function intervalsForContext(od: ObservationDefinition, context: RangeContext): BiomarkerRange[] {
+  const codes = RANGE_CONTEXT_CODES[context];
   return (od.qualifiedInterval ?? [])
-    .filter((q) => q.context?.coding?.some((c) => c.code === context))
+    .filter((q) => q.context?.coding?.some((c) => c.code && codes.includes(c.code)))
     .map((q) => ({ low: q.range?.low?.value, high: q.range?.high?.value, gender: q.gender }));
 }
 
@@ -79,8 +93,8 @@ export function parseObservationDefinition(od: ObservationDefinition): Biomarker
     optimalText: extString(od, EXT_RANGO_OPTIMO_TEXTO),
     interpretation: extString(od, EXT_INTERPRETACION),
     source: extString(od, EXT_FUENTE),
-    conventional: intervalsForContext(od, 'normal'),
-    optimal: intervalsForContext(od, 'funcional-optimo'),
+    conventional: intervalsForContext(od, 'conventional'),
+    optimal: intervalsForContext(od, 'optimal'),
   };
 }
 

@@ -1,7 +1,12 @@
 import type { Bundle, ObservationDefinition } from '@medplum/fhirtypes';
 import bundleJson from '../../data/ckm/biomarker-definitions.json';
 import { bandForKey, resolveSeedValue, roundSeedValue, seedSeries, seedValueFor } from './biomarker-seed';
-import { classifyBiomarkerValue, indexByBiomarcador, parseObservationDefinition } from './observation-definitions';
+import {
+  classifyBiomarkerValue,
+  indexByBiomarcador,
+  parseObservationDefinition,
+  rangeForGender,
+} from './observation-definitions';
 
 const defs = ((bundleJson as unknown as Bundle).entry ?? [])
   .map((e) => e.resource as ObservationDefinition)
@@ -9,9 +14,28 @@ const defs = ((bundleJson as unknown as Bundle).entry ?? [])
   .map(parseObservationDefinition);
 const byId = indexByBiomarcador(defs);
 
-describe('seedValueFor — cae en la banda pedida (sobre las 50 reales)', () => {
+/**
+ * Definiciones cuyo rango óptimo cae ENTERAMENTE fuera del convencional. Con
+ * rangos así no hay valor que se pueda clasificar de forma coherente, así que
+ * quedan afuera de los invariantes de abajo — pero NO en silencio: el test
+ * `rangos incoherentes` de más abajo verifica que la lista sea exactamente
+ * esta, para que no crezca sin que nadie se entere.
+ *
+ * Las tres están pendientes de revisión clínica:
+ * - Zinc sérico: unidad declarada µg/mL; el convencional (0,6–1,06) está en
+ *   µg/mL y el óptimo (90–110) en µg/dL. Falta unificar.
+ * - Testosterona Libre: unidad declarada pg/mL; el convencional (38–190) está
+ *   en pg/mL y el óptimo (15–25) en ng/dL. Falta unificar.
+ * - DHEA-S: convencional 20–300 y óptimo 350–500 µg/dL, sin solapamiento. Ya
+ *   viene marcada con la extensión `rango-a-validar` en el catálogo.
+ */
+const RANGOS_INCOHERENTES = ['zinc', 'testosterona-libre', 'dhea-s'];
+
+const coherentes = defs.filter((d) => !RANGOS_INCOHERENTES.includes(d.biomarcadorId ?? ''));
+
+describe('seedValueFor — cae en la banda pedida (sobre las 109 reales)', () => {
   test('banda "optimal" clasifica como Óptimo en toda def con rango óptimo', () => {
-    const withOptimal = defs.filter((d) => d.optimal.length > 0);
+    const withOptimal = coherentes.filter((d) => d.optimal.length > 0);
     expect(withOptimal.length).toBeGreaterThan(0);
     for (const def of withOptimal) {
       const v = seedValueFor(def, 'male', 'optimal');
@@ -21,7 +45,7 @@ describe('seedValueFor — cae en la banda pedida (sobre las 50 reales)', () => 
   });
 
   test('banda "out" clasifica como Alto/Bajo en toda def con rango convencional', () => {
-    const withConventional = defs.filter((d) => d.conventional.length > 0);
+    const withConventional = coherentes.filter((d) => d.conventional.length > 0);
     for (const def of withConventional) {
       const v = seedValueFor(def, 'male', 'out');
       expect(v, `${def.label} out`).toBeDefined();
@@ -32,7 +56,7 @@ describe('seedValueFor — cae en la banda pedida (sobre las 50 reales)', () => 
   test('banda "normal" clasifica como Normal en toda def con brecha construible (male y female)', () => {
     let covered = 0;
     for (const gender of ['male', 'female']) {
-      for (const def of defs) {
+      for (const def of coherentes) {
         const v = seedValueFor(def, gender, 'normal');
         if (v === undefined) {
           continue;
@@ -42,6 +66,26 @@ describe('seedValueFor — cae en la banda pedida (sobre las 50 reales)', () => 
       }
     }
     expect(covered).toBeGreaterThan(20);
+  });
+});
+
+describe('coherencia de los rangos del catálogo', () => {
+  // Si arreglás una de las tres, sacala de RANGOS_INCOHERENTES y este test
+  // vuelve a verde. Si aparece una cuarta, este test la delata.
+  test('las únicas definiciones con óptimo fuera del convencional son las conocidas', () => {
+    const detectadas = defs
+      .filter((d) =>
+        ['male', 'female'].some((g) => {
+          const c = rangeForGender(d.conventional, g);
+          const o = rangeForGender(d.optimal, g);
+          if (!c || !o) {
+            return false;
+          }
+          return (o.low ?? -Infinity) > (c.high ?? Infinity) || (o.high ?? Infinity) < (c.low ?? -Infinity);
+        })
+      )
+      .map((d) => d.biomarcadorId);
+    expect(detectadas.sort()).toStrictEqual([...RANGOS_INCOHERENTES].sort());
   });
 });
 

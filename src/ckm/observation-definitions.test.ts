@@ -21,15 +21,41 @@ const defs = (bundle.entry ?? [])
 const byId = indexByBiomarcador(defs);
 
 describe('parseObservationDefinition — sobre el bundle real', () => {
-  test('parsea las 50 definiciones del bundle', () => {
-    expect(defs).toHaveLength(50);
+  test('parsea las 109 definiciones del bundle', () => {
+    expect(defs).toHaveLength(109);
   });
 
   test('ApoB: LOINC, panel lipídico, rangos óptimo/convencional', () => {
     const apob = byId.get('apob')!;
-    expect(apob).toMatchObject({ label: 'ApoB', code: '1884-6', system: 'http://loinc.org', panelCode: 'lipidico' });
+    expect(apob).toMatchObject({
+      label: 'Apolipoproteína B',
+      code: '1884-6',
+      system: 'http://loinc.org',
+      panelCode: 'lipidico',
+    });
     expect(apob.optimal[0]?.high).toBe(90);
-    expect(apob.conventional[0]?.high).toBe(130);
+    expect(apob.conventional[0]?.high).toBe(100);
+  });
+
+  // La mayoría del catálogo marca el rango convencional con el código
+  // 'convencional'; solo las definiciones más viejas usan 'normal'. Si el
+  // lector deja de aceptar los dos, el panel se queda sin referencia dura y
+  // clasifica contra el óptimo, que es mucho más angosto.
+  test('lee el rango convencional escrito con cualquiera de los dos códigos', () => {
+    const conCodigoNuevo = byId.get('glucosa-en-ayunas')!; // 'convencional'
+    const conCodigoViejo = byId.get('fructosamina')!; // 'normal'
+    expect(conCodigoNuevo.conventional.length).toBeGreaterThan(0);
+    expect(conCodigoViejo.conventional.length).toBeGreaterThan(0);
+
+    // Los únicos sin rango convencional son marcadores funcionales que no
+    // tienen referencia de laboratorio: solo se los mira contra el óptimo.
+    const sinConvencional = defs.filter((d) => d.optimal.length > 0 && d.conventional.length === 0);
+    expect(sinConvencional.map((d) => d.biomarcadorId).sort()).toStrictEqual([
+      'dunedinpace-velocidad-envejecimiento',
+      'hrv-variabilidad-frecuencia-cardiaca',
+      'omega-3-epa-plus-dha-indice',
+      'pic-ratio-aa-epa-perfil-de-inflamacion-celular',
+    ]);
   });
 
   test('Lp(a): rangos 50 (óptimo) / 75 (convencional) nmol/L', () => {
@@ -40,15 +66,22 @@ describe('parseObservationDefinition — sobre el bundle real', () => {
   });
 
   test('captura interpretación y fuente de las extensiones', () => {
-    const glucosa = byId.get('glucosa-en-ayunas')!;
-    expect(glucosa.interpretation).toMatch(/insulín/i);
-    expect(glucosa.source).toBeTruthy();
+    const omega3 = byId.get('omega-3-epa-plus-dha-indice')!;
+    expect(omega3.interpretation).toMatch(/omega-3/i);
+    expect(omega3.source).toBeTruthy();
+  });
+
+  // Solo 15 de las 109 definiciones traen texto de interpretación y fuente: las
+  // que se sumaron después se cargaron sin esas extensiones. No es un problema
+  // del lector, es un hueco de contenido del catálogo.
+  test('deja registrado cuántas definiciones traen interpretación', () => {
+    expect(defs.filter((d) => d.interpretation).length).toBe(15);
   });
 
   test('rangos por género: ácido úrico tiene convencional male/female y óptimo sin género', () => {
     const au = byId.get('acido-urico')!;
-    expect(au.conventional.find((r) => r.gender === 'male')).toMatchObject({ low: 3.5, high: 7.2 });
-    expect(au.conventional.find((r) => r.gender === 'female')).toMatchObject({ low: 2.5, high: 6 });
+    expect(au.conventional.find((r) => r.gender === 'male')).toMatchObject({ low: 3.4, high: 7 });
+    expect(au.conventional.find((r) => r.gender === 'female')).toMatchObject({ low: 2.4, high: 6 });
     expect(rangeForGender(au.conventional, 'female')).toMatchObject({ high: 6 });
     // óptimo no tiene género -> rangeForGender cae al no-especificado
     expect(rangeForGender(au.optimal, 'male')).toMatchObject({ low: 3.5, high: 5.5 });
@@ -77,7 +110,7 @@ describe('rangeForGender', () => {
 describe('índices', () => {
   test('indexByLoinc solo incluye códigos LOINC', () => {
     const byLoinc = indexByLoinc(defs);
-    expect(byLoinc.get('1884-6')?.label).toBe('ApoB');
+    expect(byLoinc.get('1884-6')?.label).toBe('Apolipoproteína B');
     // HOMA-IR usa código local, no debe estar indexado por LOINC
     expect([...byLoinc.values()].some((d) => d.label === 'HOMA-IR')).toBe(false);
   });
@@ -150,10 +183,15 @@ describe('classifyBiomarkerValue', () => {
 
 describe('classifyBiomarkerValue — óptimo de una cola vs óptimo que excede el convencional', () => {
   test('Hb: óptimo de una sola cola (≥14) NO tapa el tope convencional (18 -> Alto)', () => {
-    const hb = byId.get('hemoglobina')!; // conv 12–17.5, óptimo male ≥14 (sin tope)
+    const hb = byId.get('hemoglobina')!; // conv male 13.5–17.5, óptimo male ≥14 (sin tope)
     expect(classifyBiomarkerValue(hb, 18, 'male').status).toBe('high');
     expect(classifyBiomarkerValue(hb, 14.5, 'male').status).toBe('optimal');
-    expect(classifyBiomarkerValue(hb, 13, 'male').status).toBe('normal');
+    expect(classifyBiomarkerValue(hb, 13.8, 'male').status).toBe('normal');
+    // Convencional y óptimo son por género: 13 queda por debajo del convencional
+    // del varón (13,5) pero es exactamente el piso del óptimo de la mujer.
+    expect(classifyBiomarkerValue(hb, 13, 'male').status).toBe('low');
+    expect(classifyBiomarkerValue(hb, 13, 'female').status).toBe('optimal');
+    expect(classifyBiomarkerValue(hb, 12.5, 'female').status).toBe('normal');
   });
 
   test('óptimo que excede el tope convencional: el valor on-target es Óptimo, no Alto', () => {
@@ -239,6 +277,6 @@ describe('groupByPanel', () => {
     const groups = groupByPanel(defs);
     expect(groups.slice(0, 3).map((g) => g.panelCode)).toStrictEqual(['metabolico', 'lipidico', 'inflamacion']);
     expect(groups.every((g) => g.panelDisplay && g.defs.length > 0)).toBe(true);
-    expect(groups.reduce((n, g) => n + g.defs.length, 0)).toBe(50);
+    expect(groups.reduce((n, g) => n + g.defs.length, 0)).toBe(109);
   });
 });
