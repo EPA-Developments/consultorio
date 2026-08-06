@@ -108,7 +108,7 @@ Leyenda: ✅ presente · 🟡 parcial · ❌ ausente · ❔ no verificable desde
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Exige**   | Secciones tipadas: paciente, profesional firmante **con matrícula/Licencia Sanitaria Federal**, **diagnóstico**, fecha de emisión y prescripción. Validación de campos obligatorios antes de firmar.                                                                    |
 | **Tenemos** | 🟡 Modelo estructurado FHIR: paciente (nombre, DNI, nacimiento, **sexo**, cobertura), profesional (**matrícula, especialidad, domicilio**), fecha, ítems con LOINC y **diagnóstico** (`reasonCode`). Es nuestro punto más fuerte.                                       |
-| **Falta**   | ❌ Validación de matrícula contra **REFEPS** antes de permitir emitir _(requisito de aprobación, ver §5.2)_. ❌ Validación server-side que impida emitir con secciones vacías. ❌ **UI para cargar el diagnóstico** (el modelo lo soporta, falta el campo en pantalla). |
+| **Falta**   | ❌ Validación de matrícula contra **REFEPS** antes de permitir emitir _(requisito de aprobación, ver §5.2)_. 🟡 Validación que impida emitir con secciones vacías: **la mitad local está hecha** — `practitioner-validation.ts` bloquea la emisión sin nombre o sin matrícula, en `createLabOrder`, que es el único camino de escritura. Falta el resto de las secciones. ❌ **UI para cargar el diagnóstico** (el modelo lo soporta, falta el campo en pantalla). |
 
 ### 3.3 Vigencia ❌
 
@@ -298,6 +298,190 @@ requisitos que en papel.
 3. 🔴 **Inscripción de bases de datos ante la AAIP**: es un **campo del formulario** y un
    **adjunto**. Trámite previo con tiempos propios → **conviene iniciarlo ya**.
 
+### 5.4-bis Bus de Interoperabilidad (dominios.msal.gob.ar) — ✅ credenciales obtenidas (08.06)
+
+> **No es ReNaPDiS.** Son dos trámites distintos ante organismos distintos, y conviene no
+> mezclarlos: el Bus federa **padrones** (quién es este paciente, este profesional, este
+> establecimiento); ReNaPDiS registra **plataformas de prescripción**. Tener acceso al Bus no
+> aporta nada al trámite de inscripción por sí solo.
+
+**Lo que hay:** sistema `4002`, credencial `2741`, issuer registrado `https://api.medplum.com.ar`.
+
+| Servicio        | Padrón nacional detrás                  | Scope habilitado                        |
+| --------------- | --------------------------------------- | --------------------------------------- |
+| Pacientes       | Federador Nacional de Pacientes         | `Patient/*.read`, `Patient/*.write`     |
+| Practitioner    | REFEPS                                  | `Practitioner/*.read`                   |
+| Organizaciones  | SISA / REFES                            | `Organization/*.read`                   |
+| Location        | —                                       | `Location/*.read`                       |
+| Inmunizaciones  | NOMIVAC                                 | `Immunization/*.read`                   |
+
+Cada servicio trae guía, endpoint de token, colección Postman y variables por ambiente
+(QA / PROD).
+
+**Restricción de integración a respetar:** el token se pide **con el scope puntual del
+servicio que se va a consumir**, no con todos juntos. Si se piden todos, la solicitud se
+rechaza. Hay que emitir un token por servicio.
+
+**Seguridad:** la _token secret word_ se genera una sola vez desde ese panel. Va a
+variables de entorno / gestor de secretos del servidor — **nunca al repositorio, a un
+issue, ni pegada en un chat**. Si se filtra, se regenera desde el mismo panel.
+
+#### Qué mueve, y qué no
+
+✅ **Desbloquea el hallazgo 🔴 de §5.2 (REFEPS).** La validación de matrícula contra REFEPS
+es **requisito de aprobación** del trámite y hasta ahora no teníamos por dónde entrar.
+`Practitioner/*.read` es exactamente esa puerta. Es el mayor avance concreto.
+
+🟡 **Refuerza §3.6 (interoperabilidad) y la pregunta abierta #6.** Que el propio bus del
+Ministerio sea FHIR deja de hacer de "FHIR es el estándar esperado" una inferencia nuestra.
+No es todavía una cita del art. 4 —el formulario acepta ADESFA y JSON no FHIR—, pero baja
+mucho el riesgo de haber elegido mal la arquitectura.
+
+🟡 **Da acceso a los `system` canónicos nacionales.** §3.6 marca como faltante que usamos
+URIs propias. Las **variables por ambiente y las colecciones Postman** de cada servicio
+contienen esos identificadores canónicos. Es lo que faltaba para alinear, y ahora es
+recuperable en vez de adivinable.
+
+🟡 **§3.1 (identificación del paciente).** El Federador aporta identidad nacional del
+paciente. **No aporta el CUIR**, que es el identificador de la prescripción y lo asigna el
+sistema de ReNaPDiS tras la inscripción. Son cosas distintas y no se reemplazan.
+
+❌ **No mueve las tres preguntas bloqueantes.** Los scopes **no incluyen `ServiceRequest`
+ni `MedicationRequest`**: este bus no transporta prescripciones ni órdenes. Es evidencia a
+favor de que el circuito de repositorio de ReNaPDiS es otro camino, pero **no responde**
+las preguntas #12, #13 y #15 — siguen necesitando la consulta a la DNSIS.
+
+❌ Tampoco responde #5 (residencia local del dato).
+
+#### Datos de conexión (de los environments de Postman, 08.06)
+
+| Variable            | Valor / uso                                                              |
+| ------------------- | ------------------------------------------------------------------------ |
+| `busUrl`            | `https://bus.msal.gob.ar` — mismo host en QA y PROD                       |
+| `domainUrl`         | Viene de ejemplo (`https://dominio.com.ar`); va **nuestro issuer**, `https://api.medplum.com.ar` |
+| `domainTokenSecret` | La _secret word_ del panel. Vacía en lo compartido: **no se filtró nada** |
+| `accessToken` / `token` | Se obtienen; no se cargan a mano                                     |
+| `appName` / `appPassword` / `appAccessToken` | Segundo juego de credenciales, de uso todavía no confirmado |
+
+🔴 **Corrección (con las colecciones de Practitioner a la vista).** Lo anterior decía que QA
+y PROD comparten `busUrl` y que "el ambiente lo define la credencial, no la URL". **Es
+falso**, y salió de creerle al archivo de variables:
+
+| Ambiente | Host real (colección)      | Lo que dice el environment |
+| -------- | -------------------------- | -------------------------- |
+| QA       | `https://bus-test.msal.gob.ar` | `https://bus.msal.gob.ar` ❌ |
+| PROD     | `https://bus.msal.gob.ar`      | `https://bus.msal.gob.ar` ✅ |
+
+Las colecciones traen la URL escrita y **no usan `{{busUrl}}`**, así que esa variable no se
+ejecuta nunca y quedó mal en el environment de QA: apunta a producción. Quien la tome como
+fuente va a pegarle a PROD creyendo que está probando.
+
+⚠️ La guía escribe el host como `bus.msal.**gov**.ar` y las colecciones como
+`bus.msal.**gob**.ar`. Se usa el de las colecciones, que es el artefacto ejecutable.
+**Confirmar con soporte@sisa.msal.gov.ar.**
+
+#### Estado de la validación de matrícula
+
+| Mitad                    | Estado                                                                    |
+| ------------------------ | ------------------------------------------------------------------------- |
+| **Local** (forma, presencia) | ✅ `practitioner-validation.ts`. Bloquea emitir sin nombre o sin matrícula. Un formato fuera de MN/MP avisa pero no bloquea: no tenemos la lista de todas las jurisdicciones y rechazarlo dejaría afuera matrículas válidas |
+| **Contra REFEPS** (existe y está vigente) | 🟡 Lógica escrita y testeada (`refeps.ts`, 34 tests contra los payloads oficiales v1 y v2). **Falta ponerla en el circuito**: necesita un Bot, porque el secreto no puede ir al navegador |
+
+#### El contrato de REFEPS (guía v2.0 · 09/2025 + colecciones)
+
+**Autenticación.** `POST {bus}/bus-auth/v2/auth` con
+`grantType: client_credentials`, `scope: Practitioner/*.read`, `clientAssertionType:
+urn:ietf:params:oauth:client-assertion-type:jwt-bearer` y un JWT HS256 firmado con el
+Domain Secret, con `iss` = nuestro issuer y los literales `aud/sub/name/ident/role`.
+
+**Consultas** (`Authorization: Bearer`): por DNI+género, por CUIL (sin guiones), por código
+REFEPS, y por id interno —esta última **la guía la desaconseja**, porque ese id no tiene
+garantía de persistir—. Las tres primeras devuelven Bundle con **exactamente 1** entry; la
+de id devuelve el Practitioner suelto.
+
+**Dónde está la matrícula.** En `qualification[]`, y cambió entre versiones:
+
+| | v1 (colecciones) | v2 (guía 09/2025) |
+| --- | --- | --- |
+| Identificar la matrícula | `identifier.type.text === 'PRO'` | `identifier.system` empieza con `.../REFEPS` |
+| Estado de habilitación | no existía | extensión `MatriculaHabilitada` (booleano) |
+| Especialidades | qualifications con `type.text === 'ESP'` | extensión `especialidadMatricula` en la matrícula |
+| Jurisdicción | — | extensión `jurisdMatricula` |
+| Vencimiento | solo `period.start` | `period.end` cuando existe |
+
+El lector acepta **las dos**, porque no sabemos con cuál responde hoy cada ambiente.
+
+#### Tres trampas que ya están cubiertas
+
+1. **Un profesional puede tener varias matrículas.** El ejemplo oficial trae dos, de años
+   distintos. Validar contra la primera rechazaría matrículas legítimas.
+2. **El prefijo MN/MP es nuestro, no de REFEPS**: el registro devuelve el número pelado y la
+   jurisdicción por separado. La comparación es por dígitos.
+3. **Que el Bus no conteste NO es "matrícula inválida".** Son cosas distintas y confundirlas
+   bloquearía a un profesional legítimo por una caída del servicio.
+
+#### Contradicciones en la documentación oficial
+
+Están resueltas en el código, pero conviene confirmarlas con soporte:
+
+- **El atributo del token.** La guía dice que la respuesta trae `token`; el script de la
+  colección lee `accessToken`. Se aceptan los dos.
+- **`iat`/`exp` en segundos o milisegundos.** La guía dice "milisegundos desde 1970", pero su
+  propio JWT de ejemplo decodifica a segundos. En milisegundos el token quedaría fechado en
+  1970. Se usan segundos.
+- **Vigencia de la aserción.** El texto dice `+6000000` (unos 69 días); el JWT de ejemplo de
+  la misma guía tiene exactamente **1 hora**. Se usa 1 hora.
+- **Bug en la colección PROD**: la búsqueda por id está escrita `Practitioner%7CXXXX` (pipe)
+  en vez de `Practitioner/XXXX`. En QA está bien.
+
+#### Por qué esto necesita un Bot y no puede ir en el front
+
+El Domain Secret es un **secreto compartido**: quien lo tiene emite tokens a nombre de
+BioWellness. En una app Vite terminaría en el bundle, legible por cualquiera con las
+herramientas de desarrollo. La consulta tiene que salir de un Bot de Medplum o de un
+backend, con el secreto en variables de entorno del servidor.
+
+Por eso `refeps.ts` no firma ni hace red: arma los pedidos e interpreta las respuestas, y la
+firma queda del lado que tiene el secreto.
+
+#### Cómo se pone en marcha (arranca contra QA)
+
+El bot es `refeps-verify`, de disparo manual (sin `criteria`, no crea Subscription). Se
+despliega con el resto: `npm run build:bots`.
+
+Después hay que cargarle los **secrets en el Bot**, desde la app de Medplum (Bot →
+Secrets). **No van al repositorio ni a un `.env` del front:**
+
+| Secret                 | Valor                                                          |
+| ---------------------- | -------------------------------------------------------------- |
+| `REFEPS_DOMAIN_SECRET` | La _token secret word_ generada en dominios.msal.gob.ar         |
+| `REFEPS_DOMAIN_URL`    | Nuestro issuer: `https://api.medplum.com.ar`                     |
+| `REFEPS_ENV`           | `qa` (default) — poner `prod` recién después de validar contra QA |
+
+`REFEPS_ENV` en `qa` apunta a `bus-test.msal.gob.ar`. **Mientras no se toque, no se le pega
+a producción**, que es justamente lo que el archivo de variables de Postman hacía mal.
+
+#### Qué pasa si el Bus no contesta
+
+No bloquea. `checkRefeps` devuelve `unavailable` y el dashboard lo trata como aviso, no como
+rechazo. Un profesional no deja de estar matriculado porque el Bus del Ministerio esté
+caído, y trasladarle esa falla al médico sería un problema nuestro convertido en suyo.
+
+Los cinco veredictos de rechazo (`no-encontrado`, `profesional-inactivo`,
+`matricula-no-coincide`, `matricula-no-habilitada`, `matricula-vencida`) sí son respuestas
+del registro y se distinguen entre sí, porque piden acciones distintas.
+
+La local **no reemplaza** a la de REFEPS: una matrícula bien formada puede no existir. Pero
+emitir sin matrícula alguna era un defecto propio, no una brecha regulatoria, y ese ya está
+cerrado.
+
+#### Advertencia de alcance
+
+Tener credenciales **no es tener integración**. Vale el criterio que atraviesa todo el
+documento: en el informe del art. 4 solo se declara lo que está **efectivamente en el
+circuito**. Hasta que el dashboard consulte REFEPS antes de emitir, §3.2 sigue en ❌ y
+§3.6 sigue en 🟡.
+
 ### 5.3 Documentación a adjuntar ✅ CONFIRMADO
 
 | Adjunto                                                                     | Obligatorio          |
@@ -353,8 +537,10 @@ Llevar esta lista junto al informe legal:
 4. **Plazos de vigencia** reales de la prescripción (los 30/60 días no están confirmados).
 5. ¿"Responsable del tratamiento en territorio argentino" implica **residencia local del
    dato**?
-6. ¿Qué estándar de interoperabilidad es **obligatorio**? (HL7 FHIR/SNOMED es inferencia
-   nuestra, no cita.)
+6. 🟡 ¿Qué estándar de interoperabilidad es **obligatorio**? (HL7 FHIR/SNOMED era inferencia
+   nuestra, no cita.) — **Muy atenuada** (§5.4-bis): el formulario acepta explícitamente HL7
+   FHIR y el propio Bus del Ministerio es FHIR. Falta solo el texto del artículo para cerrarla,
+   pero ya no es un riesgo de arquitectura.
 7. **Período de conservación** exigido a los repositorios (¿3 años? ¿10 por analogía con
    historia clínica?).
 8. ~~Lista de documentación adjunta~~ — ✅ **resuelto** (§5.3). Falta solo el texto literal de
@@ -374,16 +560,24 @@ Llevar esta lista junto al informe legal:
     depositarlas en un repositorio de terceros para que el laboratorio las valide? Si la
     respuesta es sí, hay que **elegir el repositorio e integrarse por API** — trabajo no
     contemplado en ninguna estimación previa.
+    _Dato nuevo (§5.4-bis): el Bus de Interoperabilidad **no** expone `ServiceRequest` ni
+    `MedicationRequest`, así que el repositorio de ReNaPDiS no es el Bus. Acota dónde buscar,
+    pero la pregunta sigue abierta._
 
 ---
 
 ## 7. Cómo seguir
 
 1. **Ahora**: corregir P0 (son riesgos reales, no burocracia).
-2. **En paralelo**: conseguir los textos oficiales (§6) y llevarlos al abogado junto con
-   `RECETARIO-FASE2-LEGAL.md`.
-3. **Con la definición de firma**: ejecutar P1, que es el núcleo del cumplimiento.
-4. **Antes de presentar**: P2, y recién entonces armar el informe del art. 4 con evidencia
+2. **Ahora que hay credenciales del Bus** (§5.4-bis): integrar **REFEPS** para validar
+   matrícula antes de emitir. Es requisito de aprobación del trámite y es lo único de la lista
+   que pasó de "no sabemos por dónde" a "se puede hacer". Para arrancar hace falta la **guía y
+   la colección Postman del servicio Practitioner**, que están en el mismo panel.
+3. **En paralelo**: conseguir los textos oficiales (§6) y llevarlos al abogado junto con
+   `RECETARIO-FASE2-LEGAL.md`. La consulta a la DNSIS por las preguntas **#12, #13 y #15**
+   es la que puede cambiar el encuadre entero: conviene mandarla antes que el resto.
+4. **Con la definición de firma**: ejecutar P1, que es el núcleo del cumplimiento.
+5. **Antes de presentar**: P2, y recién entonces armar el informe del art. 4 con evidencia
    real.
 
 > **Criterio que atraviesa todo:** en el informe del art. 4 solo se declara lo que está
