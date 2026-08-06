@@ -24,6 +24,7 @@
     "verify-careplan": "tsx src/scripts/verify-careplan.ts",
     "deploy-bots-server": "tsx src/scripts/deploy-bots-server.ts",
     "upload-access-policy": "tsx src/scripts/upload-access-policy.ts",
+    "access-policy-doctor": "tsx src/scripts/access-policy-doctor.ts",
     "upload-sdoh": "tsx src/scripts/upload-sdoh-questionnaire.ts",
     "upload-le8": "tsx src/scripts/upload-le8-questionnaires.ts",
     "lint": "eslint src/",
