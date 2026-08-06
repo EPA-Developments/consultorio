@@ -1,8 +1,14 @@
 // Protocolo de titulación y monitoreo (Opción B del camino CKM → GLP-1).
 //
-// SOLO LECTURA, igual que el panel de elegibilidad: arma el esquema de ficha
-// técnica ajustado a este paciente para que el médico lo revise. No prescribe,
-// no emite recetas y no escribe ningún recurso.
+// Arma el esquema de ficha técnica ajustado a este paciente para que el médico
+// lo revise. NO prescribe el GLP-1: no emite receta del fármaco ni indica la
+// dosis final, que son del profesional.
+//
+// Sí escribe dos cosas, ambas a pedido explícito y por los mismos caminos que
+// ya existen en el dashboard:
+// - Las órdenes de laboratorio de cada control, con el recetario.
+// - El CarePlan con sus Task de control, que nace en 'draft' para que lo
+//   active el médico.
 import { Alert, Badge, Button, Card, Group, List, Select, Stack, Table, Text, ThemeIcon, Timeline } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
@@ -12,6 +18,7 @@ import {
   IconAlertTriangle,
   IconCalendarCheck,
   IconCircleCheck,
+  IconClipboardPlus,
   IconFlask,
   IconInfoCircle,
   IconTargetArrow,
@@ -24,7 +31,9 @@ import { COBERTURAS_PRIVADAS } from '../../laborders/lab-order';
 import { createLabOrder } from '../../laborders/lab-order-create';
 import type { Flag, GLP1Assessment, GLP1Inputs } from '../eligibility';
 import type { MonitoringVisit } from '../monitoring';
+import { createGLP1Plan } from '../careplan-create';
 import { monitoringOrderNote, planOrderFor } from '../monitoring-order';
+import type { GLP1Protocol } from '../protocol';
 import { buildProtocol } from '../protocol';
 import { INDICATION_LABELS, PRESENTATION_LABELS, indicationFor, moleculesFor } from '../titration';
 
@@ -35,8 +44,30 @@ export function GLP1ProtocolSection(props: {
 }): JSX.Element | null {
   const { inputs, assessment } = props;
   const indication = indicationFor(inputs);
+  const medplum = useMedplum();
   const { items: catalogo } = useLabOrderCatalog();
   const [cobertura, setCobertura] = useState<string>(COBERTURAS_PRIVADAS[0]);
+  const [agendando, setAgendando] = useState(false);
+
+  async function agendar(protocolo: GLP1Protocol): Promise<void> {
+    if (!props.patient.id) {
+      return;
+    }
+    setAgendando(true);
+    try {
+      const { tasks } = await createGLP1Plan(medplum, { protocol: protocolo, patientId: props.patient.id });
+      showNotification({
+        icon: <IconCircleCheck />,
+        color: 'teal',
+        title: 'Plan creado en borrador',
+        message: `${tasks.length} controles agendados. El plan queda para revisar y activar.`,
+      });
+    } catch (err) {
+      showNotification({ color: 'red', title: 'Error al agendar', message: normalizeErrorString(err) });
+    } finally {
+      setAgendando(false);
+    }
+  }
 
   // Se ofrecen primero las moléculas sugeridas para este perfil, y después el
   // resto de las que tienen esquema para la indicación: la sugerencia orienta,
@@ -181,11 +212,22 @@ export function GLP1ProtocolSection(props: {
           </Card>
 
           <Card withBorder radius="md" p="md">
-            <Group gap="xs" mb="md">
-              <ThemeIcon color="blue" variant="light" radius="md">
-                <IconCalendarCheck size={18} />
-              </ThemeIcon>
-              <Text fw={600}>Calendario de controles</Text>
+            <Group justify="space-between" mb="md" wrap="nowrap" align="flex-start">
+              <Group gap="xs">
+                <ThemeIcon color="blue" variant="light" radius="md">
+                  <IconCalendarCheck size={18} />
+                </ThemeIcon>
+                <Text fw={600}>Calendario de controles</Text>
+              </Group>
+              <Button
+                size="xs"
+                variant="light"
+                leftSection={<IconClipboardPlus size={14} />}
+                loading={agendando}
+                onClick={() => void agendar(protocolo)}
+              >
+                Agendar los {protocolo.monitoring.length} controles
+              </Button>
             </Group>
             <Timeline active={0} bulletSize={18} lineWidth={2}>
               {protocolo.monitoring.map((v) => (

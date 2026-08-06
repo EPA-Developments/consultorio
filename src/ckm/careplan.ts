@@ -181,8 +181,8 @@ export function buildCarePlanMessages(ctx: CarePlanContext): { system: string; u
   return { system, user: lines.join('\n') };
 }
 
-function addDays(startIso: string, days: number): string {
-  // Aritmética en UTC (independiente de la zona horaria del runtime).
+/** Suma días a una fecha ISO. Aritmética en UTC, independiente de la zona horaria del runtime. */
+export function addDays(startIso: string, days: number): string {
   return new Date(new Date(startIso).getTime() + days * 24 * 3600 * 1000).toISOString();
 }
 
