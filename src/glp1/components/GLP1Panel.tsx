@@ -19,6 +19,7 @@ import { CANDIDACY_LABELS, PHENOTYPE_LABELS, PROTOCOL_PROVISIONAL_NOTE, PROTOCOL
 import type { Flag } from '../eligibility';
 import { useGLP1Assessment } from '../hooks/useGLP1Assessment';
 import { GLP1ProtocolSection } from './GLP1ProtocolSection';
+import { GLP1ResponseSection } from './GLP1ResponseSection';
 
 export function GLP1Panel(props: { patient: Patient }): JSX.Element {
   const { assessment, inputs, loading } = useGLP1Assessment(props.patient);
@@ -51,6 +52,10 @@ export function GLP1Panel(props: { patient: Patient }): JSX.Element {
           <Text size="sm">{PROTOCOL_PROVISIONAL_NOTE}</Text>
         </Alert>
       )}
+
+      {/* Respuesta al tratamiento. Va primero porque en un paciente ya tratado
+          es lo que se viene a mirar; se muestra sola si hay un plan vigente. */}
+      <GLP1ResponseSection patient={props.patient} />
 
       {/* Encabezado: fenotipo + candidatura */}
       <Card withBorder radius="md" p="md">

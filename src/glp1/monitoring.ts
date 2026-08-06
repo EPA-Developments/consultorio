@@ -148,6 +148,19 @@ export function monitoringPlan(i: GLP1Inputs, schedule: TitrationSchedule): Moni
   return plan.sort((a, b) => a.weeks - b.weeks);
 }
 
+/**
+ * Qué revisar antes de dar por fallida la respuesta. No depende de la molécula
+ * ni de la indicación: la causa más frecuente de "no responde" es que nunca se
+ * llegó a dosis terapéutica o que no se está aplicando bien.
+ */
+export const REVISION_ANTES_DE_CONCLUIR = [
+  '¿Llegó a la dosis terapéutica, o quedó frenado en un escalón por intolerancia?',
+  '¿La aplicación es correcta y no hay salteos? (en la presentación oral, el ayuno y los 30 minutos son condición de absorción)',
+  '¿Hay algo que empuje en contra: corticoides, antipsicóticos, hipotiroidismo sin tratar?',
+  '¿El plan alimentario y la actividad de fuerza están sostenidos?',
+  'Recién después: considerar cambio de molécula.',
+] as const;
+
 export interface ResponseReview {
   /** Semana en la que se evalúa. */
   weeks: number;
@@ -168,13 +181,7 @@ export function responseReview(schedule: TitrationSchedule): ResponseReview {
     weeks: semanas,
     criterion:
       'Descenso de al menos 5 % del peso basal. Con menos, revisar antes de concluir que el tratamiento no sirve.',
-    ifNotMet: [
-      '¿Llegó a la dosis terapéutica, o quedó frenado en un escalón por intolerancia?',
-      '¿La aplicación es correcta y no hay salteos? (en la presentación oral, el ayuno y los 30 minutos son condición de absorción)',
-      '¿Hay algo que empuje en contra: corticoides, antipsicóticos, hipotiroidismo sin tratar?',
-      '¿El plan alimentario y la actividad de fuerza están sostenidos?',
-      'Recién después: considerar cambio de molécula.',
-    ],
+    ifNotMet: [...REVISION_ANTES_DE_CONCLUIR],
   };
 }
 
