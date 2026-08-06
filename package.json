@@ -31,7 +31,8 @@
     "lint:fix": "eslint src/ --fix",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "refeps-doctor": "tsx src/scripts/refeps-doctor.ts"
   },
   "prettier": {
     "printWidth": 120,

@@ -446,11 +446,23 @@ firma queda del lado que tiene el secreto.
 
 #### Cómo se pone en marcha (arranca contra QA)
 
-El bot es `refeps-verify`, de disparo manual (sin `criteria`, no crea Subscription). Se
-despliega con el resto: `npm run build:bots`.
+El bot es `refeps-verify`, de disparo manual (sin `criteria`, no crea Subscription).
 
-Después hay que cargarle los **secrets en el Bot**, desde la app de Medplum (Bot →
-Secrets). **No van al repositorio ni a un `.env` del front:**
+⚠️ **Desplegarlo son DOS pasos, no uno.** `build:bots` solo genera el bundle en
+`data/core/example-bots.json`; el que habla con el servidor es `deploy-bots-server`. Correr
+solo el primero deja el bot sin crear, sin ningún error visible:
+
+```bash
+npm run build:bots
+MEDPLUM_CLIENT_ID=... MEDPLUM_CLIENT_SECRET=... npm run deploy-bots-server
+```
+
+Si el servidor se desplegó alguna vez con `CKM_BOT_RUNTIME=vmcontext`, hay que volver a
+pasarlo: sin esa variable los bots vuelven a `awslambda`.
+
+Después, los **secrets del PROYECTO** (Admin → Project → Secrets). En Medplum son
+`Project.secret` y llegan a **todos** los bots del proyecto — no hay secrets por bot.
+**No van al repositorio ni a un `.env` del front:**
 
 | Secret                 | Valor                                                          |
 | ---------------------- | -------------------------------------------------------------- |
@@ -460,6 +472,15 @@ Secrets). **No van al repositorio ni a un `.env` del front:**
 
 `REFEPS_ENV` en `qa` apunta a `bus-test.msal.gob.ar`. **Mientras no se toque, no se le pega
 a producción**, que es justamente lo que el archivo de variables de Postman hacía mal.
+
+Para verificar todo el circuito sin adivinar:
+
+```bash
+npm run refeps-doctor              # ¿está el bot? ¿están los secrets? ¿qué ambiente?
+npm run refeps-doctor -- --me      # ejecuta la verificación sobre los profesionales del proyecto
+```
+
+Nunca imprime el valor de un secreto: solo si está o no está.
 
 #### Qué pasa si el Bus no contesta
 
