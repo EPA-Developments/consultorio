@@ -22,7 +22,7 @@ import { getCKMStage, getHGraphData } from '../../ckm/extensions';
 import { getLatestCKMObservations } from '../../ckm/observations';
 import { latestValueByCode } from '../../ckm/observation-definitions';
 import { assessGLP1 } from '../eligibility';
-import type { GLP1Assessment } from '../eligibility';
+import type { GLP1Assessment, GLP1Inputs } from '../eligibility';
 import { computeHomaIr, glp1ConditionFlags, glp1MedicationFlags } from '../glp1-clinical';
 
 /** Códigos del catálogo (109 marcadores) que no son parámetros CKM. */
@@ -31,6 +31,8 @@ const CODIGO_INSULINA = '20448-7'; // Insulina basal (LOINC)
 
 export interface GLP1AssessmentData {
   assessment?: GLP1Assessment;
+  /** Los mismos datos con los que se evaluó, para armar el protocolo sin volver a pedirlos. */
+  inputs?: GLP1Inputs;
   loading: boolean;
 }
 
@@ -75,7 +77,7 @@ export function useGLP1Assessment(patient: Patient | undefined): GLP1AssessmentD
         const glucosa = ckm.glucoseFasting?.value;
         const hGraph = getHGraphData(patient);
 
-        const assessment = assessGLP1({
+        const inputs: GLP1Inputs = {
           ageYears: ageFromBirthDate(patient.birthDate) || undefined,
           sex: patientPreventSex(patient),
           bmi: ckm.bmi?.value,
@@ -95,9 +97,9 @@ export function useGLP1Assessment(patient: Patient | undefined): GLP1AssessmentD
           hasHeartFailure: hasHeartFailure(activas),
           ...glp1ConditionFlags(activas),
           ...glp1MedicationFlags(medications as MedicationRequest[]),
-        });
+        };
 
-        setData({ assessment, loading: false });
+        setData({ assessment: assessGLP1(inputs), inputs, loading: false });
       } catch (err) {
         console.error('GLP-1: error evaluando elegibilidad', err);
         if (!cancelled) {
