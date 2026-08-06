@@ -3,17 +3,40 @@
 // SOLO LECTURA, igual que el panel de elegibilidad: arma el esquema de ficha
 // técnica ajustado a este paciente para que el médico lo revise. No prescribe,
 // no emite recetas y no escribe ningún recurso.
-import { Alert, Badge, Card, Group, List, Select, Stack, Table, Text, ThemeIcon, Timeline } from '@mantine/core';
-import { IconAlertTriangle, IconCalendarCheck, IconInfoCircle, IconTargetArrow, IconVaccine } from '@tabler/icons-react';
+import { Alert, Badge, Button, Card, Group, List, Select, Stack, Table, Text, ThemeIcon, Timeline } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
+import { normalizeErrorString } from '@medplum/core';
+import type { Patient } from '@medplum/fhirtypes';
+import { useMedplum } from '@medplum/react';
+import {
+  IconAlertTriangle,
+  IconCalendarCheck,
+  IconCircleCheck,
+  IconFlask,
+  IconInfoCircle,
+  IconTargetArrow,
+  IconVaccine,
+} from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
+import { useLabOrderCatalog } from '../../laborders/hooks/useLabOrderCatalog';
+import { COBERTURAS_PRIVADAS } from '../../laborders/lab-order';
+import { createLabOrder } from '../../laborders/lab-order-create';
 import type { Flag, GLP1Assessment, GLP1Inputs } from '../eligibility';
+import type { MonitoringVisit } from '../monitoring';
+import { monitoringOrderNote, planOrderFor } from '../monitoring-order';
 import { buildProtocol } from '../protocol';
 import { INDICATION_LABELS, PRESENTATION_LABELS, indicationFor, moleculesFor } from '../titration';
 
-export function GLP1ProtocolSection(props: { inputs: GLP1Inputs; assessment: GLP1Assessment }): JSX.Element | null {
+export function GLP1ProtocolSection(props: {
+  patient: Patient;
+  inputs: GLP1Inputs;
+  assessment: GLP1Assessment;
+}): JSX.Element | null {
   const { inputs, assessment } = props;
   const indication = indicationFor(inputs);
+  const { items: catalogo } = useLabOrderCatalog();
+  const [cobertura, setCobertura] = useState<string>(COBERTURAS_PRIVADAS[0]);
 
   // Se ofrecen primero las moléculas sugeridas para este perfil, y después el
   // resto de las que tienen esquema para la indicación: la sugerencia orienta,
@@ -56,6 +79,14 @@ export function GLP1ProtocolSection(props: { inputs: GLP1Inputs; assessment: GLP
           onChange={setMolecula}
           allowDeselect={false}
           w={240}
+        />
+        <Select
+          label="Cobertura"
+          data={[...COBERTURAS_PRIVADAS]}
+          value={cobertura}
+          onChange={(v) => setCobertura(v ?? COBERTURAS_PRIVADAS[0])}
+          allowDeselect={false}
+          w={180}
         />
         <Badge variant="light" size="lg" mb={6}>
           {INDICATION_LABELS[indication]}
@@ -168,19 +199,19 @@ export function GLP1ProtocolSection(props: { inputs: GLP1Inputs; assessment: GLP
                     ))}
                   </List>
                   {v.labs.length > 0 && (
-                    <Group gap={6} mt={8}>
-                      {v.labs.map((l) => (
-                        <Badge key={l} size="sm" variant="light" color="blue">
-                          {l}
-                        </Badge>
-                      ))}
-                    </Group>
+                    <VisitLabs
+                      visit={v}
+                      patient={props.patient}
+                      molecule={protocolo.molecule}
+                      cobertura={cobertura}
+                      catalog={catalogo}
+                    />
                   )}
                 </Timeline.Item>
               ))}
             </Timeline>
             <Text size="xs" c="dimmed" mt="md">
-              Los estudios se pueden solicitar desde la pestaña "Órdenes de laboratorio".
+              La orden se emite igual que desde la pestaña "Órdenes de laboratorio", y aparece ahí para imprimir.
             </Text>
           </Card>
 
@@ -205,6 +236,84 @@ export function GLP1ProtocolSection(props: { inputs: GLP1Inputs; assessment: GLP
           </Card>
         </>
       )}
+    </Stack>
+  );
+}
+
+/**
+ * Los estudios de una visita, con el botón que emite la orden.
+ *
+ * Muestra los ítems tal como van a quedar en la orden, no como los nombra el
+ * calendario: el HOMA-IR y el eGFR se piden a través de sus fuentes, y decirlo
+ * evita que el médico crea que se perdieron.
+ */
+function VisitLabs(props: {
+  visit: MonitoringVisit;
+  patient: Patient;
+  molecule: string;
+  cobertura: string;
+  catalog: ReturnType<typeof useLabOrderCatalog>['items'];
+}): JSX.Element {
+  const medplum = useMedplum();
+  const [emitiendo, setEmitiendo] = useState(false);
+  const plan = useMemo(() => planOrderFor(props.visit.labs, props.catalog), [props.visit.labs, props.catalog]);
+
+  async function emitir(): Promise<void> {
+    setEmitiendo(true);
+    try {
+      const { requests } = await createLabOrder(medplum, {
+        patient: props.patient,
+        items: plan.items,
+        intent: 'order',
+        note: monitoringOrderNote(props.visit.label, props.molecule, props.cobertura),
+      });
+      showNotification({
+        icon: <IconCircleCheck />,
+        color: 'teal',
+        title: 'Orden generada',
+        message: `${requests.length} análisis solicitados para ${props.visit.label}.`,
+      });
+    } catch (err) {
+      showNotification({ color: 'red', title: 'Error al generar la orden', message: normalizeErrorString(err) });
+    } finally {
+      setEmitiendo(false);
+    }
+  }
+
+  return (
+    <Stack gap={6} mt={8}>
+      <Group gap={6}>
+        {plan.items.map((i) => (
+          <Badge key={i.biomarcadorId} size="sm" variant="light" color="blue">
+            {i.label}
+          </Badge>
+        ))}
+      </Group>
+
+      {plan.replacedDerived.length > 0 && (
+        <Text size="xs" c="dimmed">
+          {plan.replacedDerived.length === 1 ? 'Se pide' : 'Se piden'} {plan.replacedDerived.join(', ')} a través de sus
+          análisis fuente, que ya están en la lista.
+        </Text>
+      )}
+      {(plan.unknown.length > 0 || plan.notOrderable.length > 0) && (
+        <Text size="xs" c="orange">
+          Queda fuera de la orden: {[...plan.unknown, ...plan.notOrderable].join(', ')}.
+        </Text>
+      )}
+
+      <Group>
+        <Button
+          size="xs"
+          variant="light"
+          leftSection={<IconFlask size={14} />}
+          loading={emitiendo}
+          disabled={plan.items.length === 0}
+          onClick={() => void emitir()}
+        >
+          Solicitar {plan.items.length} {plan.items.length === 1 ? 'análisis' : 'análisis'}
+        </Button>
+      </Group>
     </Stack>
   );
 }

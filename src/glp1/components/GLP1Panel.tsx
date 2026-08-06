@@ -164,7 +164,7 @@ export function GLP1Panel(props: { patient: Patient }): JSX.Element {
       {inputs && (assessment.candidacy === 'candidato' || assessment.candidacy === 'posible') && (
         <>
           <Divider my="xs" />
-          <GLP1ProtocolSection inputs={inputs} assessment={assessment} />
+          <GLP1ProtocolSection patient={props.patient} inputs={inputs} assessment={assessment} />
         </>
       )}
 
