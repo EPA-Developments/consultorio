@@ -21,10 +21,17 @@
     { "resourceType": "DocumentReference" },
     { "resourceType": "RiskAssessment" },
     { "resourceType": "Binary" },
+    { "resourceType": "ServiceRequest" },
+    { "resourceType": "Goal" },
+    { "resourceType": "Provenance" },
+    { "resourceType": "DetectedIssue" },
     { "resourceType": "Questionnaire", "readonly": true },
     { "resourceType": "Practitioner", "readonly": true },
     { "resourceType": "Organization", "readonly": true },
     { "resourceType": "HealthcareService", "readonly": true },
-    { "resourceType": "ValueSet", "readonly": true }
+    { "resourceType": "ValueSet", "readonly": true },
+    { "resourceType": "ObservationDefinition", "readonly": true },
+    { "resourceType": "CodeSystem", "readonly": true },
+    { "resourceType": "Bot", "readonly": true }
   ]
 }

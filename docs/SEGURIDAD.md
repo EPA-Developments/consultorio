@@ -141,7 +141,85 @@ aplicable a este recurso.
 
 ---
 
-## 6. Lo que sigue abierto (no es P0)
+## 6. AccessPolicies: quién ve qué
+
+Hay **dos roles** y cada uno tiene su policy versionada en `data/ckm/`:
+
+| Rol                                   | Archivo                        | Alcance                                                                       |
+| ------------------------------------- | ------------------------------ | ----------------------------------------------------------------------------- |
+| **Médico** (dashboard.biowellness.ar) | `clinician-access-policy.json` | **Todo el proyecto**: ve y edita los pacientes de _Biowellness \| San Isidro_ |
+| **Paciente** (app.biowellness.ar)     | `patient-access-policy.json`   | Solo **su propio** compartment                                                |
+
+### La policy del médico
+
+Es la que necesitan **Dr. Conrado López Alonso, Dra. Stephanie Dos Santos y Dr.
+Alejandro D'Alessandro** para ver los pacientes del proyecto. No filtra por médico
+tratante: da acceso a **todo el proyecto**, que es lo que corresponde a un centro
+donde los tres atienden a la misma población.
+
+```bash
+npm run upload-access-policy data/ckm/clinician-access-policy.json
+```
+
+> ⚠️ **Subirla no alcanza.** Una AccessPolicy **no hace nada** hasta que está
+> **asignada en el ProjectMembership** de cada usuario (desde el admin de Medplum:
+> _Project → Users → \[usuario\] → Access Policy_). Se puede tener la policy
+> perfecta en el repo y los médicos sin acceso.
+
+**Para ver el estado real** (qué policy tiene asignada hoy cada uno):
+
+```bash
+npm run access-policy-doctor
+```
+
+Lista las policies del proyecto, qué tiene asignado cada miembro, y avisa si algún
+Practitioner quedó **sin policy**.
+
+> 🔎 **Ojo con los admin de proyecto.** Un usuario `admin` **no está limitado por
+> la AccessPolicy**: ve todo. Si los tres médicos son admin, los permisos ni
+> siquiera se están evaluando y parece que "todo funciona". Para probar de verdad
+> la policy hay que usar un usuario **no admin**. El diagnóstico lo marca.
+
+### Reglas que faltaban (julio 2026)
+
+A la policy del médico le faltaban recursos que la aplicación **ya usa**, lo que
+daría 403 en funciones nuevas:
+
+- **`ServiceRequest`** — las órdenes de laboratorio (crear, leer, aprobar).
+- **`Goal`** — los objetivos que crea el Plan Bienestar.
+- **`ObservationDefinition`** — el catálogo de biomarcadores del panel.
+- **`Bot`** (lectura) — para el botón "Generar con IA".
+- **`Provenance`** — la firma/sello de emisión (Fase 2).
+- **`DetectedIssue`**, **`CodeSystem`** (lectura).
+
+Ya están agregadas al archivo. **Hay que volver a subirla y verificar.**
+
+### ⚠️ La policy del paciente NO es la que está en uso
+
+El archivo versionado se llama **`HeartInnovations — Patient Self Access v1.2`**
+(nombre heredado de la plantilla original de Medplum), pero la policy que
+realmente usa el portal es **"Paciente — Portal"**
+(`45ff9a4e-e1c6-48d8-aaae-1932aadf216c`) — confirmado por el equipo.
+
+Como `upload-access-policy` hace **upsert por nombre**, hoy ese archivo **no toca
+la policy en uso**: apunta a otro recurso.
+
+**No renombrar el archivo sin antes bajar la policy real.** Si se renombra a
+"Paciente — Portal" y se sube, el upload **sobrescribe la policy de producción con
+el contenido del archivo** — y si al archivo le falta alguna regla que solo existe
+en el servidor, se pierde y el paciente empieza a recibir 403. Es exactamente el
+accidente que ya pasó una vez.
+
+Secuencia segura:
+
+1. Bajar la policy real: `GET /fhir/R4/AccessPolicy/45ff9a4e-e1c6-48d8-aaae-1932aadf216c`
+2. Volcarla al archivo (reemplazando su contenido, incluido el `name`).
+3. Agregar encima las reglas versionadas que falten y commitear.
+4. Recién ahí correr `upload-access-policy` y verificar que **no cambie nada**.
+
+---
+
+## 7. Lo que sigue abierto (no es P0)
 
 Del checklist de cumplimiento, siguen **ausentes** y son los próximos en prioridad:
 
