@@ -18,7 +18,7 @@ const DEFAULT_OPEN = ['metabolico', 'lipidico', 'inflamacion'];
 
 export function BiomarkerPanelPage(): JSX.Element {
   const { patientId } = useParams();
-  const { patient, groups, valuesByCode, historyByCode, gender, loading } = useBiomarkerPanel(patientId);
+  const { patient, groups, valuesByCode, historyByCode, gender, ageYears, loading } = useBiomarkerPanel(patientId);
 
   if (loading) {
     return <Loader m="xl" />;
@@ -62,6 +62,7 @@ export function BiomarkerPanelPage(): JSX.Element {
                 valuesByCode={valuesByCode}
                 historyByCode={historyByCode}
                 gender={gender}
+                ageYears={ageYears}
               />
             ))}
           </Accordion>
@@ -81,8 +82,9 @@ function PanelSection(props: {
   valuesByCode: Map<string, CodedValue>;
   historyByCode: Map<string, CodedValue[]>;
   gender?: string;
+  ageYears?: number;
 }): JSX.Element {
-  const { group, valuesByCode, historyByCode, gender } = props;
+  const { group, valuesByCode, historyByCode, gender, ageYears } = props;
   const withData = group.defs.filter((d) => d.code && valuesByCode.has(d.code)).length;
 
   return (
@@ -115,6 +117,7 @@ function PanelSection(props: {
                 reading={def.code ? valuesByCode.get(def.code) : undefined}
                 history={def.code ? historyByCode.get(def.code) : undefined}
                 gender={gender}
+                ageYears={ageYears}
               />
             ))}
           </Table.Tbody>
@@ -137,9 +140,10 @@ function BiomarkerRow(props: {
   reading?: CodedValue;
   history?: CodedValue[];
   gender?: string;
+  ageYears?: number;
 }): JSX.Element {
-  const { def, reading, history, gender } = props;
-  const status = classifyBiomarkerValue(def, reading?.value, gender);
+  const { def, reading, history, gender, ageYears } = props;
+  const status = classifyBiomarkerValue(def, reading?.value, gender, ageYears);
 
   return (
     <Table.Tr>

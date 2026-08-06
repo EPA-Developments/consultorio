@@ -8,7 +8,7 @@ import {
   indexByLoinc,
   latestValueByCode,
   parseObservationDefinition,
-  rangeForGender,
+  rangeFor,
   valuesByCodeHistory,
 } from './observation-definitions';
 
@@ -82,9 +82,9 @@ describe('parseObservationDefinition — sobre el bundle real', () => {
     const au = byId.get('acido-urico')!;
     expect(au.conventional.find((r) => r.gender === 'male')).toMatchObject({ low: 3.4, high: 7 });
     expect(au.conventional.find((r) => r.gender === 'female')).toMatchObject({ low: 2.4, high: 6 });
-    expect(rangeForGender(au.conventional, 'female')).toMatchObject({ high: 6 });
-    // óptimo no tiene género -> rangeForGender cae al no-especificado
-    expect(rangeForGender(au.optimal, 'male')).toMatchObject({ low: 3.5, high: 5.5 });
+    expect(rangeFor(au.conventional, 'female')).toMatchObject({ high: 6 });
+    // óptimo no tiene género -> rangeFor cae al no-especificado
+    expect(rangeFor(au.optimal, 'male')).toMatchObject({ low: 3.5, high: 5.5 });
   });
 
   test('todas las definiciones tienen panel y label', () => {
@@ -95,15 +95,51 @@ describe('parseObservationDefinition — sobre el bundle real', () => {
   });
 });
 
-describe('rangeForGender', () => {
+describe('rangeFor — selección por género', () => {
   test('lista vacía -> undefined', () => {
-    expect(rangeForGender([])).toBeUndefined();
+    expect(rangeFor([])).toBeUndefined();
   });
   test('sin match de género cae al no-especificado', () => {
-    expect(rangeForGender([{ high: 10 }, { high: 5, gender: 'male' }], 'female')).toMatchObject({ high: 10 });
+    expect(rangeFor([{ high: 10 }, { high: 5, gender: 'male' }], 'female')).toMatchObject({ high: 10 });
   });
   test('sin no-especificado ni match cae al primero', () => {
-    expect(rangeForGender([{ high: 7, gender: 'male' }], 'female')).toMatchObject({ high: 7 });
+    expect(rangeFor([{ high: 7, gender: 'male' }], 'female')).toMatchObject({ high: 7 });
+  });
+});
+
+describe('rangeFor — rangos por franja etaria', () => {
+  const premeno = { low: 1, high: 8.5, gender: 'female', ageMin: 18, ageMax: 49 };
+  const posmeno = { low: 0.5, high: 4, gender: 'female', ageMin: 50 };
+  const varon = { low: 38, high: 190, gender: 'male' };
+  const rangos = [varon, premeno, posmeno];
+
+  test('elige la franja que corresponde a la edad', () => {
+    expect(rangeFor(rangos, 'female', 35)).toBe(premeno);
+    expect(rangeFor(rangos, 'female', 60)).toBe(posmeno);
+  });
+
+  test('los bordes de la franja son inclusivos', () => {
+    expect(rangeFor(rangos, 'female', 49)).toBe(premeno);
+    expect(rangeFor(rangos, 'female', 50)).toBe(posmeno);
+  });
+
+  test('el rango sin franja etaria aplica a cualquier edad', () => {
+    expect(rangeFor(rangos, 'male', 25)).toBe(varon);
+    expect(rangeFor(rangos, 'male', 80)).toBe(varon);
+  });
+
+  // Lo importante: sin edad NO se elige una franja al azar. Antes de esto, una
+  // paciente de 60 se comparaba contra el rango premenopáusico.
+  test('sin edad conocida no devuelve ninguna franja', () => {
+    expect(rangeFor(rangos, 'female')).toBeUndefined();
+  });
+
+  test('si ninguna franja cubre la edad no cae a la de al lado', () => {
+    expect(rangeFor([premeno], 'female', 60)).toBeUndefined();
+  });
+
+  test('no mezcla géneros: pide female y no devuelve el rango de varón', () => {
+    expect(rangeFor(rangos, 'female', 60)?.gender).toBe('female');
   });
 });
 
@@ -178,6 +214,46 @@ describe('classifyBiomarkerValue', () => {
   test('valor ausente -> unknown con etiqueta —', () => {
     const glu = byId.get('glucosa-en-ayunas')!;
     expect(classifyBiomarkerValue(glu, undefined)).toMatchObject({ status: 'unknown', label: '—' });
+  });
+});
+
+describe('Testosterona Libre — sobre el catálogo real', () => {
+  const testo = (): ReturnType<typeof parseObservationDefinition> => byId.get('testosterona-libre')!;
+
+  test('varón: convencional 38–190, óptimo 150–250 pg/mL', () => {
+    expect(classifyBiomarkerValue(testo(), 100, 'male', 45).status).toBe('normal');
+    expect(classifyBiomarkerValue(testo(), 200, 'male', 45).status).toBe('optimal');
+    expect(classifyBiomarkerValue(testo(), 300, 'male', 45).status).toBe('high');
+    expect(classifyBiomarkerValue(testo(), 20, 'male', 45).status).toBe('low');
+  });
+
+  // El rango de varón (38–190 pg/mL) aplicado a una mujer la dejaba siempre por
+  // debajo del piso, o sea con hipogonadismo falso. Con el rango femenino, 4
+  // pg/mL es un valor perfectamente bueno.
+  test('mujer premenopáusica: 4 pg/mL es óptimo, no un déficit', () => {
+    expect(classifyBiomarkerValue(testo(), 4, 'female', 35).status).toBe('optimal');
+    expect(classifyBiomarkerValue(testo(), 1.5, 'female', 35).status).toBe('normal');
+    expect(classifyBiomarkerValue(testo(), 0.5, 'female', 35).status).toBe('low');
+    expect(classifyBiomarkerValue(testo(), 9, 'female', 35).status).toBe('high');
+  });
+
+  test('mujer posmenopáusica: se usa su propia franja (0,5–4,0)', () => {
+    expect(classifyBiomarkerValue(testo(), 3, 'female', 60).status).toBe('normal');
+    expect(classifyBiomarkerValue(testo(), 5, 'female', 60).status).toBe('high');
+    expect(classifyBiomarkerValue(testo(), 0.3, 'female', 60).status).toBe('low');
+  });
+
+  test('sin edad, en una mujer, no arriesga una clasificación', () => {
+    expect(classifyBiomarkerValue(testo(), 4, 'female').status).toBe('unknown');
+  });
+
+  test('conserva la nota de método (Vermeulen, no inmunoensayo directo)', () => {
+    const od = (bundle.entry ?? [])
+      .map((e) => e.resource as ObservationDefinition)
+      .find((r) => r.identifier?.some((i) => i.value === 'testosterona-libre'))!;
+    const nota = od.extension?.find((e) => e.url.endsWith('/formula-derivado'))?.valueString ?? '';
+    expect(nota).toMatch(/Vermeulen/);
+    expect(nota).toMatch(/inmunoensayo/i);
   });
 });
 

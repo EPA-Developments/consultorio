@@ -41,6 +41,13 @@ export interface BiomarkerRange {
   high?: number;
   /** 'male' | 'female' si el rango es específico por género; ausente si aplica a ambos. */
   gender?: string;
+  /**
+   * Edad en años a la que aplica el rango; ausente si aplica a cualquier edad.
+   * Lo usa, por ejemplo, la testosterona libre en mujeres, donde el rango
+   * premenopáusico y el posmenopáusico son distintos.
+   */
+  ageMin?: number;
+  ageMax?: number;
 }
 
 /** Forma normalizada de una ObservationDefinition de biomarcador. */
@@ -74,7 +81,13 @@ function intervalsForContext(od: ObservationDefinition, context: RangeContext): 
   const codes = RANGE_CONTEXT_CODES[context];
   return (od.qualifiedInterval ?? [])
     .filter((q) => q.context?.coding?.some((c) => c.code && codes.includes(c.code)))
-    .map((q) => ({ low: q.range?.low?.value, high: q.range?.high?.value, gender: q.gender }));
+    .map((q) => ({
+      low: q.range?.low?.value,
+      high: q.range?.high?.value,
+      gender: q.gender,
+      ageMin: q.age?.low?.value,
+      ageMax: q.age?.high?.value,
+    }));
 }
 
 /** Normaliza una ObservationDefinition de biomarcador a BiomarkerDefinition. */
@@ -98,22 +111,47 @@ export function parseObservationDefinition(od: ObservationDefinition): Biomarker
   };
 }
 
+function matchesAge(r: BiomarkerRange, ageYears?: number): boolean {
+  if (r.ageMin === undefined && r.ageMax === undefined) {
+    return true;
+  }
+  if (ageYears === undefined) {
+    return false;
+  }
+  return (r.ageMin === undefined || ageYears >= r.ageMin) && (r.ageMax === undefined || ageYears <= r.ageMax);
+}
+
 /**
- * Elige el rango aplicable a un género: el específico si existe, si no el no
- * especificado, y como último recurso el primero. Devuelve undefined si la
- * lista está vacía.
+ * Elige el rango aplicable a un paciente. Va de lo más específico a lo más
+ * general: género + edad, después género, después edad, después el rango sin
+ * calificar, y como último recurso el primero de la lista.
+ *
+ * El orden importa: si un biomarcador trae dos rangos para el mismo género que
+ * se distinguen solo por la edad (testosterona libre en mujeres, pre y
+ * posmenopausia), quedarse con el primero que matchea el género elegiría el
+ * premenopáusico para una paciente de 60.
  */
-export function rangeForGender(ranges: BiomarkerRange[], gender?: string): BiomarkerRange | undefined {
+export function rangeFor(ranges: BiomarkerRange[], gender?: string, ageYears?: number): BiomarkerRange | undefined {
   if (ranges.length === 0) {
     return undefined;
   }
+  const aplica = (r: BiomarkerRange): boolean => matchesAge(r, ageYears);
+
   if (gender) {
-    const specific = ranges.find((r) => r.gender === gender);
-    if (specific) {
-      return specific;
+    const delGenero = ranges.filter((r) => r.gender === gender);
+    if (delGenero.length > 0) {
+      // Si el biomarcador tiene rangos propios del género, la elección se hace
+      // DENTRO de ese grupo. Cuando ninguno cubre la edad no hay rango
+      // aplicable, y eso se informa como "sin dato": es preferible a mostrar el
+      // rango de otra franja etaria como si fuera el de la paciente.
+      return delGenero.find(aplica);
     }
   }
-  return ranges.find((r) => !r.gender) ?? ranges[0];
+  const sinGenero = ranges.filter((r) => !r.gender);
+  if (sinGenero.length > 0) {
+    return sinGenero.find(aplica);
+  }
+  return ranges.find(aplica) ?? ranges[0];
 }
 
 /** Indexa las definiciones por código LOINC (solo las que tienen system LOINC). */
@@ -193,18 +231,19 @@ function inRange(value: number, r: BiomarkerRange | undefined): boolean {
  * Clasifica un valor: óptimo si cae en el rango funcional/óptimo; normal si cae
  * en el convencional pero no en el óptimo; alto/bajo si queda fuera del
  * convencional (o del óptimo si no hay convencional). Respeta el rango por
- * género cuando existe.
+ * género y por edad cuando existe.
  */
 export function classifyBiomarkerValue(
   def: BiomarkerDefinition,
   value: number | undefined,
-  gender?: string
+  gender?: string,
+  ageYears?: number
 ): BiomarkerStatusInfo {
   if (value === undefined || !Number.isFinite(value)) {
     return STATUS_INFO.unknown;
   }
-  const optimal = rangeForGender(def.optimal, gender);
-  const conventional = rangeForGender(def.conventional, gender);
+  const optimal = rangeFor(def.optimal, gender, ageYears);
+  const conventional = rangeFor(def.conventional, gender, ageYears);
   const aboveConventional = conventional?.high !== undefined && value > conventional.high;
   const belowConventional = conventional?.low !== undefined && value < conventional.low;
   // Dentro del óptimo es Óptimo, AUNQUE el óptimo se extienda más allá del

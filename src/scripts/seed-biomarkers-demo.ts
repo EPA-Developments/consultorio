@@ -17,6 +17,7 @@ import { MedplumClient } from '@medplum/core';
 import type { Bundle, Observation, ObservationDefinition, Patient } from '@medplum/fhirtypes';
 import biomarkerBundle from '../../data/ckm/biomarker-definitions.json';
 import { seedSeries } from '../ckm/biomarker-seed';
+import { ageFromBirthDate } from '../ckm/clinical';
 import { parseObservationDefinition } from '../ckm/observation-definitions';
 import type { BiomarkerDefinition } from '../ckm/observation-definitions';
 
@@ -83,6 +84,8 @@ function buildObservation(
 
 async function seedPatient(medplum: MedplumClient, patient: Patient, specs: BiomarkerSpec[]): Promise<number> {
   const patientId = patient.id as string;
+  const edad = ageFromBirthDate(patient.birthDate);
+  const ageYears = Number.isFinite(edad) ? edad : undefined;
   const now = Date.now();
   let written = 0;
   for (const spec of specs) {
@@ -90,7 +93,7 @@ async function seedPatient(medplum: MedplumClient, patient: Patient, specs: Biom
     if (!biomarcadorId) {
       continue;
     }
-    const series = seedSeries(spec.def, patient.gender, `${patientId}|${biomarcadorId}`, SERIES_POINTS);
+    const series = seedSeries(spec.def, patient.gender, `${patientId}|${biomarcadorId}`, SERIES_POINTS, ageYears);
     if (!series) {
       continue;
     }
