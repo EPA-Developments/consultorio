@@ -199,11 +199,11 @@ describe('classifyBiomarkerValue — óptimo de una cola vs óptimo que excede e
     expect(classifyBiomarkerValue(t3, 4.4).status).toBe('optimal');
     expect(classifyBiomarkerValue(t3, 4.6).status).toBe('high'); // fuera del óptimo acotado
 
-    const dhea = byId.get('dhea-s')!; // conv 50–450, óptimo 350–500
-    expect(classifyBiomarkerValue(dhea, 470).status).toBe('optimal');
+    const dhea = byId.get('dhea-s')!; // conv male 80–560, óptimo male 350–500
+    expect(classifyBiomarkerValue(dhea, 470, 'male').status).toBe('optimal');
 
-    const testo = byId.get('testosterona-libre')!; // conv male 5–21, óptimo male 15–25
-    expect(classifyBiomarkerValue(testo, 23, 'male').status).toBe('optimal');
+    const testo = byId.get('testosterona-libre')!; // conv 38–190, óptimo male 150–250 pg/mL
+    expect(classifyBiomarkerValue(testo, 230, 'male').status).toBe('optimal');
   });
 });
 

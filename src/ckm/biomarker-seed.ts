@@ -51,10 +51,16 @@ export function seedValueFor(def: BiomarkerDefinition, gender: string | undefine
     }
   } else {
     // Fuera del convencional (alto si hay tope; bajo si solo hay piso).
+    //
+    // El óptimo puede extenderse más allá del convencional (testosterona libre,
+    // T3 libre, DHEA-S): hay que pasar los DOS topes, porque si no el valor
+    // "fuera de rango" termina cayendo dentro del óptimo y se clasifica Óptimo.
+    const hi = Math.max(cHi ?? Number.NEGATIVE_INFINITY, oHi ?? Number.NEGATIVE_INFINITY);
+    const lo = Math.min(cLo ?? Number.POSITIVE_INFINITY, oLo ?? Number.POSITIVE_INFINITY);
     if (cHi !== undefined) {
-      raw = cHi * 1.25;
+      raw = hi * 1.25;
     } else if (cLo !== undefined) {
-      raw = cLo * 0.7;
+      raw = lo * 0.7;
     } else if (oHi !== undefined) {
       raw = oHi * 1.4;
     } else if (oLo !== undefined) {

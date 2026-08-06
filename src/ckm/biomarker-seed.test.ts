@@ -14,28 +14,9 @@ const defs = ((bundleJson as unknown as Bundle).entry ?? [])
   .map(parseObservationDefinition);
 const byId = indexByBiomarcador(defs);
 
-/**
- * Definiciones cuyo rango óptimo cae ENTERAMENTE fuera del convencional. Con
- * rangos así no hay valor que se pueda clasificar de forma coherente, así que
- * quedan afuera de los invariantes de abajo — pero NO en silencio: el test
- * `rangos incoherentes` de más abajo verifica que la lista sea exactamente
- * esta, para que no crezca sin que nadie se entere.
- *
- * Las tres están pendientes de revisión clínica:
- * - Zinc sérico: unidad declarada µg/mL; el convencional (0,6–1,06) está en
- *   µg/mL y el óptimo (90–110) en µg/dL. Falta unificar.
- * - Testosterona Libre: unidad declarada pg/mL; el convencional (38–190) está
- *   en pg/mL y el óptimo (15–25) en ng/dL. Falta unificar.
- * - DHEA-S: convencional 20–300 y óptimo 350–500 µg/dL, sin solapamiento. Ya
- *   viene marcada con la extensión `rango-a-validar` en el catálogo.
- */
-const RANGOS_INCOHERENTES = ['zinc', 'testosterona-libre', 'dhea-s'];
-
-const coherentes = defs.filter((d) => !RANGOS_INCOHERENTES.includes(d.biomarcadorId ?? ''));
-
 describe('seedValueFor — cae en la banda pedida (sobre las 109 reales)', () => {
   test('banda "optimal" clasifica como Óptimo en toda def con rango óptimo', () => {
-    const withOptimal = coherentes.filter((d) => d.optimal.length > 0);
+    const withOptimal = defs.filter((d) => d.optimal.length > 0);
     expect(withOptimal.length).toBeGreaterThan(0);
     for (const def of withOptimal) {
       const v = seedValueFor(def, 'male', 'optimal');
@@ -45,7 +26,7 @@ describe('seedValueFor — cae en la banda pedida (sobre las 109 reales)', () =>
   });
 
   test('banda "out" clasifica como Alto/Bajo en toda def con rango convencional', () => {
-    const withConventional = coherentes.filter((d) => d.conventional.length > 0);
+    const withConventional = defs.filter((d) => d.conventional.length > 0);
     for (const def of withConventional) {
       const v = seedValueFor(def, 'male', 'out');
       expect(v, `${def.label} out`).toBeDefined();
@@ -56,7 +37,7 @@ describe('seedValueFor — cae en la banda pedida (sobre las 109 reales)', () =>
   test('banda "normal" clasifica como Normal en toda def con brecha construible (male y female)', () => {
     let covered = 0;
     for (const gender of ['male', 'female']) {
-      for (const def of coherentes) {
+      for (const def of defs) {
         const v = seedValueFor(def, gender, 'normal');
         if (v === undefined) {
           continue;
@@ -70,10 +51,12 @@ describe('seedValueFor — cae en la banda pedida (sobre las 109 reales)', () =>
 });
 
 describe('coherencia de los rangos del catálogo', () => {
-  // Si arreglás una de las tres, sacala de RANGOS_INCOHERENTES y este test
-  // vuelve a verde. Si aparece una cuarta, este test la delata.
-  test('las únicas definiciones con óptimo fuera del convencional son las conocidas', () => {
-    const detectadas = defs
+  // Un rango óptimo enteramente fuera del convencional casi siempre significa
+  // que los dos están escritos en unidades distintas, y con eso no hay valor
+  // que se pueda clasificar bien. Pasó con Zinc sérico (µg/mL vs µg/dL) y con
+  // Testosterona Libre (pg/mL vs ng/dL): el panel los mostraba mal.
+  test('ninguna definición tiene el óptimo fuera del convencional', () => {
+    const incoherentes = defs
       .filter((d) =>
         ['male', 'female'].some((g) => {
           const c = rangeForGender(d.conventional, g);
@@ -84,8 +67,40 @@ describe('coherencia de los rangos del catálogo', () => {
           return (o.low ?? -Infinity) > (c.high ?? Infinity) || (o.high ?? Infinity) < (c.low ?? -Infinity);
         })
       )
-      .map((d) => d.biomarcadorId);
-    expect(detectadas.sort()).toStrictEqual([...RANGOS_INCOHERENTES].sort());
+      .map((d) => d.label);
+    expect(incoherentes).toStrictEqual([]);
+  });
+
+  /**
+   * Misma unidad escrita de dos maneras: la definición declara la forma que se
+   * muestra en pantalla y el rango usa el código UCUM. No es un error, así que
+   * no cuenta como desalineación.
+   */
+  const SINONIMOS: Record<string, string> = {
+    'mL/min/{1.73_m2}': 'mL/min/1.73m2',
+    '{index}': 'indice',
+    'u[IU]/mL': 'uUI/mL',
+  };
+  const canonica = (u: string): string => SINONIMOS[u] ?? u;
+
+  // Las unidades de los rangos tienen que coincidir con la que declara la
+  // definición; si no, el número que se muestra no es el que se comparó. Así
+  // estaban Zinc sérico (µg/mL vs µg/dL) y Testosterona Libre (pg/mL vs ng/dL).
+  test('cada rango está en la unidad declarada por su definición', () => {
+    const bundleEntries = ((bundleJson as unknown as Bundle).entry ?? []).map((e) => e.resource as ObservationDefinition);
+    const desalineadas: string[] = [];
+    for (const od of bundleEntries) {
+      const unidad = od.quantitativeDetails?.unit?.coding?.[0]?.code;
+      for (const q of od.qualifiedInterval ?? []) {
+        for (const bound of [q.range?.low, q.range?.high]) {
+          const u = bound?.code ?? bound?.unit;
+          if (u && unidad && canonica(u) !== canonica(unidad)) {
+            desalineadas.push(`${od.code?.text}: ${u} != ${unidad}`);
+          }
+        }
+      }
+    }
+    expect(desalineadas).toStrictEqual([]);
   });
 });
 
