@@ -67,6 +67,17 @@ const Bots: BotDescription[] = [
     // antes ("Sandbox.Timedout: Task timed out after 10.00 seconds").
     timeout: 90,
   },
+  {
+    // Disparo MANUAL (medplum.executeBot antes de emitir una orden): sin
+    // criteria, no crea Subscription. Necesita los secrets REFEPS_DOMAIN_SECRET,
+    // REFEPS_DOMAIN_URL y, opcionalmente, REFEPS_ENV.
+    src: 'src/bots/refeps/refeps-verify.ts',
+    dist: 'dist/bots/refeps/refeps-verify.js',
+    runtimeVersion: CKM_RUNTIME,
+    // Dos saltos de red contra el Bus (token + consulta). Los 10 s por defecto
+    // alcanzan justo, y un pico de latencia del Bus daría Sandbox.Timedout.
+    timeout: 30,
+  },
 ];
 
 async function main(): Promise<void> {

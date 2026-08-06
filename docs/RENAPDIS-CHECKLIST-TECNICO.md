@@ -444,6 +444,33 @@ backend, con el secreto en variables de entorno del servidor.
 Por eso `refeps.ts` no firma ni hace red: arma los pedidos e interpreta las respuestas, y la
 firma queda del lado que tiene el secreto.
 
+#### Cómo se pone en marcha (arranca contra QA)
+
+El bot es `refeps-verify`, de disparo manual (sin `criteria`, no crea Subscription). Se
+despliega con el resto: `npm run build:bots`.
+
+Después hay que cargarle los **secrets en el Bot**, desde la app de Medplum (Bot →
+Secrets). **No van al repositorio ni a un `.env` del front:**
+
+| Secret                 | Valor                                                          |
+| ---------------------- | -------------------------------------------------------------- |
+| `REFEPS_DOMAIN_SECRET` | La _token secret word_ generada en dominios.msal.gob.ar         |
+| `REFEPS_DOMAIN_URL`    | Nuestro issuer: `https://api.medplum.com.ar`                     |
+| `REFEPS_ENV`           | `qa` (default) — poner `prod` recién después de validar contra QA |
+
+`REFEPS_ENV` en `qa` apunta a `bus-test.msal.gob.ar`. **Mientras no se toque, no se le pega
+a producción**, que es justamente lo que el archivo de variables de Postman hacía mal.
+
+#### Qué pasa si el Bus no contesta
+
+No bloquea. `checkRefeps` devuelve `unavailable` y el dashboard lo trata como aviso, no como
+rechazo. Un profesional no deja de estar matriculado porque el Bus del Ministerio esté
+caído, y trasladarle esa falla al médico sería un problema nuestro convertido en suyo.
+
+Los cinco veredictos de rechazo (`no-encontrado`, `profesional-inactivo`,
+`matricula-no-coincide`, `matricula-no-habilitada`, `matricula-vencida`) sí son respuestas
+del registro y se distinguen entre sí, porque piden acciones distintas.
+
 La local **no reemplaza** a la de REFEPS: una matrícula bien formada puede no existir. Pero
 emitir sin matrícula alguna era un defecto propio, no una brecha regulatoria, y ese ya está
 cerrado.
