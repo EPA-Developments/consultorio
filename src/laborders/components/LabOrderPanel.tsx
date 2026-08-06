@@ -36,7 +36,6 @@ import type { JSX } from 'react';
 import { MATRICULA_SYSTEM } from '../../ckm/argentina';
 import {
   approveProposals,
-  buildLabOrder,
   chunk,
   COBERTURAS_PRIVADAS,
   groupByRequisition,
@@ -45,13 +44,9 @@ import {
   resolveDerivedSources,
 } from '../lab-order';
 import type { LabOrderItem } from '../lab-order';
+import { createLabOrder } from '../lab-order-create';
 import { buildPrintData, printHtmlDocument, renderLabOrderHtml } from '../lab-order-print';
 import { useLabOrderCatalog } from '../hooks/useLabOrderCatalog';
-
-/** Genera un número de orden legible a partir de un UUID del navegador. */
-function newRequisitionId(): string {
-  return 'ORD-' + crypto.randomUUID().slice(0, 8).toUpperCase();
-}
 
 export function LabOrderPanel(props: { patient: Patient }): JSX.Element {
   const medplum = useMedplum();
@@ -128,32 +123,20 @@ export function LabOrderPanel(props: { patient: Patient }): JSX.Element {
     }
     setCreating(true);
     try {
-      const profile = medplum.getProfile();
-      const requester = profile?.resourceType === 'Practitioner' ? createReference(profile) : undefined;
       const orderItems = orderableIds.map((id) => byId.get(id)).filter((i): i is LabOrderItem => Boolean(i));
 
-      const orders = buildLabOrder({
-        subject: createReference(props.patient),
-        requester,
+      const { requests } = await createLabOrder(medplum, {
+        patient: props.patient,
         items: orderItems,
-        requisitionId: newRequisitionId(),
-        authoredOn: new Date().toISOString(),
         intent: 'order',
         note: `Cobertura: ${cobertura}`,
       });
-
-      const bundle: Bundle = {
-        resourceType: 'Bundle',
-        type: 'transaction',
-        entry: orders.map((resource) => ({ request: { method: 'POST', url: 'ServiceRequest' }, resource })),
-      };
-      await medplum.executeBatch(bundle);
 
       showNotification({
         icon: <IconCircleCheck />,
         color: 'teal',
         title: 'Orden generada',
-        message: `${orders.length} análisis solicitados (${cobertura}).`,
+        message: `${requests.length} análisis solicitados (${cobertura}).`,
       });
       clear();
       setReloadKey((k) => k + 1);

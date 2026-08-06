@@ -4,7 +4,7 @@
 // fenotipo metabólico, si hay criterios de candidatura, las contraindicaciones
 // y precauciones, qué datos faltan y qué moléculas tienen evidencia para este
 // perfil. La decisión es del médico.
-import { Alert, Badge, Card, Group, List, Loader, Stack, Text, ThemeIcon, Title } from '@mantine/core';
+import { Alert, Badge, Card, Divider, Group, List, Loader, Stack, Text, ThemeIcon, Title } from '@mantine/core';
 import type { Patient } from '@medplum/fhirtypes';
 import {
   IconAlertTriangle,
@@ -18,9 +18,10 @@ import type { JSX } from 'react';
 import { CANDIDACY_LABELS, PHENOTYPE_LABELS, PROTOCOL_PROVISIONAL_NOTE, PROTOCOL_VERIFIED } from '../eligibility';
 import type { Flag } from '../eligibility';
 import { useGLP1Assessment } from '../hooks/useGLP1Assessment';
+import { GLP1ProtocolSection } from './GLP1ProtocolSection';
 
 export function GLP1Panel(props: { patient: Patient }): JSX.Element {
-  const { assessment, loading } = useGLP1Assessment(props.patient);
+  const { assessment, inputs, loading } = useGLP1Assessment(props.patient);
 
   if (loading) {
     return <Loader m="xl" />;
@@ -156,6 +157,15 @@ export function GLP1Panel(props: { patient: Patient }): JSX.Element {
             Se pueden solicitar desde la pestaña "Órdenes de laboratorio".
           </Text>
         </Card>
+      )}
+
+      {/* Protocolo: solo si hay candidatura. Sin criterios o con una
+          contraindicación, mostrar un esquema de dosis sería sugerir tratar. */}
+      {inputs && (assessment.candidacy === 'candidato' || assessment.candidacy === 'posible') && (
+        <>
+          <Divider my="xs" />
+          <GLP1ProtocolSection patient={props.patient} inputs={inputs} assessment={assessment} />
+        </>
       )}
 
       {assessment.candidacy === 'no-candidato' && assessment.blockers.length === 0 && (
