@@ -9,6 +9,7 @@ import { createReference } from '@medplum/core';
 import type { Bundle, Patient, ServiceRequest } from '@medplum/fhirtypes';
 import type { LabOrderItem } from './lab-order';
 import { buildLabOrder } from './lab-order';
+import { checkPractitionerForEmission, EmissionBlockedError } from './practitioner-validation';
 
 /** Genera un número de orden legible a partir de un UUID del navegador. */
 export function newRequisitionId(): string {
@@ -40,7 +41,20 @@ export async function createLabOrder(
   params: CreateLabOrderParams
 ): Promise<CreatedLabOrder> {
   const profile = medplum.getProfile();
-  const requester = profile?.resourceType === 'Practitioner' ? createReference(profile) : undefined;
+  const practitioner = profile?.resourceType === 'Practitioner' ? profile : undefined;
+
+  // Una orden médica lleva la matrícula de quien la firma. Hasta ahora se
+  // imprimía "si estaba", así que una orden sin matrícula salía igual y el
+  // problema recién aparecía en el laboratorio. Las propuestas del paciente no
+  // pasan por acá: no las firma un profesional.
+  if ((params.intent ?? 'order') === 'order') {
+    const check = checkPractitionerForEmission(practitioner);
+    if (!check.canEmit) {
+      throw new EmissionBlockedError(check.problems);
+    }
+  }
+
+  const requester = practitioner ? createReference(practitioner) : undefined;
   const requisitionId = params.requisitionId ?? newRequisitionId();
 
   const requests = buildLabOrder({

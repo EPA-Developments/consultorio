@@ -108,7 +108,7 @@ Leyenda: ✅ presente · 🟡 parcial · ❌ ausente · ❔ no verificable desde
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Exige**   | Secciones tipadas: paciente, profesional firmante **con matrícula/Licencia Sanitaria Federal**, **diagnóstico**, fecha de emisión y prescripción. Validación de campos obligatorios antes de firmar.                                                                    |
 | **Tenemos** | 🟡 Modelo estructurado FHIR: paciente (nombre, DNI, nacimiento, **sexo**, cobertura), profesional (**matrícula, especialidad, domicilio**), fecha, ítems con LOINC y **diagnóstico** (`reasonCode`). Es nuestro punto más fuerte.                                       |
-| **Falta**   | ❌ Validación de matrícula contra **REFEPS** antes de permitir emitir _(requisito de aprobación, ver §5.2)_. ❌ Validación server-side que impida emitir con secciones vacías. ❌ **UI para cargar el diagnóstico** (el modelo lo soporta, falta el campo en pantalla). |
+| **Falta**   | ❌ Validación de matrícula contra **REFEPS** antes de permitir emitir _(requisito de aprobación, ver §5.2)_. 🟡 Validación que impida emitir con secciones vacías: **la mitad local está hecha** — `practitioner-validation.ts` bloquea la emisión sin nombre o sin matrícula, en `createLabOrder`, que es el único camino de escritura. Falta el resto de las secciones. ❌ **UI para cargar el diagnóstico** (el modelo lo soporta, falta el campo en pantalla). |
 
 ### 3.3 Vigencia ❌
 
@@ -352,6 +352,34 @@ favor de que el circuito de repositorio de ReNaPDiS es otro camino, pero **no re
 las preguntas #12, #13 y #15 — siguen necesitando la consulta a la DNSIS.
 
 ❌ Tampoco responde #5 (residencia local del dato).
+
+#### Datos de conexión (de los environments de Postman, 08.06)
+
+| Variable            | Valor / uso                                                              |
+| ------------------- | ------------------------------------------------------------------------ |
+| `busUrl`            | `https://bus.msal.gob.ar` — mismo host en QA y PROD                       |
+| `domainUrl`         | Viene de ejemplo (`https://dominio.com.ar`); va **nuestro issuer**, `https://api.medplum.com.ar` |
+| `domainTokenSecret` | La _secret word_ del panel. Vacía en lo compartido: **no se filtró nada** |
+| `accessToken` / `token` | Se obtienen; no se cargan a mano                                     |
+| `appName` / `appPassword` / `appAccessToken` | Segundo juego de credenciales, de uso todavía no confirmado |
+
+QA y PROD comparten `busUrl`: **el ambiente lo define la credencial, no la URL.** Cuidado
+al configurar — apuntar a producción con la credencial equivocada no va a fallar por la URL.
+
+⚠️ **Las colecciones de Practitioner/REFEPS todavía no las tenemos.** Lo descargado hasta
+ahora fue de Pacientes/Federador, y además los dos archivos de colección vinieron como
+HTML (la página del portal) en vez de JSON: la descarga se hizo sin sesión válida.
+
+#### Estado de la validación de matrícula
+
+| Mitad                    | Estado                                                                    |
+| ------------------------ | ------------------------------------------------------------------------- |
+| **Local** (forma, presencia) | ✅ `practitioner-validation.ts`. Bloquea emitir sin nombre o sin matrícula. Un formato fuera de MN/MP avisa pero no bloquea: no tenemos la lista de todas las jurisdicciones y rechazarlo dejaría afuera matrículas válidas |
+| **Contra REFEPS** (existe y está vigente) | ❌ Falta el contrato del servicio Practitioner del Bus |
+
+La local **no reemplaza** a la de REFEPS: una matrícula bien formada puede no existir. Pero
+emitir sin matrícula alguna era un defecto propio, no una brecha regulatoria, y ese ya está
+cerrado.
 
 #### Advertencia de alcance
 
