@@ -298,6 +298,68 @@ requisitos que en papel.
 3. 🔴 **Inscripción de bases de datos ante la AAIP**: es un **campo del formulario** y un
    **adjunto**. Trámite previo con tiempos propios → **conviene iniciarlo ya**.
 
+### 5.4-bis Bus de Interoperabilidad (dominios.msal.gob.ar) — ✅ credenciales obtenidas (08.06)
+
+> **No es ReNaPDiS.** Son dos trámites distintos ante organismos distintos, y conviene no
+> mezclarlos: el Bus federa **padrones** (quién es este paciente, este profesional, este
+> establecimiento); ReNaPDiS registra **plataformas de prescripción**. Tener acceso al Bus no
+> aporta nada al trámite de inscripción por sí solo.
+
+**Lo que hay:** sistema `4002`, credencial `2741`, issuer registrado `https://api.medplum.com.ar`.
+
+| Servicio        | Padrón nacional detrás                  | Scope habilitado                        |
+| --------------- | --------------------------------------- | --------------------------------------- |
+| Pacientes       | Federador Nacional de Pacientes         | `Patient/*.read`, `Patient/*.write`     |
+| Practitioner    | REFEPS                                  | `Practitioner/*.read`                   |
+| Organizaciones  | SISA / REFES                            | `Organization/*.read`                   |
+| Location        | —                                       | `Location/*.read`                       |
+| Inmunizaciones  | NOMIVAC                                 | `Immunization/*.read`                   |
+
+Cada servicio trae guía, endpoint de token, colección Postman y variables por ambiente
+(QA / PROD).
+
+**Restricción de integración a respetar:** el token se pide **con el scope puntual del
+servicio que se va a consumir**, no con todos juntos. Si se piden todos, la solicitud se
+rechaza. Hay que emitir un token por servicio.
+
+**Seguridad:** la _token secret word_ se genera una sola vez desde ese panel. Va a
+variables de entorno / gestor de secretos del servidor — **nunca al repositorio, a un
+issue, ni pegada en un chat**. Si se filtra, se regenera desde el mismo panel.
+
+#### Qué mueve, y qué no
+
+✅ **Desbloquea el hallazgo 🔴 de §5.2 (REFEPS).** La validación de matrícula contra REFEPS
+es **requisito de aprobación** del trámite y hasta ahora no teníamos por dónde entrar.
+`Practitioner/*.read` es exactamente esa puerta. Es el mayor avance concreto.
+
+🟡 **Refuerza §3.6 (interoperabilidad) y la pregunta abierta #6.** Que el propio bus del
+Ministerio sea FHIR deja de hacer de "FHIR es el estándar esperado" una inferencia nuestra.
+No es todavía una cita del art. 4 —el formulario acepta ADESFA y JSON no FHIR—, pero baja
+mucho el riesgo de haber elegido mal la arquitectura.
+
+🟡 **Da acceso a los `system` canónicos nacionales.** §3.6 marca como faltante que usamos
+URIs propias. Las **variables por ambiente y las colecciones Postman** de cada servicio
+contienen esos identificadores canónicos. Es lo que faltaba para alinear, y ahora es
+recuperable en vez de adivinable.
+
+🟡 **§3.1 (identificación del paciente).** El Federador aporta identidad nacional del
+paciente. **No aporta el CUIR**, que es el identificador de la prescripción y lo asigna el
+sistema de ReNaPDiS tras la inscripción. Son cosas distintas y no se reemplazan.
+
+❌ **No mueve las tres preguntas bloqueantes.** Los scopes **no incluyen `ServiceRequest`
+ni `MedicationRequest`**: este bus no transporta prescripciones ni órdenes. Es evidencia a
+favor de que el circuito de repositorio de ReNaPDiS es otro camino, pero **no responde**
+las preguntas #12, #13 y #15 — siguen necesitando la consulta a la DNSIS.
+
+❌ Tampoco responde #5 (residencia local del dato).
+
+#### Advertencia de alcance
+
+Tener credenciales **no es tener integración**. Vale el criterio que atraviesa todo el
+documento: en el informe del art. 4 solo se declara lo que está **efectivamente en el
+circuito**. Hasta que el dashboard consulte REFEPS antes de emitir, §3.2 sigue en ❌ y
+§3.6 sigue en 🟡.
+
 ### 5.3 Documentación a adjuntar ✅ CONFIRMADO
 
 | Adjunto                                                                     | Obligatorio          |
@@ -353,8 +415,10 @@ Llevar esta lista junto al informe legal:
 4. **Plazos de vigencia** reales de la prescripción (los 30/60 días no están confirmados).
 5. ¿"Responsable del tratamiento en territorio argentino" implica **residencia local del
    dato**?
-6. ¿Qué estándar de interoperabilidad es **obligatorio**? (HL7 FHIR/SNOMED es inferencia
-   nuestra, no cita.)
+6. 🟡 ¿Qué estándar de interoperabilidad es **obligatorio**? (HL7 FHIR/SNOMED era inferencia
+   nuestra, no cita.) — **Muy atenuada** (§5.4-bis): el formulario acepta explícitamente HL7
+   FHIR y el propio Bus del Ministerio es FHIR. Falta solo el texto del artículo para cerrarla,
+   pero ya no es un riesgo de arquitectura.
 7. **Período de conservación** exigido a los repositorios (¿3 años? ¿10 por analogía con
    historia clínica?).
 8. ~~Lista de documentación adjunta~~ — ✅ **resuelto** (§5.3). Falta solo el texto literal de
@@ -374,16 +438,24 @@ Llevar esta lista junto al informe legal:
     depositarlas en un repositorio de terceros para que el laboratorio las valide? Si la
     respuesta es sí, hay que **elegir el repositorio e integrarse por API** — trabajo no
     contemplado en ninguna estimación previa.
+    _Dato nuevo (§5.4-bis): el Bus de Interoperabilidad **no** expone `ServiceRequest` ni
+    `MedicationRequest`, así que el repositorio de ReNaPDiS no es el Bus. Acota dónde buscar,
+    pero la pregunta sigue abierta._
 
 ---
 
 ## 7. Cómo seguir
 
 1. **Ahora**: corregir P0 (son riesgos reales, no burocracia).
-2. **En paralelo**: conseguir los textos oficiales (§6) y llevarlos al abogado junto con
-   `RECETARIO-FASE2-LEGAL.md`.
-3. **Con la definición de firma**: ejecutar P1, que es el núcleo del cumplimiento.
-4. **Antes de presentar**: P2, y recién entonces armar el informe del art. 4 con evidencia
+2. **Ahora que hay credenciales del Bus** (§5.4-bis): integrar **REFEPS** para validar
+   matrícula antes de emitir. Es requisito de aprobación del trámite y es lo único de la lista
+   que pasó de "no sabemos por dónde" a "se puede hacer". Para arrancar hace falta la **guía y
+   la colección Postman del servicio Practitioner**, que están en el mismo panel.
+3. **En paralelo**: conseguir los textos oficiales (§6) y llevarlos al abogado junto con
+   `RECETARIO-FASE2-LEGAL.md`. La consulta a la DNSIS por las preguntas **#12, #13 y #15**
+   es la que puede cambiar el encuadre entero: conviene mandarla antes que el resto.
+4. **Con la definición de firma**: ejecutar P1, que es el núcleo del cumplimiento.
+5. **Antes de presentar**: P2, y recién entonces armar el informe del art. 4 con evidencia
    real.
 
 > **Criterio que atraviesa todo:** en el informe del art. 4 solo se declara lo que está
