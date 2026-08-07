@@ -1,5 +1,13 @@
 # Integración del portal del paciente con el recetario (Fase 1)
 
+> **Dos hilos de coordinación viven acá.** Las secciones 1–8 son el contrato del
+> flujo de solicitud de estudios (Fase 1, ya implementado del lado del
+> dashboard). La **sección 9** abre un hilo nuevo con **recepción**
+> (`recepcion.biowellness.ar`): las sesiones acumuladas de terapias biológicas,
+> que el portal va a querer mostrarle al paciente y que el dashboard ya usa como
+> umbral de seguridad. Comparten documento porque comparten equipo y proyecto
+> Medplum, no porque sean el mismo flujo.
+
 > **Qué es este documento.** El contrato de interoperabilidad entre el
 > **dashboard** (médico, `biowellness/dashboard`) y el **portal del paciente**
 > (`biowellness/portal`, servido en bio.medplum.com.ar) para el flujo de
@@ -310,3 +318,135 @@ Observations del paciente.)
   paciente y se deja constancia en una nota). El badge pasa a "Orden médica".
   Es decir: apenas el portal empiece a crear solicitudes, el loop ya cierra de
   punta a punta.
+
+---
+
+# 9. Sesiones acumuladas de terapias biológicas (hilo con recepción)
+
+> **Interlocutor**: el repo de recepción (`recepcion.biowellness.ar`) y el
+> portal del paciente. **Estado**: el contador está implementado y mergeado en
+> el dashboard (`src/bio/session-count.ts`); faltan datos de recepción, no
+> arquitectura.
+
+## 9.1 De qué se trata
+
+El tope de exposición del HBOT no se mide contra la serie en curso sino contra
+**todo lo que el paciente lleva hecho en su vida**. Alguien que hace un bloque
+diario preparando una maratón y otro seis meses después acumula los dos. A las
+100 sesiones el Panel Bio del dashboard pide evaluación médica antes de seguir
+indicando.
+
+Para el portal es, además, un número que el paciente quiere ver: _"llevás 34
+sesiones de cámara"_. Son el mismo dato con dos usos distintos, y esa diferencia
+es la que gobierna todo lo que sigue.
+
+## 9.2 La regla que no se puede romper: comprado ≠ administrado
+
+Un turno `booked` está **pago y reservado**. No dice que el paciente haya
+entrado a la cámara. Alguien compra un pack de diez y hace seis; alguien recibe
+una sesión de cortesía que no se factura.
+
+Por eso el conteo viaja siempre con su procedencia (`OrigenConteo`):
+
+| Valor           | Qué significa                         | ¿Sirve para mostrarle al paciente? | ¿Sirve como umbral de seguridad? |
+| --------------- | ------------------------------------- | ---------------------------------- | -------------------------------- |
+| `administradas` | Sesiones registradas al administrarse | Sí                                 | **Sí**                           |
+| `facturacion`   | Estimado desde lo comprado            | Sí, aclarando que es estimado      | **No**                           |
+| `desconocido`   | Sin determinar                        | No                                 | No                               |
+
+**El portal puede mostrar cualquiera de los tres si dice cuál es. El gate de
+seguridad solo acepta `administradas`.** No es una formalidad: un total
+estimado por lo comprado, presentado como total, tranquiliza sobre una
+exposición oxidativa que nadie midió.
+
+## 9.3 Contrato de lectura (lo que el dashboard ya hace)
+
+Las dos apps comparten el proyecto Medplum
+(`7f068d7d-4633-46e9-9eff-d52bc03625b9` en `api.medplum.com.ar`), así que no hay
+capa de integración: se leen los `Appointment` directo.
+
+- **Qué cuenta**: `status = fulfilled`. Además, `arrived` y `checked-in` **con
+  fecha pasada** — el paciente vino y nadie cerró el turno. Se cuentan de más a
+  propósito: el tope pide evaluación, no bloquea, así que contar de menos es el
+  error caro. El panel informa cuántos son.
+- **Qué no cuenta**: `pending`, `booked`, `proposed`, `waitlist`, `cancelled`,
+  `noshow`, `entered-in-error`.
+- **Cómo se atribuye la terapia**: por el código de servicio del turno. Se busca
+  primero en `Appointment.serviceType[].coding[]` con
+  `system = https://biowellness.ar/fhir/CodeSystem/servicio`, y si no está, en
+  cualquier extensión cuyo URL termine en `/itemCodigo`.
+- **Si aparece un código desconocido**: el conteo se marca no confiable, los
+  topes **no se evalúan** y el panel lo dice. Nunca se informa un total parcial
+  como si fuera el total.
+
+## 9.4 Lo que hace falta de recepción
+
+1. **La lista completa de códigos de servicio** (los `ActivityDefinition` con
+   `identifier.system = .../CodeSystem/servicio`). Hoy el catálogo tiene dos
+   confirmados: `HBOT_MONO` e `IHHT`.
+   **Ojo con esto**: monoplaza, biplaza y multiplaza son **tres servicios y una
+   sola exposición**. El tope de 100 es de HBOT, no de un equipo. El modelo ya
+   soporta varios códigos por terapia; hay que decirle cuáles.
+2. **Un `Appointment` real en JSON**, de un turno ya cerrado, para fijar el URL
+   literal de la extensión del código. El bot de reserva usa `EXT.itemCodigo`
+   pero la constante vive en un módulo que todavía no vimos.
+3. **Confirmar que el turno llega a `fulfilled`.** `bw-reservar-turno` crea el
+   turno en `pending`/`booked` y ahí termina; las transiciones a Llegó / En
+   curso / Completado las hace otro módulo. Si en la práctica los turnos quedan
+   en `booked` para siempre, el contador da cero — y eso se arregla en
+   recepción, no en el dashboard, porque `booked` es facturación.
+
+## 9.5 Sembrado del histórico
+
+**De dónde salen los pagos hoy**: `Coverage` (paquetes y planes, con
+`consumirSesionDePlan`), `Invoice`, y MercadoPago como pasarela de la seña. Todo
+lo que ya está en Medplum **no necesita exportarse**: es FHIR en el mismo
+proyecto y se lee directo.
+
+Lo que sí hay que sembrar es lo **anterior al sistema**. Ahí la única fuente
+suele ser la cobranza, y eso está bien **si queda etiquetado como tal**.
+
+**Cómo NO hacerlo**: crear `Appointment` con `status: 'fulfilled'` para cada
+sesión histórica. El contador los tomaría como administradas y el histórico
+entraría al umbral de seguridad disfrazado de registro clínico. Además inventa
+turnos que nunca existieron.
+
+**Cómo sí**: un **saldo inicial por paciente y por terapia** — un recurso con el
+total previo y su procedencia — que el contador suma a lo que lee de los turnos.
+Cuando hay saldo inicial, la procedencia del total degrada al eslabón más débil:
+`administradas` + `facturacion` = `facturacion`.
+
+> **Pendiente en el dashboard**: `contarSesiones()` hoy devuelve siempre
+> `origenConteo: 'administradas'`, porque los turnos son su única fuente. Sumar
+> el saldo inicial y degradar la procedencia es un cambio chico, pero hay que
+> hacerlo **antes** de sembrar nada: si el histórico entra sin que el contador
+> sepa degradar, el número queda mal etiquetado desde el día uno.
+
+Con la exportación en la mano (formato libre: CSV, planilla, dump), lo que hace
+falta por fila es: paciente identificable, terapia, y cantidad de sesiones o
+fecha. Si viene por pack comprado y no por sesión, sirve igual — es
+`facturacion`, que es exactamente lo que el campo declara.
+
+## 9.6 Pendiente aparte: contraindicaciones en `Flag`
+
+Recepción guarda las contraindicaciones del paciente como recursos **`Flag`**
+(`subject=Patient&status=active`) y su regla R-02 las valida antes de reservar.
+El gate del Panel Bio lee **`Condition`**.
+
+Son dos lecturas sobre el mismo paciente que no se ven entre sí: una
+contraindicación cargada por recepción hoy es invisible para el Panel Bio, y una
+`Condition` de la historia clínica es invisible para la validación de recepción.
+Un paciente puede pasar un control y fallar el otro según por dónde entre.
+
+Para reconciliarlas alcanza con saber **con qué sistema de códigos escribe
+recepción los `Flag`** — es otro string, no otro diseño.
+
+## 9.7 Definición de "listo" (hilo sesiones acumuladas)
+
+- [ ] Catálogo de servicios completo mapeado a las seis terapias del Panel Bio.
+- [ ] Un `Appointment` real confirma el URL de la extensión.
+- [ ] Confirmado que recepción cierra los turnos en `fulfilled`.
+- [ ] Saldo inicial implementado en el dashboard (con degradación de procedencia).
+- [ ] Histórico sembrado y etiquetado `facturacion`.
+- [ ] El portal muestra el acumulado al paciente **con su procedencia visible**.
+- [ ] `Flag` de recepción y `Condition` del dashboard reconciliados.
