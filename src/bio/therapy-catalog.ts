@@ -113,6 +113,61 @@ export interface Validacion {
   validadoEl?: string;
 }
 
+/**
+ * Objetivo por el que se indica la terapia. **Es lo que define la frecuencia y
+ * la duración**, no la terapia: un corredor preparando una maratón puede ir a
+ * la cámara todos los días, y el mismo equipo en un programa de longevidad va
+ * dos o tres veces por semana. No hay "la serie" de HBOT; hay la serie para
+ * este objetivo.
+ */
+export type Objetivo =
+  | 'longevidad'
+  | 'preparacion-deportiva'
+  | 'recuperacion-deportiva'
+  | 'reparacion-tisular'
+  | 'energia-fatiga'
+  | 'estres-sueno';
+
+export const OBJETIVO_LABELS: Record<Objetivo, string> = {
+  longevidad: 'Longevidad y rejuvenecimiento',
+  'preparacion-deportiva': 'Preparación para un evento deportivo',
+  'recuperacion-deportiva': 'Recuperación del esfuerzo',
+  'reparacion-tisular': 'Reparación tisular',
+  'energia-fatiga': 'Energía y fatiga',
+  'estres-sueno': 'Estrés y sueño',
+};
+
+/**
+ * Duración de un esquema. No siempre es un número de semanas: la preparación
+ * para una competencia dura hasta el evento, y una rutina de recuperación no
+ * tiene fin previsto.
+ */
+export type Duracion =
+  | { tipo: 'semanas'; semanas: number }
+  | { tipo: 'hasta-evento' }
+  | { tipo: 'abierta' };
+
+export interface Esquema {
+  objetivo: Objetivo;
+  /** Frecuencias posibles; la más alta es la del bloque intensivo. */
+  frecuenciaSemanal: number[];
+  duracion: Duracion;
+  nota?: string;
+}
+
+/**
+ * Tope de exposición acumulada. Se cuenta a lo largo de TODAS las series, no
+ * dentro de una: alguien que hace un bloque diario para una maratón y otro seis
+ * meses después acumula los dos.
+ */
+export interface LimiteAcumulado {
+  sesionesAcumuladas: number;
+  severidad: 'evaluacion' | 'seguimiento';
+  texto: string;
+  evidencia: NivelEvidencia;
+  fuente?: string;
+}
+
 export interface Terapia {
   id: string;
   nombre: string;
@@ -121,12 +176,15 @@ export interface Terapia {
   medicalizacion: Medicalizacion;
   validacion: Validacion;
   resumen: string;
+  /** Un esquema por objetivo: la frecuencia depende de para qué se indica. */
+  esquemas: Esquema[];
+  /** Topes de exposición acumulada, si la terapia los tiene. */
+  limitesAcumulados?: LimiteAcumulado[];
   /** Para las terapias que son un circuito de varias modalidades en orden fijo. */
   modalidades?: string[];
   /** Aclaración de alcance cuando todavía no está definido a qué camino pertenece. */
   alcancePendiente?: string;
   parametros: ParametroTerapia[];
-  serie: { semanas: number; frecuenciasSemanales: number[] };
   indicaciones: Indicacion[];
   contraindicaciones: Contraindicacion[];
   tamizajePrevio: TamizajePrevio[];
@@ -169,10 +227,50 @@ export function contraindicacionesPorSeveridad(t: Terapia, severidad: Severidad)
   return t.contraindicaciones.filter((c) => c.severidad === severidad);
 }
 
+/** Terapias que sirven a un objetivo dado. */
+export function terapiasPorObjetivo(objetivo: Objetivo): Terapia[] {
+  return CATALOGO.terapias.filter((t) => t.esquemas.some((e) => e.objetivo === objetivo));
+}
+
+/** El esquema de una terapia para un objetivo, si lo tiene. */
+export function esquemaPara(t: Terapia, objetivo: Objetivo): Esquema | undefined {
+  return t.esquemas.find((e) => e.objetivo === objetivo);
+}
+
+/** Objetivos que cubre el catálogo, sin repetir. */
+export function objetivosDisponibles(): Objetivo[] {
+  return [...new Set(CATALOGO.terapias.flatMap((t) => t.esquemas.map((e) => e.objetivo)))];
+}
+
 /**
- * Sesiones que tiene una serie con una frecuencia dada.
- * La serie se define en semanas, no en sesiones: el total depende del ritmo.
+ * Sesiones de un esquema con una frecuencia dada.
+ *
+ * Devuelve undefined cuando la duración no es un número de semanas: una
+ * preparación para un evento dura hasta el evento y una rutina abierta no
+ * termina. Informar un total ahí sería inventarlo.
  */
-export function sesionesDeLaSerie(t: Terapia, frecuenciaSemanal: number): number {
-  return t.serie.semanas * frecuenciaSemanal;
+export function sesionesDelEsquema(esquema: Esquema, frecuenciaSemanal: number): number | undefined {
+  return esquema.duracion.tipo === 'semanas' ? esquema.duracion.semanas * frecuenciaSemanal : undefined;
+}
+
+/** Texto de la duración, para mostrar. */
+export function duracionTexto(duracion: Duracion): string {
+  switch (duracion.tipo) {
+    case 'semanas':
+      return `${duracion.semanas} semanas`;
+    case 'hasta-evento':
+      return 'hasta el evento';
+    default:
+      return 'abierta';
+  }
+}
+
+/**
+ * Límites de exposición acumulada que ya se alcanzaron, del más grave al menos.
+ * Se evalúa contra el total histórico del paciente, no contra la serie actual.
+ */
+export function limitesAlcanzados(t: Terapia, sesionesAcumuladas: number): LimiteAcumulado[] {
+  return (t.limitesAcumulados ?? [])
+    .filter((l) => sesionesAcumuladas >= l.sesionesAcumuladas)
+    .sort((a, b) => b.sesionesAcumuladas - a.sesionesAcumuladas);
 }

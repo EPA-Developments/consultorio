@@ -16,10 +16,12 @@ import { useBioSafety } from '../hooks/useBioSafety';
 import { RESULTADO_LABELS } from '../safety';
 import type { EvaluacionTerapia, HallazgoSeguridad } from '../safety';
 import {
+  duracionTexto,
   EJE_LABELS,
   EVIDENCIA_LABELS,
   MEDICALIZACION_LABELS,
-  sesionesDeLaSerie,
+  OBJETIVO_LABELS,
+  sesionesDelEsquema,
   SEVERIDAD_LABELS,
 } from '../therapy-catalog';
 import type { Eje } from '../therapy-catalog';
@@ -220,15 +222,63 @@ function TerapiaItem(props: { evaluacion: EvaluacionTerapia }): JSX.Element {
             </List>
           </div>
 
-          <Group gap={6}>
-            <IconClock size={14} />
-            <Text size="sm">
-              Serie de {terapia.serie.semanas} semanas ·{' '}
-              {terapia.serie.frecuenciasSemanales
-                .map((f) => `${f}/sem = ${sesionesDeLaSerie(terapia, f)} sesiones`)
-                .join(' · ')}
-            </Text>
-          </Group>
+          {/* La frecuencia depende del objetivo, no de la terapia: un corredor
+              preparando una maratón puede ir todos los días. */}
+          <div>
+            <Group gap={6} mb={4}>
+              <IconClock size={14} />
+              <Text size="sm" fw={600}>
+                Esquemas según el objetivo
+              </Text>
+            </Group>
+            <Stack gap={6}>
+              {terapia.esquemas.map((e) => {
+                const min = Math.min(...e.frecuenciaSemanal);
+                const max = Math.max(...e.frecuenciaSemanal);
+                const frecuencia = min === max ? `${min}/sem` : `${min}–${max}/sem`;
+                const total = sesionesDelEsquema(e, max);
+                return (
+                  <div key={e.objetivo}>
+                    <Text size="sm">
+                      <strong>{OBJETIVO_LABELS[e.objetivo]}</strong> — {frecuencia} ·{' '}
+                      {duracionTexto(e.duracion)}
+                      {total !== undefined ? ` · hasta ${total} sesiones` : ''}
+                    </Text>
+                    {e.nota && (
+                      <Text size="xs" c="dimmed" fs="italic">
+                        {e.nota}
+                      </Text>
+                    )}
+                  </div>
+                );
+              })}
+            </Stack>
+          </div>
+
+          {terapia.limitesAcumulados && terapia.limitesAcumulados.length > 0 && (
+            <div>
+              <Text size="sm" fw={600} mb={4}>
+                Topes de exposición acumulada
+              </Text>
+              <Stack gap={4}>
+                {terapia.limitesAcumulados.map((l) => (
+                  <div key={l.sesionesAcumuladas}>
+                    <Text size="sm">
+                      <strong>{l.sesionesAcumuladas} sesiones</strong> — {l.texto}
+                    </Text>
+                    {l.fuente && (
+                      <Text size="xs" c="dimmed" fs="italic">
+                        {l.fuente}
+                      </Text>
+                    )}
+                  </div>
+                ))}
+              </Stack>
+              <Text size="xs" c="dimmed" mt={4}>
+                Se cuentan a lo largo de todas las series, no dentro de una.
+              </Text>
+            </div>
+          )}
         </Stack>
       </Accordion.Panel>
     </Accordion.Item>

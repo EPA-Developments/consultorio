@@ -1,14 +1,19 @@
 import {
   contraindicacionesPorSeveridad,
+  duracionTexto,
+  esquemaPara,
   EVIDENCIA_LABELS,
+  limitesAlcanzados,
+  objetivosDisponibles,
   porEje,
-  sesionesDeLaSerie,
+  sesionesDelEsquema,
   terapiaPorId,
   terapiasPorEje,
   todasLasTerapias,
   versionCatalogo,
 } from './therapy-catalog';
-import type { NivelEvidencia, Severidad } from './therapy-catalog';
+import type { NivelEvidencia, Objetivo, Severidad } from './therapy-catalog';
+import { terapiasPorObjetivo } from './therapy-catalog';
 
 describe('Catálogo', () => {
   test('tiene las seis terapias del catálogo publicado', () => {
@@ -182,18 +187,90 @@ describe('Contraindicaciones', () => {
   });
 });
 
-describe('Series', () => {
-  test('la serie se define en semanas y el total depende de la frecuencia', () => {
-    const hbot = terapiaPorId('hbot')!;
-    expect(hbot.serie.semanas).toBe(8);
-    expect(sesionesDeLaSerie(hbot, 2)).toBe(16); // Standard
-    expect(sesionesDeLaSerie(hbot, 3)).toBe(24); // Intensivo
+describe('Esquemas: la serie depende del objetivo, no de la terapia', () => {
+  // La corrección que trajo el caso del maratonista: no existe "la serie" de
+  // HBOT. Existe la serie para preparar una competencia y la serie para un
+  // programa de longevidad, y son distintas.
+  test('cada terapia declara al menos un esquema, con objetivo y frecuencia', () => {
+    for (const t of todasLasTerapias()) {
+      expect(t.esquemas.length, t.nombre).toBeGreaterThan(0);
+      for (const e of t.esquemas) {
+        expect(e.frecuenciaSemanal.length, `${t.nombre}/${e.objetivo}`).toBeGreaterThan(0);
+        expect(e.duracion.tipo, `${t.nombre}/${e.objetivo}`).toBeTruthy();
+      }
+    }
   });
 
-  test('todas las terapias declaran sus frecuencias posibles', () => {
-    for (const t of todasLasTerapias()) {
-      expect(t.serie.frecuenciasSemanales.length, t.nombre).toBeGreaterThan(0);
+  test('HBOT admite frecuencia diaria para preparar un evento y baja para longevidad', () => {
+    const hbot = terapiaPorId('hbot')!;
+    const evento = esquemaPara(hbot, 'preparacion-deportiva')!;
+    const longevidad = esquemaPara(hbot, 'longevidad')!;
+    expect(Math.max(...evento.frecuenciaSemanal)).toBe(7);
+    expect(Math.min(...longevidad.frecuenciaSemanal)).toBe(2);
+  });
+
+  test('una preparación para evento no tiene semanas: dura hasta el evento', () => {
+    const evento = esquemaPara(terapiaPorId('hbot')!, 'preparacion-deportiva')!;
+    expect(evento.duracion.tipo).toBe('hasta-evento');
+    expect(duracionTexto(evento.duracion)).toBe('hasta el evento');
+  });
+
+  // Informar un total en un esquema sin fin sería inventarlo.
+  test('sesionesDelEsquema no devuelve un total cuando la duración no es en semanas', () => {
+    const hbot = terapiaPorId('hbot')!;
+    expect(sesionesDelEsquema(esquemaPara(hbot, 'preparacion-deportiva')!, 7)).toBeUndefined();
+    expect(sesionesDelEsquema(esquemaPara(hbot, 'recuperacion-deportiva')!, 3)).toBeUndefined();
+    expect(sesionesDelEsquema(esquemaPara(hbot, 'longevidad')!, 2)).toBe(16);
+    expect(sesionesDelEsquema(esquemaPara(hbot, 'longevidad')!, 5)).toBe(40);
+  });
+
+  test('el catálogo cubre los objetivos que la práctica ofrece', () => {
+    const objetivos = objetivosDisponibles();
+    for (const o of ['longevidad', 'preparacion-deportiva', 'recuperacion-deportiva'] as Objetivo[]) {
+      expect(objetivos, o).toContain(o);
     }
+  });
+
+  test('se puede buscar qué terapias sirven a un objetivo', () => {
+    const ids = terapiasPorObjetivo('preparacion-deportiva').map((t) => t.id);
+    expect(ids).toContain('hbot');
+    expect(ids).toContain('ihht');
+    expect(ids).not.toContain('iv-therapy');
+  });
+
+  test('una terapia no tiene esquema para un objetivo que no cubre', () => {
+    expect(esquemaPara(terapiaPorId('botas')!, 'longevidad')).toBeUndefined();
+  });
+});
+
+describe('Topes de exposición acumulada', () => {
+  // El riesgo que el esquema diario hace posible: 8 semanas a 7 por semana son
+  // 56 sesiones, y dos bloques pasan las 100.
+  const hbot = () => terapiaPorId('hbot')!;
+
+  test('HBOT declara el tope de 100 sesiones por el riesgo refractivo irreversible', () => {
+    const tope = hbot().limitesAcumulados!.find((l) => l.sesionesAcumuladas === 100)!;
+    expect(tope.texto).toMatch(/irreversible/i);
+    expect(tope.severidad).toBe('evaluacion');
+  });
+
+  test('no se alcanza ningún límite al empezar', () => {
+    expect(limitesAlcanzados(hbot(), 0)).toStrictEqual([]);
+  });
+
+  test('a las 20 sesiones aparece el control visual, a las 100 el tope', () => {
+    expect(limitesAlcanzados(hbot(), 20).map((l) => l.sesionesAcumuladas)).toStrictEqual([20]);
+    expect(limitesAlcanzados(hbot(), 100).map((l) => l.sesionesAcumuladas)).toStrictEqual([100, 20]);
+  });
+
+  test('dos bloques diarios de 8 semanas cruzan el tope', () => {
+    const bloque = 8 * 7;
+    expect(limitesAlcanzados(hbot(), bloque)).toHaveLength(1);
+    expect(limitesAlcanzados(hbot(), bloque * 2).some((l) => l.sesionesAcumuladas === 100)).toBe(true);
+  });
+
+  test('las terapias sin tope declarado devuelven lista vacía', () => {
+    expect(limitesAlcanzados(terapiaPorId('botas')!, 500)).toStrictEqual([]);
   });
 });
 

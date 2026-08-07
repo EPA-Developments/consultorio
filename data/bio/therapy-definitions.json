@@ -1,15 +1,84 @@
 {
   "version": "2026-08-07",
-  "nota": "Catálogo de terapias del Panel Bio. Es DATO, no código: se corrige acá sin tocar la aplicación, igual que el catálogo de biomarcadores. Ninguna terapia arranca validada; el estado de validación lo pone el equipo médico.",
+  "nota": "Catálogo de terapias del Panel Bio. Es DATO, no código: se corrige acá sin tocar la aplicación, igual que el catálogo de biomarcadores. La frecuencia y la duración NO son propiedades de la terapia: dependen del objetivo, por eso cada terapia declara varios esquemas. Ninguna terapia arranca validada.",
   "terapias": [
     {
       "id": "hbot",
       "nombre": "HBOT",
       "nombreCompleto": "Oxigenoterapia hiperbárica",
-      "ejes": ["rejuvenecer", "reparar"],
+      "ejes": [
+        "rejuvenecer",
+        "reparar"
+      ],
       "medicalizacion": "evaluacion-medica",
-      "validacion": { "estado": "borrador" },
+      "validacion": {
+        "estado": "borrador"
+      },
       "resumen": "Oxígeno al 100 % a presión mayor que la atmosférica, en ciclos con pausas de aire.",
+      "esquemas": [
+        {
+          "objetivo": "preparacion-deportiva",
+          "frecuenciaSemanal": [
+            5,
+            6,
+            7
+          ],
+          "duracion": {
+            "tipo": "hasta-evento"
+          },
+          "nota": "Bloque intensivo previo a una competencia. La frecuencia diaria se sostiene mientras dure la preparación, no un número fijo de semanas."
+        },
+        {
+          "objetivo": "reparacion-tisular",
+          "frecuenciaSemanal": [
+            5
+          ],
+          "duracion": {
+            "tipo": "semanas",
+            "semanas": 4
+          },
+          "nota": "Es la indicación con evidencia más establecida y la que usa frecuencia alta de forma habitual."
+        },
+        {
+          "objetivo": "longevidad",
+          "frecuenciaSemanal": [
+            2,
+            3,
+            5
+          ],
+          "duracion": {
+            "tipo": "semanas",
+            "semanas": 8
+          },
+          "nota": "El protocolo publicado que mostró alargamiento telomérico usó 5 por semana durante 12 semanas (60 sesiones). A 2 por semana durante 8 se entrega el 27 % de esa dosis; no se sabe si el efecto depende del total acumulado o de la densidad."
+        },
+        {
+          "objetivo": "recuperacion-deportiva",
+          "frecuenciaSemanal": [
+            2,
+            3
+          ],
+          "duracion": {
+            "tipo": "abierta"
+          }
+        }
+      ],
+      "limitesAcumulados": [
+        {
+          "sesionesAcumuladas": 100,
+          "severidad": "evaluacion",
+          "evidencia": "senal-consistente-n-pequeno",
+          "texto": "Por encima de 100 sesiones acumuladas aumenta el riesgo de cambio refractivo IRREVERSIBLE, y es a partir de ahí que se reportan las cataratas.",
+          "fuente": "La miopía por HBOT suele ser reversible en semanas o meses, pero la reversibilidad se pierde con la exposición acumulada. La práctica habitual son 20 a 50 sesiones."
+        },
+        {
+          "sesionesAcumuladas": 20,
+          "severidad": "seguimiento",
+          "evidencia": "senal-consistente-n-pequeno",
+          "texto": "A partir de 20 sesiones acumuladas conviene repetir agudeza visual y refracción.",
+          "fuente": "La miopía transitoria aparece en series prolongadas."
+        }
+      ],
       "parametros": [
         {
           "clave": "presion_ata",
@@ -51,10 +120,15 @@
           "nota": "La barotrauma ótica se juega acá: la mayoría de los casos ocurre en los primeros metros de compresión."
         }
       ],
-      "serie": { "semanas": 8, "frecuenciasSemanales": [2, 3] },
       "indicaciones": [
-        { "texto": "Programas de longevidad y rejuvenecimiento", "evidencia": "senal-consistente-n-pequeno" },
-        { "texto": "Reparación tisular y cicatrización", "evidencia": "ensayo-humano" }
+        {
+          "texto": "Programas de longevidad y rejuvenecimiento",
+          "evidencia": "senal-consistente-n-pequeno"
+        },
+        {
+          "texto": "Reparación tisular y cicatrización",
+          "evidencia": "ensayo-humano"
+        }
       ],
       "contraindicaciones": [
         {
@@ -101,23 +175,90 @@
         }
       ],
       "tamizajePrevio": [
-        { "texto": "Evaluación otorrinolaringológica y timpánica", "obligatorio": true },
-        { "texto": "Agudeza visual y refracción basal", "obligatorio": true, "nota": "La miopía transitoria aparece en series largas." },
-        { "texto": "Radiografía o evaluación pulmonar si hay antecedente respiratorio", "obligatorio": false }
+        {
+          "texto": "Evaluación otorrinolaringológica y timpánica",
+          "obligatorio": true
+        },
+        {
+          "texto": "Agudeza visual y refracción basal",
+          "obligatorio": true,
+          "nota": "La miopía transitoria aparece en series largas."
+        },
+        {
+          "texto": "Radiografía o evaluación pulmonar si hay antecedente respiratorio",
+          "obligatorio": false
+        }
       ],
       "seguimiento": [
-        { "texto": "Barotrauma ótica", "cuando": "cada sesión" },
-        { "texto": "Agudeza visual", "cuando": "fin de serie" }
+        {
+          "texto": "Barotrauma ótica",
+          "cuando": "cada sesión"
+        },
+        {
+          "texto": "Agudeza visual",
+          "cuando": "fin de serie"
+        }
       ]
     },
     {
       "id": "ihht",
       "nombre": "IHHT",
       "nombreCompleto": "Hipoxia-hiperoxia intermitente",
-      "ejes": ["rejuvenecer", "recuperar"],
+      "ejes": [
+        "rejuvenecer",
+        "recuperar"
+      ],
       "medicalizacion": "evaluacion-medica",
-      "validacion": { "estado": "borrador" },
+      "validacion": {
+        "estado": "borrador"
+      },
       "resumen": "Ciclos alternados de aire con baja y alta oxigenación, con la intensidad ajustada a la saturación del paciente.",
+      "esquemas": [
+        {
+          "objetivo": "preparacion-deportiva",
+          "frecuenciaSemanal": [
+            3,
+            4,
+            5
+          ],
+          "duracion": {
+            "tipo": "hasta-evento"
+          },
+          "nota": "Incluye la adaptación previa a la altura, que es la indicación con mejor respaldo."
+        },
+        {
+          "objetivo": "energia-fatiga",
+          "frecuenciaSemanal": [
+            2,
+            3
+          ],
+          "duracion": {
+            "tipo": "semanas",
+            "semanas": 8
+          }
+        },
+        {
+          "objetivo": "longevidad",
+          "frecuenciaSemanal": [
+            2,
+            3
+          ],
+          "duracion": {
+            "tipo": "semanas",
+            "semanas": 8
+          }
+        },
+        {
+          "objetivo": "recuperacion-deportiva",
+          "frecuenciaSemanal": [
+            2,
+            3
+          ],
+          "duracion": {
+            "tipo": "abierta"
+          }
+        }
+      ],
       "parametros": [
         {
           "clave": "spo2_objetivo",
@@ -133,18 +274,57 @@
           "tipo": "numero",
           "nota": "Punto individual definido por el test de tolerancia previo; el equipo corta solo."
         },
-        { "clave": "o2_hipoxia", "etiqueta": "O₂ en fase hipóxica", "unidad": "%", "tipo": "numero", "min": 10, "max": 21 },
-        { "clave": "o2_hiperoxia", "etiqueta": "O₂ en fase hiperóxica", "unidad": "%", "tipo": "numero", "min": 21, "max": 40 },
-        { "clave": "ciclos", "etiqueta": "Ciclos", "unidad": "cantidad", "tipo": "numero" },
-        { "clave": "duracion_min", "etiqueta": "Duración", "unidad": "min", "tipo": "numero", "sugerido": 30 }
+        {
+          "clave": "o2_hipoxia",
+          "etiqueta": "O₂ en fase hipóxica",
+          "unidad": "%",
+          "tipo": "numero",
+          "min": 10,
+          "max": 21
+        },
+        {
+          "clave": "o2_hiperoxia",
+          "etiqueta": "O₂ en fase hiperóxica",
+          "unidad": "%",
+          "tipo": "numero",
+          "min": 21,
+          "max": 40
+        },
+        {
+          "clave": "ciclos",
+          "etiqueta": "Ciclos",
+          "unidad": "cantidad",
+          "tipo": "numero"
+        },
+        {
+          "clave": "duracion_min",
+          "etiqueta": "Duración",
+          "unidad": "min",
+          "tipo": "numero",
+          "sugerido": 30
+        }
       ],
-      "serie": { "semanas": 8, "frecuenciasSemanales": [2, 3] },
       "indicaciones": [
-        { "texto": "Fatiga crónica y falta de energía", "evidencia": "senal-consistente-n-pequeno" },
-        { "texto": "Preparación y recuperación deportiva", "evidencia": "senal-consistente-n-pequeno" },
-        { "texto": "Programas de longevidad y salud metabólica", "evidencia": "mecanistico-sin-ensayos" },
-        { "texto": "Adaptación previa a la altura", "evidencia": "ensayo-humano" },
-        { "texto": "Apoyo a la función cognitiva", "evidencia": "senal-consistente-n-pequeno" }
+        {
+          "texto": "Fatiga crónica y falta de energía",
+          "evidencia": "senal-consistente-n-pequeno"
+        },
+        {
+          "texto": "Preparación y recuperación deportiva",
+          "evidencia": "senal-consistente-n-pequeno"
+        },
+        {
+          "texto": "Programas de longevidad y salud metabólica",
+          "evidencia": "mecanistico-sin-ensayos"
+        },
+        {
+          "texto": "Adaptación previa a la altura",
+          "evidencia": "ensayo-humano"
+        },
+        {
+          "texto": "Apoyo a la función cognitiva",
+          "evidencia": "senal-consistente-n-pequeno"
+        }
       ],
       "contraindicaciones": [
         {
@@ -223,30 +403,112 @@
         }
       ],
       "seguimiento": [
-        { "texto": "Oximetría continua durante toda la sesión", "cuando": "cada sesión" },
-        { "texto": "Registrar la SpO₂ mínima alcanzada", "cuando": "cada sesión" }
+        {
+          "texto": "Oximetría continua durante toda la sesión",
+          "cuando": "cada sesión"
+        },
+        {
+          "texto": "Registrar la SpO₂ mínima alcanzada",
+          "cuando": "cada sesión"
+        }
       ]
     },
     {
       "id": "red-light",
       "nombre": "Red Light",
       "nombreCompleto": "Fotobiomodulación full spectrum",
-      "ejes": ["rejuvenecer", "reparar"],
-      "medicalizacion": "bienestar",
-      "validacion": { "estado": "borrador" },
-      "resumen": "Paneles full body con siete longitudes de onda entre 590 y 850 nm.",
-      "parametros": [
-        { "clave": "longitudes_onda", "etiqueta": "Longitudes de onda", "unidad": "nm", "tipo": "texto", "sugerido": "590–850 (7 λ)" },
-        { "clave": "irradiancia", "etiqueta": "Irradiancia", "unidad": "mW/cm²", "tipo": "numero", "nota": "Con la distancia, determina la dosis real. Sin esto no se puede reproducir una sesión." },
-        { "clave": "distancia_cm", "etiqueta": "Distancia al panel", "unidad": "cm", "tipo": "numero" },
-        { "clave": "duracion_min", "etiqueta": "Duración", "unidad": "min", "tipo": "numero" },
-        { "clave": "dosis_j_cm2", "etiqueta": "Dosis", "unidad": "J/cm²", "tipo": "numero", "nota": "Derivada de irradiancia × tiempo. La respuesta no es monótona: más no es mejor." }
+      "ejes": [
+        "rejuvenecer",
+        "reparar"
       ],
-      "serie": { "semanas": 8, "frecuenciasSemanales": [2, 3] },
+      "medicalizacion": "bienestar",
+      "validacion": {
+        "estado": "borrador"
+      },
+      "resumen": "Paneles full body con siete longitudes de onda entre 590 y 850 nm.",
+      "esquemas": [
+        {
+          "objetivo": "reparacion-tisular",
+          "frecuenciaSemanal": [
+            3,
+            4,
+            5
+          ],
+          "duracion": {
+            "tipo": "semanas",
+            "semanas": 8
+          }
+        },
+        {
+          "objetivo": "longevidad",
+          "frecuenciaSemanal": [
+            2,
+            3
+          ],
+          "duracion": {
+            "tipo": "abierta"
+          }
+        },
+        {
+          "objetivo": "recuperacion-deportiva",
+          "frecuenciaSemanal": [
+            2,
+            3,
+            4
+          ],
+          "duracion": {
+            "tipo": "abierta"
+          }
+        }
+      ],
+      "parametros": [
+        {
+          "clave": "longitudes_onda",
+          "etiqueta": "Longitudes de onda",
+          "unidad": "nm",
+          "tipo": "texto",
+          "sugerido": "590–850 (7 λ)"
+        },
+        {
+          "clave": "irradiancia",
+          "etiqueta": "Irradiancia",
+          "unidad": "mW/cm²",
+          "tipo": "numero",
+          "nota": "Con la distancia, determina la dosis real. Sin esto no se puede reproducir una sesión."
+        },
+        {
+          "clave": "distancia_cm",
+          "etiqueta": "Distancia al panel",
+          "unidad": "cm",
+          "tipo": "numero"
+        },
+        {
+          "clave": "duracion_min",
+          "etiqueta": "Duración",
+          "unidad": "min",
+          "tipo": "numero"
+        },
+        {
+          "clave": "dosis_j_cm2",
+          "etiqueta": "Dosis",
+          "unidad": "J/cm²",
+          "tipo": "numero",
+          "nota": "Derivada de irradiancia × tiempo. La respuesta no es monótona: más no es mejor."
+        }
+      ],
       "indicaciones": [
-        { "texto": "Rejuvenecimiento cutáneo", "evidencia": "ensayo-humano" },
-        { "texto": "Reparación de tejido y antiinflamatorio local", "evidencia": "senal-consistente-n-pequeno" },
-        { "texto": "Programas de longevidad", "evidencia": "mecanistico-sin-ensayos" }
+        {
+          "texto": "Rejuvenecimiento cutáneo",
+          "evidencia": "ensayo-humano"
+        },
+        {
+          "texto": "Reparación de tejido y antiinflamatorio local",
+          "evidencia": "senal-consistente-n-pequeno"
+        },
+        {
+          "texto": "Programas de longevidad",
+          "evidencia": "mecanistico-sin-ensayos"
+        }
       ],
       "contraindicaciones": [
         {
@@ -270,7 +532,10 @@
         }
       ],
       "tamizajePrevio": [
-        { "texto": "Revisión de medicación fotosensibilizante", "obligatorio": true }
+        {
+          "texto": "Revisión de medicación fotosensibilizante",
+          "obligatorio": true
+        }
       ],
       "seguimiento": []
     },
@@ -278,14 +543,71 @@
       "id": "recovery-pro",
       "nombre": "Recovery Pro",
       "nombreCompleto": "Circuito de contraste: sauna, inmersión en frío y Red Light",
-      "ejes": ["recuperar"],
+      "ejes": [
+        "recuperar"
+      ],
       "medicalizacion": "bienestar",
-      "validacion": { "estado": "borrador" },
+      "validacion": {
+        "estado": "borrador"
+      },
       "resumen": "Circuito de contraste en orden fijo: calor, frío y luz. Se registra como UNA sesión con tres modalidades.",
-      "modalidades": ["sauna", "inmersion-frio", "red-light"],
+      "esquemas": [
+        {
+          "objetivo": "recuperacion-deportiva",
+          "frecuenciaSemanal": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "duracion": {
+            "tipo": "abierta"
+          },
+          "nota": "Puede sostenerse indefinidamente como rutina. Atención al orden respecto del entrenamiento de fuerza: el frío inmediato posterior atenúa las adaptaciones de hipertrofia."
+        },
+        {
+          "objetivo": "preparacion-deportiva",
+          "frecuenciaSemanal": [
+            4,
+            5,
+            6,
+            7
+          ],
+          "duracion": {
+            "tipo": "hasta-evento"
+          }
+        },
+        {
+          "objetivo": "estres-sueno",
+          "frecuenciaSemanal": [
+            2,
+            3
+          ],
+          "duracion": {
+            "tipo": "abierta"
+          }
+        }
+      ],
+      "modalidades": [
+        "sauna",
+        "inmersion-frio",
+        "red-light"
+      ],
       "parametros": [
-        { "clave": "sauna_temp", "etiqueta": "Temperatura de sauna", "unidad": "°C", "tipo": "numero" },
-        { "clave": "sauna_min", "etiqueta": "Tiempo en sauna", "unidad": "min", "tipo": "numero" },
+        {
+          "clave": "sauna_temp",
+          "etiqueta": "Temperatura de sauna",
+          "unidad": "°C",
+          "tipo": "numero"
+        },
+        {
+          "clave": "sauna_min",
+          "etiqueta": "Tiempo en sauna",
+          "unidad": "min",
+          "tipo": "numero"
+        },
         {
           "clave": "agua_temp",
           "etiqueta": "Temperatura del agua",
@@ -295,16 +617,43 @@
           "max": 15,
           "nota": "Para adultos mayores se recomienda no bajar de 12 °C con supervisión. Registrar la temperatura real, no el rango del equipo."
         },
-        { "clave": "inmersion_min", "etiqueta": "Tiempo de inmersión", "unidad": "min", "tipo": "numero" },
-        { "clave": "ciclos", "etiqueta": "Ciclos de contraste", "unidad": "cantidad", "tipo": "numero" },
-        { "clave": "duracion_min", "etiqueta": "Duración total", "unidad": "min", "tipo": "numero", "sugerido": 60 }
+        {
+          "clave": "inmersion_min",
+          "etiqueta": "Tiempo de inmersión",
+          "unidad": "min",
+          "tipo": "numero"
+        },
+        {
+          "clave": "ciclos",
+          "etiqueta": "Ciclos de contraste",
+          "unidad": "cantidad",
+          "tipo": "numero"
+        },
+        {
+          "clave": "duracion_min",
+          "etiqueta": "Duración total",
+          "unidad": "min",
+          "tipo": "numero",
+          "sugerido": 60
+        }
       ],
-      "serie": { "semanas": 8, "frecuenciasSemanales": [2, 3] },
       "indicaciones": [
-        { "texto": "Recuperación deportiva y del esfuerzo", "evidencia": "ensayo-humano" },
-        { "texto": "Manejo del estrés y del sueño", "evidencia": "senal-consistente-n-pequeno" },
-        { "texto": "Rigidez y tensión muscular", "evidencia": "senal-consistente-n-pequeno" },
-        { "texto": "Rutinas de longevidad y bienestar", "evidencia": "mecanistico-sin-ensayos" }
+        {
+          "texto": "Recuperación deportiva y del esfuerzo",
+          "evidencia": "ensayo-humano"
+        },
+        {
+          "texto": "Manejo del estrés y del sueño",
+          "evidencia": "senal-consistente-n-pequeno"
+        },
+        {
+          "texto": "Rigidez y tensión muscular",
+          "evidencia": "senal-consistente-n-pequeno"
+        },
+        {
+          "texto": "Rutinas de longevidad y bienestar",
+          "evidencia": "mecanistico-sin-ensayos"
+        }
       ],
       "contraindicaciones": [
         {
@@ -376,30 +725,94 @@
         }
       ],
       "tamizajePrevio": [
-        { "texto": "Tamizaje cardiovascular", "obligatorio": true, "nota": "El contraste térmico exige un corazón sano; es la propia advertencia del material publicado." }
+        {
+          "texto": "Tamizaje cardiovascular",
+          "obligatorio": true,
+          "nota": "El contraste térmico exige un corazón sano; es la propia advertencia del material publicado."
+        }
       ],
       "seguimiento": [
-        { "texto": "Tolerancia al contraste y síntomas cardiovasculares", "cuando": "cada sesión" }
+        {
+          "texto": "Tolerancia al contraste y síntomas cardiovasculares",
+          "cuando": "cada sesión"
+        }
       ]
     },
     {
       "id": "botas",
       "nombre": "Botas",
       "nombreCompleto": "Compresión neumática secuencial y crioterapia localizada",
-      "ejes": ["recuperar"],
-      "medicalizacion": "bienestar",
-      "validacion": { "estado": "borrador" },
-      "resumen": "Compresión neumática intermitente para retorno venoso y drenaje, con frío terapéutico localizado.",
-      "parametros": [
-        { "clave": "presion_mmhg", "etiqueta": "Presión", "unidad": "mmHg", "tipo": "numero" },
-        { "clave": "camaras", "etiqueta": "Cámaras", "unidad": "cantidad", "tipo": "numero" },
-        { "clave": "crio_temp", "etiqueta": "Temperatura del frío", "unidad": "°C", "tipo": "numero" },
-        { "clave": "duracion_min", "etiqueta": "Duración", "unidad": "min", "tipo": "numero", "sugerido": 30 }
+      "ejes": [
+        "recuperar"
       ],
-      "serie": { "semanas": 8, "frecuenciasSemanales": [2, 3] },
+      "medicalizacion": "bienestar",
+      "validacion": {
+        "estado": "borrador"
+      },
+      "resumen": "Compresión neumática intermitente para retorno venoso y drenaje, con frío terapéutico localizado.",
+      "esquemas": [
+        {
+          "objetivo": "recuperacion-deportiva",
+          "frecuenciaSemanal": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "duracion": {
+            "tipo": "abierta"
+          }
+        },
+        {
+          "objetivo": "preparacion-deportiva",
+          "frecuenciaSemanal": [
+            5,
+            6,
+            7
+          ],
+          "duracion": {
+            "tipo": "hasta-evento"
+          }
+        }
+      ],
+      "parametros": [
+        {
+          "clave": "presion_mmhg",
+          "etiqueta": "Presión",
+          "unidad": "mmHg",
+          "tipo": "numero"
+        },
+        {
+          "clave": "camaras",
+          "etiqueta": "Cámaras",
+          "unidad": "cantidad",
+          "tipo": "numero"
+        },
+        {
+          "clave": "crio_temp",
+          "etiqueta": "Temperatura del frío",
+          "unidad": "°C",
+          "tipo": "numero"
+        },
+        {
+          "clave": "duracion_min",
+          "etiqueta": "Duración",
+          "unidad": "min",
+          "tipo": "numero",
+          "sugerido": 30
+        }
+      ],
       "indicaciones": [
-        { "texto": "Recuperación muscular y drenaje", "evidencia": "senal-consistente-n-pequeno" },
-        { "texto": "Retorno venoso y linfático", "evidencia": "ensayo-humano" }
+        {
+          "texto": "Recuperación muscular y drenaje",
+          "evidencia": "senal-consistente-n-pequeno"
+        },
+        {
+          "texto": "Retorno venoso y linfático",
+          "evidencia": "ensayo-humano"
+        }
       ],
       "contraindicaciones": [
         {
@@ -448,7 +861,10 @@
         }
       ],
       "tamizajePrevio": [
-        { "texto": "Descartar TVP: edema asimétrico, dolor unilateral, inmovilización o cirugía reciente", "obligatorio": true }
+        {
+          "texto": "Descartar TVP: edema asimétrico, dolor unilateral, inmovilización o cirugía reciente",
+          "obligatorio": true
+        }
       ],
       "seguimiento": []
     },
@@ -456,21 +872,70 @@
       "id": "iv-therapy",
       "nombre": "IV Therapy",
       "nombreCompleto": "Vitaminas, minerales y cofactores endovenosos",
-      "ejes": ["rejuvenecer", "recuperar"],
+      "ejes": [
+        "rejuvenecer",
+        "recuperar"
+      ],
       "medicalizacion": "acto-medico",
-      "validacion": { "estado": "borrador" },
+      "validacion": {
+        "estado": "borrador"
+      },
       "alcancePendiente": "La línea Anti-Aging NAD+ corresponde al Camino Regenerar, no al Panel Bio. Falta definir si la terapia entera se mueve o solo esa línea.",
       "resumen": "Infusión endovenosa. Es la única terapia del catálogo que constituye un acto médico completo, con prescripción.",
-      "parametros": [
-        { "clave": "formulacion", "etiqueta": "Formulación", "tipo": "texto", "nota": "Se carga desde la orden real, con ingredientes y miligramos. El sistema NO precarga cócteles." },
-        { "clave": "volumen_ml", "etiqueta": "Volumen", "unidad": "mL", "tipo": "numero" },
-        { "clave": "duracion_min", "etiqueta": "Tiempo de infusión", "unidad": "min", "tipo": "numero" }
+      "esquemas": [
+        {
+          "objetivo": "recuperacion-deportiva",
+          "frecuenciaSemanal": [
+            1
+          ],
+          "duracion": {
+            "tipo": "abierta"
+          }
+        },
+        {
+          "objetivo": "energia-fatiga",
+          "frecuenciaSemanal": [
+            1
+          ],
+          "duracion": {
+            "tipo": "semanas",
+            "semanas": 8
+          }
+        }
       ],
-      "serie": { "semanas": 8, "frecuenciasSemanales": [1, 2] },
+      "parametros": [
+        {
+          "clave": "formulacion",
+          "etiqueta": "Formulación",
+          "tipo": "texto",
+          "nota": "Se carga desde la orden real, con ingredientes y miligramos. El sistema NO precarga cócteles."
+        },
+        {
+          "clave": "volumen_ml",
+          "etiqueta": "Volumen",
+          "unidad": "mL",
+          "tipo": "numero"
+        },
+        {
+          "clave": "duracion_min",
+          "etiqueta": "Tiempo de infusión",
+          "unidad": "min",
+          "tipo": "numero"
+        }
+      ],
       "indicaciones": [
-        { "texto": "Reposición hidroelectrolítica con indicación", "evidencia": "ensayo-humano" },
-        { "texto": "Corrección de déficit documentado por laboratorio", "evidencia": "ensayo-humano" },
-        { "texto": "Performance y longevidad", "evidencia": "sin-datos" }
+        {
+          "texto": "Reposición hidroelectrolítica con indicación",
+          "evidencia": "ensayo-humano"
+        },
+        {
+          "texto": "Corrección de déficit documentado por laboratorio",
+          "evidencia": "ensayo-humano"
+        },
+        {
+          "texto": "Performance y longevidad",
+          "evidencia": "sin-datos"
+        }
       ],
       "contraindicaciones": [
         {
@@ -518,12 +983,24 @@
         }
       ],
       "tamizajePrevio": [
-        { "texto": "G6PD cuantitativo antes de la primera infusión con vitamina C en dosis alta", "obligatorio": true },
-        { "texto": "Función renal (creatinina y eGFR)", "obligatorio": true },
-        { "texto": "Ionograma, calcio corregido y magnesio", "obligatorio": true }
+        {
+          "texto": "G6PD cuantitativo antes de la primera infusión con vitamina C en dosis alta",
+          "obligatorio": true
+        },
+        {
+          "texto": "Función renal (creatinina y eGFR)",
+          "obligatorio": true
+        },
+        {
+          "texto": "Ionograma, calcio corregido y magnesio",
+          "obligatorio": true
+        }
       ],
       "seguimiento": [
-        { "texto": "Reacción a la infusión y sitio de acceso venoso", "cuando": "cada sesión" }
+        {
+          "texto": "Reacción a la infusión y sitio de acceso venoso",
+          "cuando": "cada sesión"
+        }
       ]
     }
   ]
