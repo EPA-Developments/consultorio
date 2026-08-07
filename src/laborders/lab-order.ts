@@ -72,41 +72,62 @@ export const LABORATORY_CATEGORY: CodeableConcept = {
  * - `derived`: valor calculado a partir de otros marcadores (HOMA-IR de
  *   glucosa+insulina, eGFR de creatinina); no se pide por separado, viene con su
  *   fuente.
+ * - `component`: analito que viene dentro de un panel (los 24 del hemograma).
+ *   Es un valor MEDIDO, no calculado, pero tampoco se pide suelto. Sin esta
+ *   categoría hay que elegir entre dejarlo pedible o llamarlo "calculado", y
+ *   ninguna de las dos es cierta.
  * - `device`: se mide con un wearable/dispositivo (HRV), no es un análisis.
  */
-export type LabOrderability = 'lab' | 'specialized' | 'derived' | 'device';
+export type LabOrderability = 'lab' | 'specialized' | 'derived' | 'component' | 'device';
 
 /**
- * Marcadores que son un cálculo derivado de otros, y las FUENTES que hay que
- * pedir en su lugar.
+ * Para los derivados que el médico puede llegar a elegir: qué hay que pedir EN
+ * SU LUGAR.
+ *
+ * Esta tabla ya NO decide si un marcador es derivado — eso lo dice el catálogo
+ * con la extensión `no-solicitable`. Lo que queda acá es lo único que el
+ * catálogo no sabe expresar: sus fuentes. `formula-derivado` trae la fórmula en
+ * prosa ("glucosa × insulina / 405"), que sirve para mostrarle al médico pero
+ * no para armar una orden.
  *
  * Las fuentes se referencian por **código LOINC**, no por slug: el catálogo
- * mezcla convenciones de identificador (86 de 107 usan el LOINC como
- * identifier, 21 conservan un slug descriptivo), así que el LOINC es la clave
- * estable. `resolveDerivedSources` resuelve contra el identifier O el código,
- * para tolerar las dos.
+ * mezcla convenciones de identificador, así que el LOINC es la clave estable.
+ * `resolveDerivedSources` resuelve contra el identifier O el código.
  */
 const DERIVED_SOURCES: Record<string, string[]> = {
   'homa-ir': ['1558-6', '20448-7'], // glucosa en ayunas + insulina basal
   'egfr-tfg-estimada': ['2160-0'], // creatinina sérica
 };
 
-/** Marcadores que se miden con dispositivo, no en laboratorio. */
+/**
+ * Marcadores que se miden con dispositivo, no en laboratorio.
+ *
+ * **No sale del catálogo a propósito**: el HRV no tiene la extensión
+ * `no-solicitable`, así que si esta clasificación dependiera solo del catálogo,
+ * el HRV volvería a ser solicitable. Se mantiene hasta que el catálogo lo
+ * marque.
+ */
 const DEVICE_IDS = new Set(['hrv-variabilidad-frecuencia-cardiaca']);
 
 /**
- * Clasifica un marcador por solicitabilidad. Un derivado se conoce por su id;
- * un marcador de dispositivo también. El resto: si no tiene código LOINC es un
- * estudio especializado (código local, sin nomenclador de rutina); si tiene
- * LOINC es laboratorio de rutina.
+ * Clasifica un marcador por solicitabilidad.
+ *
+ * **La fuente de verdad es el catálogo**, no una lista de ids acá. La extensión
+ * `no-solicitable` marca todo lo que no se pide suelto; la presencia de
+ * `formula-derivado` distingue un cálculo de un componente de panel. Antes esto
+ * eran dos ids hardcodeados y el catálogo marcaba 31: el dashboard dejaba emitir
+ * órdenes pidiendo "Colesterol NO-HDL" o "Basófilos", que ningún laboratorio
+ * puede procesar sueltos.
  */
 export function orderabilityFor(def: BiomarkerDefinition): LabOrderability {
   const id = def.biomarcadorId ?? '';
-  if (id in DERIVED_SOURCES) {
-    return 'derived';
-  }
+  // El dispositivo primero: un wearable mal etiquetado como "calculado" manda
+  // al médico a buscar una fuente que no existe.
   if (DEVICE_IDS.has(id)) {
     return 'device';
+  }
+  if (def.noSolicitable) {
+    return def.formulaDerivado ? 'derived' : 'component';
   }
   if (def.system !== LOINC_SYSTEM || !def.code) {
     return 'specialized';
@@ -138,6 +159,12 @@ export const ORDERABILITY_INFO: Record<LabOrderability, OrderabilityInfo> = {
     color: 'gray',
     orderable: false,
     note: 'Se calcula a partir de otros marcadores; se pide su fuente.',
+  },
+  component: {
+    label: 'Viene en el panel',
+    color: 'gray',
+    orderable: false,
+    note: 'Es un valor medido, pero no se pide suelto: llega con el panel que lo incluye.',
   },
   device: {
     label: 'Wearable',

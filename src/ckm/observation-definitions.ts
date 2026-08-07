@@ -18,6 +18,17 @@ export const EXT_RANGO_CONVENCIONAL_TEXTO = EXT_BASE + 'rango-convencional-texto
 export const EXT_RANGO_OPTIMO_TEXTO = EXT_BASE + 'rango-optimo-texto';
 export const EXT_INTERPRETACION = EXT_BASE + 'interpretacion';
 export const EXT_FUENTE = EXT_BASE + 'fuente';
+
+/**
+ * Estas dos usan OTRA base (`biowellness.ar`, no `bio.medplum.com.ar`). Las
+ * escribe el catálogo así; no es un error de tipeo acá. Vale unificarlas alguna
+ * vez, pero se cambia en el catálogo primero, no en el lector.
+ */
+const EXT_BASE_CATALOGO = 'https://biowellness.ar/fhir/StructureDefinition/';
+/** El catálogo marca acá lo que no se pide suelto: derivados y componentes de panel. */
+export const EXT_NO_SOLICITABLE = EXT_BASE_CATALOGO + 'no-solicitable';
+/** Presente solo en los calculados; su valor es la fórmula en prosa. */
+export const EXT_FORMULA_DERIVADO = EXT_BASE_CATALOGO + 'formula-derivado';
 export const LOINC_SYSTEM = 'http://loinc.org';
 
 /** Contexto de un rango: convencional u óptimo. */
@@ -67,6 +78,15 @@ export interface BiomarkerDefinition {
   optimalText?: string;
   interpretation?: string;
   source?: string;
+  /**
+   * El catálogo dice que este marcador no se pide suelto. Es la fuente de
+   * verdad de la solicitabilidad: mantener una lista paralela en el código se
+   * desincroniza, y el precio de desincronizarse acá es una orden que llega al
+   * laboratorio pidiendo un estudio que no existe.
+   */
+  noSolicitable?: boolean;
+  /** Fórmula, en prosa, de los marcadores que son un cálculo. */
+  formulaDerivado?: string;
   /** Rangos convencionales (contexto 'normal'); puede haber uno por género. */
   conventional: BiomarkerRange[];
   /** Rangos óptimos (contexto 'funcional-optimo'). */
@@ -75,6 +95,10 @@ export interface BiomarkerDefinition {
 
 function extString(od: ObservationDefinition, url: string): string | undefined {
   return od.extension?.find((e) => e.url === url)?.valueString;
+}
+
+function extBoolean(od: ObservationDefinition, url: string): boolean | undefined {
+  return od.extension?.find((e) => e.url === url)?.valueBoolean;
 }
 
 function intervalsForContext(od: ObservationDefinition, context: RangeContext): BiomarkerRange[] {
@@ -106,6 +130,8 @@ export function parseObservationDefinition(od: ObservationDefinition): Biomarker
     optimalText: extString(od, EXT_RANGO_OPTIMO_TEXTO),
     interpretation: extString(od, EXT_INTERPRETACION),
     source: extString(od, EXT_FUENTE),
+    noSolicitable: extBoolean(od, EXT_NO_SOLICITABLE),
+    formulaDerivado: extString(od, EXT_FORMULA_DERIVADO),
     conventional: intervalsForContext(od, 'conventional'),
     optimal: intervalsForContext(od, 'optimal'),
   };

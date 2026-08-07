@@ -10,7 +10,7 @@
 
 > **Qué es este documento.** El contrato de interoperabilidad entre el
 > **dashboard** (médico, `biowellness/dashboard`) y el **portal del paciente**
-> (`biowellness/portal`, servido en bio.medplum.com.ar) para el flujo de
+> (`biowellness/portal`, servido en **app.biowellness.ar**) para el flujo de
 > solicitud de estudios. Y a la vez una **guía/prompt de implementación** lista
 > para ejecutar en una sesión scopeada al repo `portal`.
 >
@@ -90,11 +90,11 @@ solicitud aparece automáticamente en la ficha del médico.
 
 ---
 
-## 3. Catálogo: las mismas 50 ObservationDefinition
+## 3. Catálogo: las mismas 109 ObservationDefinition
 
 El portal y el dashboard comparten el **mismo servidor Medplum** (api.medplum.com.ar).
-El catálogo de estudios es el mismo bundle de 50 `ObservationDefinition` ya
-cargado. Para leerlo (idéntico al dashboard):
+El catálogo de estudios es el mismo bundle, hoy de **109 `ObservationDefinition`**
+(94 del panel canónico de junio 2026 + 15 extras del seed original), ya cargado. Para leerlo (idéntico al dashboard):
 
 ```ts
 const ods = await medplum.searchResources('ObservationDefinition', { _count: '1000' });
@@ -120,23 +120,28 @@ Solo se solicitan los marcadores **`lab`** y **`specialized`**. Se excluyen los
 **`derived`** (se calculan de otros) y **`device`** (wearable). Misma lógica que
 el dashboard:
 
+**La solicitabilidad la dice el catálogo, no una lista en el código.** El
+recurso trae la extensión `no-solicitable`, y `formula-derivado` distingue un
+cálculo de un componente de panel:
+
 ```ts
-const DERIVED_SOURCES = {
-  'homa-ir': ['glucosa-en-ayunas', 'insulina-en-ayunas'],
-  'egfr-tfg-estimada': ['creatinina'],
-};
+const EXT = 'https://biowellness.ar/fhir/StructureDefinition/';
 const DEVICE_IDS = new Set(['hrv-variabilidad-frecuencia-cardiaca']);
 
-function isOrderable(def) {
-  const id = def.biomarcadorId ?? '';
-  if (id in DERIVED_SOURCES) return false; // derivado: viene con su fuente
-  if (DEVICE_IDS.has(id)) return false; // wearable: no es análisis
-  return true; // lab o especializado: solicitable
+function isOrderable(od) {
+  const id = od.identifier?.find((i) => i.system === BIOMARCADOR_IDENTIFIER_SYSTEM)?.value ?? '';
+  if (DEVICE_IDS.has(id)) return false; // wearable: el catálogo NO lo marca (ver §10.2)
+  return !od.extension?.some((e) => e.url === EXT + 'no-solicitable' && e.valueBoolean);
 }
 ```
 
-Para el portal, con mostrar "packs" curados alcanza; el paciente no necesita ver
-los 50 marcadores sueltos.
+Hoy el catálogo marca **31**: 7 calculados (los que además traen
+`formula-derivado`) y 24 analitos del hemograma, que son valores medidos pero no
+se piden sueltos.
+
+Para el portal, con mostrar "packs" curados alcanza. (El portal reporta que "Mi
+control completo" son hoy ~80 estudios solicitables, por decisión de Product
+Owner: un control completo es el panel entero. El contrato no cambia.)
 
 ---
 
@@ -176,7 +181,8 @@ export const LABORATORY_CATEGORY = {
   text: 'Laboratorio',
 };
 
-const DERIVED_IDS = new Set(['homa-ir', 'egfr-tfg-estimada']);
+const EXT_NO_SOLICITABLE = 'https://biowellness.ar/fhir/StructureDefinition/no-solicitable';
+// Única lista que queda hardcodeada: el catálogo no marca el HRV. Ver §10.2.
 const DEVICE_IDS = new Set(['hrv-variabilidad-frecuencia-cardiaca']);
 
 export interface StudyItem {
@@ -197,7 +203,8 @@ export function parseStudy(od: ObservationDefinition): StudyItem {
     code: coding?.code,
     system: coding?.system,
     panelCode: od.category?.[0]?.coding?.[0]?.code,
-    orderable: !!id && !DERIVED_IDS.has(id) && !DEVICE_IDS.has(id),
+    orderable:
+      !!id && !DEVICE_IDS.has(id) && !od.extension?.some((e) => e.url === EXT_NO_SOLICITABLE && e.valueBoolean),
   };
 }
 
@@ -450,3 +457,188 @@ recepción los `Flag`** — es otro string, no otro diseño.
 - [ ] Histórico sembrado y etiquetado `facturacion`.
 - [ ] El portal muestra el acumulado al paciente **con su procedencia visible**.
 - [ ] `Flag` de recepción y `Condition` del dashboard reconciliados.
+
+---
+
+# 10. Respuestas del dashboard (agosto 2026)
+
+> En respuesta a `respuesta-dashboard-portal-integration.md`. Verificado contra
+> el código y contra `data/ckm/biomarker-definitions.json`, no de memoria.
+
+## 10.1 `no-solicitable`: sí, y el problema era peor de lo que reportaron
+
+**Lo leemos.** Ya está implementado: `parseObservationDefinition` parsea
+`no-solicitable` y `formula-derivado`, y `orderabilityFor` clasifica con eso.
+
+Tenían razón y se quedaron cortos. La lista hardcodeada tenía **2** entradas; el
+catálogo marca **31**. Eran **29 marcadores que el dashboard dejaba pedir** y no
+se pueden pedir: los 24 del hemograma, los 4 ratios/derivados que nombraron, y
+`testosterona-libre`.
+
+También tenían razón en lo de los componentes de panel, así que hay una
+categoría nueva. Antes eran cuatro valores; ahora cinco:
+
+| Clasificación | Se pide | Cuándo                                                 |
+| ------------- | ------- | ------------------------------------------------------ |
+| `lab`         | sí      | LOINC de rutina                                        |
+| `specialized` | sí      | código local, sin nomenclador                          |
+| `derived`     | no      | `no-solicitable` **+** `formula-derivado`              |
+| `component`   | no      | `no-solicitable` **sin** fórmula → "Viene en el panel" |
+| `device`      | no      | wearable (ver 10.2)                                    |
+
+Lo que **no** pudimos mover al catálogo es qué pedir _en lugar_ de un derivado.
+`formula-derivado` trae la fórmula en prosa (`"glucosa × insulina / 405"`,
+`"CKD-EPI"`), que sirve para mostrarle al médico pero no para armar una orden.
+La tabla de fuentes LOINC sigue en el código, reducida a eso solo.
+
+> **Pregunta de vuelta**: `testosterona-libre` está marcada `no-solicitable`,
+> pero su propia fórmula dice "…o medir por diálisis en equilibrio". Si se puede
+> medir directo, ¿corresponde que esté marcada? Es decisión del catálogo, no
+> nuestra.
+
+## 10.2 HRV: los dos identificadores son correctos, y hay una trampa
+
+No hay desalineación. Son campos distintos del mismo recurso:
+
+```jsonc
+"identifier": [{ "system": ".../sid/biomarcador", "value": "hrv-variabilidad-frecuencia-cardiaca" }],
+"code": { "coding": [{ "system": ".../biomarcador-local", "code": "hrv-rmssd", "display": "HRV (…)" }] }
+```
+
+El dashboard filtra por `identifier`, así que el filtro funciona. Ustedes miran
+`code.coding[0].code`, que es `hrv-rmssd`. Los dos valores son reales.
+
+**La trampa**: el HRV **no tiene** la extensión `no-solicitable`. Si la
+solicitabilidad dependiera _solo_ del catálogo —que es lo que propusieron— **el
+HRV pasaría a ser solicitable**, que es justo el bug que querían evitar. Por eso
+`DEVICE_IDS` sobrevive como la única lista hardcodeada, y hay un test que falla
+si el catálogo empieza a marcarlo.
+
+**Lo mejor sería marcarlo en el catálogo** y que la lista desaparezca. Mientras
+tanto queda cubierto por las dos vías.
+
+## 10.3 Son 109: confirmado
+
+El bundle versionado tiene 109 entradas. La sección 3 decía 50 y ya está
+corregida, igual que el supuesto de la sección 4 y `app.biowellness.ar` en la
+introducción.
+
+## 10.4 `coding[0]`: no, no se usa para matchear resultados
+
+Verificado en las dos rutas que leen resultados entrantes:
+
+- `src/ckm/observations.ts:44` — `codes?.coding?.some(...)`, recorre **todos**
+  los codings, y además mantiene un mapa `LOINC_SYNONYMS` explícito para los
+  laboratorios que informan con códigos alternativos.
+- `src/ckm/biomarkers.ts:160` — `observation.code?.coding?.some(...)`, ídem.
+
+`coding[0]` se usa solo para **emitir** el código canónico y para mostrar. Un
+resultado que llegue con el segundo, tercero o cuarto LOINC de la glucosa
+matchea bien. Buena pregunta igual: el riesgo era real, la implementación ya lo
+cubría.
+
+## 10.5 Quién computa las sesiones: módulo compartido
+
+**No persistan el conteo.** Un conteo persistido queda viejo en cuanto recepción
+cierra un turno, y ahí el problema es peor que la divergencia: divergir se nota
+(34 vs 31), quedar viejo no. La analogía con los derivados no cierra del todo —
+un derivado se calcula de una extracción y no cambia más; el acumulado de
+sesiones cambia cada vez que alguien entra a la cámara.
+
+**Módulo compartido.** `src/bio/session-count.ts` es puro (recibe
+`Appointment[]`, sin red ni UI) y la parte que de verdad puede divergir —el mapa
+de código de servicio a terapia— ya vive en `data/bio/therapy-definitions.json`,
+que es dato, no código. Es el mismo patrón del catálogo de biomarcadores.
+
+Lo empaquetamos como quieran (paquete npm, submódulo, o el JSON publicado más
+una copia chica del lector). Lo que importa es que **las reglas —qué estados
+cuentan y qué código es qué terapia— tengan un solo dueño**.
+
+Si el empaquetado cross-repo resulta caro, la alternativa es un bot con
+`Subscription` sobre `Appointment` que mantenga el número actualizado por
+evento. Más piezas, pero sin el problema de frescura de persistir a mano.
+
+## 10.6 La verificación de `fulfilled`: no la podemos correr
+
+**No tenemos credenciales de Medplum en este entorno**, así que no podemos
+correr `Appointment?status=fulfilled&_summary=count`. Tienen razón en que define
+si esto arranca ahora, y en que es un minuto.
+
+Quien tenga acceso al proyecto, la consulta completa que necesitamos son tres:
+
+```
+GET /fhir/R4/Appointment?status=fulfilled&_summary=count
+GET /fhir/R4/Appointment?status=arrived,checked-in&_summary=count
+GET /fhir/R4/Appointment?_summary=count
+```
+
+La primera define si hay algo que contar. La segunda dice cuántos turnos
+quedaron abiertos (el contador los toma, ver §9.3). La tercera da el
+denominador: si la primera da 0 y la tercera da 4.000, no es que no haya
+pacientes — es que nadie cierra turnos.
+
+Coincidimos en el criterio: **"0 sesiones" para alguien que hizo 34 es peor que
+no mostrar nada.** Por eso el contador ya distingue "no hay dato" de "cero", y
+por eso `conteoParaGate()` devuelve `undefined` en vez de ceros cuando no puede
+sostener el número.
+
+## 10.7 El saldo inicial va como `Observation`
+
+**`Observation`**, una por paciente y por terapia. Por dos razones:
+
+1. **No hace falta una regla nueva de AccessPolicy.** El paciente ya lee sus
+   propias `Observation`. Era su preocupación explícita —los 403 de
+   `ServiceRequest` y el 400 de `Subscription`— y con `Observation` no se repite.
+2. Es semánticamente lo que es: un hecho registrado sobre el paciente, con
+   valor, fecha y procedencia.
+
+Forma propuesta:
+
+```jsonc
+{
+  "resourceType": "Observation",
+  "status": "final",
+  "category": [
+    {
+      "coding": [
+        { "system": "https://biowellness.ar/fhir/CodeSystem/observacion-categoria", "code": "sesiones-terapia" },
+      ],
+    },
+  ],
+  "code": {
+    "coding": [{ "system": "https://biowellness.ar/fhir/CodeSystem/terapia", "code": "hbot" }],
+    "text": "Sesiones de HBOT previas al sistema",
+  },
+  "subject": { "reference": "Patient/<id>" },
+  "effectiveDateTime": "<fecha de corte del sembrado>",
+  "valueInteger": 34,
+  "method": { "coding": [{ "system": "https://biowellness.ar/fhir/CodeSystem/origen-conteo", "code": "facturacion" }] },
+}
+```
+
+La **categoría propia** importa: sin ella, este recurso aparecería en las
+consultas de biomarcadores y contaminaría los paneles. `method` lleva la
+procedencia, que es lo que hace que el total degrade a `facturacion`.
+
+## 10.8 La prueba de punta a punta
+
+De acuerdo en que es el único ítem que ninguno de los dos cierra solo, y **no
+nos consta que se haya hecho.** Tampoco la podemos correr desde acá: hace falta
+una sesión de paciente en el portal y una de médico en el dashboard, al mismo
+tiempo, contra el mismo proyecto.
+
+Del lado del dashboard está listo: el tab lista `proposal`/`draft` con el badge
+naranja y el botón "Aprobar y emitir" ya convierte a `order`/`active` sellada
+con matrícula.
+
+Proponemos hacerla juntos con un paciente de prueba: ustedes crean la solicitud,
+nosotros confirmamos que aparece con el badge y la aprobamos, y ustedes verifican
+que el estado cambió del lado del portal.
+
+## 10.9 La decisión de producto de 3.4
+
+De acuerdo en que no es de implementación. Aportamos solo la restricción
+técnica: con `desconocido` **la pantalla no puede mostrar un número**, ni
+siquiera uno tachado o en gris, porque no hay número que mostrar. Que
+"desaparezca sin parecer un error" es exactamente el requisito; el contrato solo
+exige que no aparezca un dígito.
