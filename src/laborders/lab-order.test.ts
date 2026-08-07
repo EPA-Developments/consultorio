@@ -9,6 +9,7 @@ import {
   groupByRequisition,
   LABORATORY_CATEGORY,
   MAX_WRITES_PER_TX,
+  ORDERABILITY_INFO,
   orderabilityFor,
   REQUISITION_SYSTEM,
   resolveDerivedSources,
@@ -42,9 +43,34 @@ const glucosa = def({
 // Código real del catálogo (insulina basal): las fuentes de los derivados se
 // declaran por LOINC, así que el fixture tiene que usar el mismo.
 const insulina = def({ biomarcadorId: 'insulina-en-ayunas', label: 'Insulina', code: '20448-7', system: LOINC_SYSTEM });
-const homaIr = def({ biomarcadorId: 'homa-ir', label: 'HOMA-IR', code: 'homa-ir', system: LOCAL_SYSTEM });
+// Los derivados los marca el CATÁLOGO, no una lista en el código: el fixture
+// tiene que traer las dos extensiones, igual que el recurso del servidor.
+const homaIr = def({
+  biomarcadorId: 'homa-ir',
+  label: 'HOMA-IR',
+  code: 'homa-ir',
+  system: LOCAL_SYSTEM,
+  noSolicitable: true,
+  formulaDerivado: 'glucosa × insulina / 405',
+});
 const creatinina = def({ biomarcadorId: 'creatinina', label: 'Creatinina', code: '2160-0', system: LOINC_SYSTEM });
-const egfr = def({ biomarcadorId: 'egfr-tfg-estimada', label: 'eGFR', code: '98979-8', system: LOINC_SYSTEM });
+const egfr = def({
+  biomarcadorId: 'egfr-tfg-estimada',
+  label: 'eGFR',
+  code: '98979-8',
+  system: LOINC_SYSTEM,
+  noSolicitable: true,
+  formulaDerivado: 'CKD-EPI',
+});
+// Un analito del hemograma: medido, no calculado, y aun así no se pide suelto.
+const hemoglobina = def({
+  biomarcadorId: 'hemoglobina',
+  label: 'Hemoglobina',
+  code: '718-7',
+  system: LOINC_SYSTEM,
+  panelCode: 'hemograma',
+  noSolicitable: true,
+});
 const edadBiologica = def({
   biomarcadorId: 'edad-biologica-metilacion-adn',
   label: 'Edad Biológica',
@@ -79,10 +105,69 @@ describe('Clasificación de solicitabilidad', () => {
     expect(orderabilityFor(hrv)).toBe('device');
   });
 
+  // Sin esta categoría había que elegir entre dejarlo pedible o llamarlo
+  // "calculado", y la hemoglobina no es ninguna de las dos: es medida y viene
+  // adentro del hemograma.
+  test('analito de panel → componente, no derivado', () => {
+    expect(orderabilityFor(hemoglobina)).toBe('component');
+  });
+
+  test('el dispositivo gana sobre no-solicitable', () => {
+    expect(orderabilityFor({ ...hrv, noSolicitable: true })).toBe('device');
+  });
+
   test('LOINC ausente pero código local presente igual es especializado', () => {
     expect(orderabilityFor(def({ biomarcadorId: 'zonulina', code: 'zonulina', system: LOCAL_SYSTEM }))).toBe(
       'specialized'
     );
+  });
+});
+
+// El bug que motivó todo esto: la lista hardcodeada tenía dos entradas y el
+// catálogo marca 31. El dashboard dejaba emitir órdenes pidiendo "Colesterol
+// NO-HDL" o "Basófilos", que ningún laboratorio procesa sueltos.
+describe('La solicitabilidad sale del catálogo real, no de una lista paralela', () => {
+  const defs = (biomarkerBundle.entry as { resource: ObservationDefinition }[]).map((e) =>
+    parseObservationDefinition(e.resource)
+  );
+  const byId = new Map(defs.map((d) => [d.biomarcadorId, d]));
+
+  test('ningún marcado no-solicitable en el catálogo queda pedible', () => {
+    const pedibles = defs.filter((d) => d.noSolicitable && ORDERABILITY_INFO[orderabilityFor(d)].orderable);
+    expect(pedibles.map((d) => d.biomarcadorId)).toStrictEqual([]);
+  });
+
+  test('los seis derivados que el portal reportó no se pueden pedir', () => {
+    const derivados = [
+      'colesterol-no-hdl',
+      'ratio-psa-libre-total',
+      'saturacion-transferrina',
+      'ratio-zinc-cobre',
+      'homa-ir',
+      'egfr-tfg-estimada',
+    ];
+    for (const id of derivados) {
+      const d = byId.get(id);
+      expect(d, `falta ${id} en el catálogo`).toBeDefined();
+      expect(orderabilityFor(d as BiomarkerDefinition), id).toBe('derived');
+    }
+  });
+
+  test('el hemograma se clasifica como componente, no como calculado', () => {
+    expect(orderabilityFor(byId.get('hemoglobina') as BiomarkerDefinition)).toBe('component');
+    expect(orderabilityFor(byId.get('plaquetas') as BiomarkerDefinition)).toBe('component');
+  });
+
+  // El HRV no trae la extensión: si la clasificación dependiera solo del
+  // catálogo, un wearable volvería a ser solicitable.
+  test('el HRV sigue siendo dispositivo aunque el catálogo no lo marque', () => {
+    const hrvReal = byId.get('hrv-variabilidad-frecuencia-cardiaca') as BiomarkerDefinition;
+    expect(hrvReal.noSolicitable).toBeUndefined();
+    expect(orderabilityFor(hrvReal)).toBe('device');
+  });
+
+  test('lo que sí es solicitable sigue siéndolo', () => {
+    expect(orderabilityFor(byId.get('glucosa-en-ayunas') as BiomarkerDefinition)).toBe('lab');
   });
 });
 
