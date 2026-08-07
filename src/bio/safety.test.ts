@@ -1,5 +1,5 @@
 import type { Condition } from '@medplum/fhirtypes';
-import { evaluarCatalogo, evaluarTerapia, ordenarPorRiesgo } from './safety';
+import { evaluarCatalogo, evaluarTerapia, ordenarPorRiesgo, ORIGEN_CONTEO_LABELS } from './safety';
 import type { DatosPaciente } from './safety';
 import { terapiaPorId, todasLasTerapias } from './therapy-catalog';
 
@@ -150,5 +150,68 @@ describe('Caso clínico: paciente de 62 con varios antecedentes', () => {
     const orden = ordenarPorRiesgo(evaluarCatalogo(todasLasTerapias(), paciente));
     expect(orden[0].resultado).toBe('bloquear');
     expect(orden[orden.length - 1].resultado).toBe('permitir');
+  });
+});
+
+describe('Topes de exposición acumulada en el circuito', () => {
+  // El límite estaba declarado en el catálogo pero el motor no lo evaluaba:
+  // existía el artefacto y no estaba en el circuito real.
+  test('sin conteo de sesiones no se evalúa ningún tope', () => {
+    const r = evaluarTerapia(HBOT, SANO);
+    expect(r.limites).toStrictEqual([]);
+    expect(r.sesionesAcumuladas).toBeUndefined();
+    expect(r.resultado).toBe('permitir');
+  });
+
+  test('con pocas sesiones no cambia nada', () => {
+    const r = evaluarTerapia(HBOT, { condiciones: [], sesionesAcumuladas: { hbot: 8 } });
+    expect(r.limites).toStrictEqual([]);
+    expect(r.resultado).toBe('permitir');
+  });
+
+  // El riesgo no viene de lo que el paciente tiene, sino de cuántas lleva.
+  test('a las 100 sesiones exige evaluación aunque los antecedentes estén limpios', () => {
+    const r = evaluarTerapia(HBOT, { condiciones: [], sesionesAcumuladas: { hbot: 100 } });
+    expect(r.resultado).toBe('evaluar');
+    expect(r.mensaje).toMatch(/100 sesiones acumuladas/);
+    expect(r.mensaje).toMatch(/irreversible/i);
+  });
+
+  test('a las 20 sesiones se registra el control visual sin frenar la indicación', () => {
+    const r = evaluarTerapia(HBOT, { condiciones: [], sesionesAcumuladas: { hbot: 25 } });
+    expect(r.limites.map((l) => l.sesionesAcumuladas)).toStrictEqual([20]);
+    expect(r.resultado).toBe('permitir'); // 'seguimiento' no gatea
+  });
+
+  test('un bloqueo por antecedente gana sobre el tope', () => {
+    const r = evaluarTerapia(HBOT, {
+      condiciones: [condicion('J93.0', 'Neumotórax')],
+      sesionesAcumuladas: { hbot: 120 },
+    });
+    expect(r.resultado).toBe('bloquear');
+    expect(r.limites.length).toBeGreaterThan(0); // se registra igual
+  });
+
+  test('el conteo es por terapia: las sesiones de una no cuentan para otra', () => {
+    const datos = { condiciones: [], sesionesAcumuladas: { hbot: 120 } };
+    expect(evaluarTerapia(HBOT, datos).resultado).toBe('evaluar');
+    expect(evaluarTerapia(IHHT, datos).resultado).toBe('permitir');
+  });
+
+  // Facturación cuenta lo comprado, no lo administrado. La distinción viaja
+  // con el dato para que la pantalla pueda decirlo.
+  test('el origen del conteo se conserva en la evaluación', () => {
+    const r = evaluarTerapia(HBOT, {
+      condiciones: [],
+      sesionesAcumuladas: { hbot: 100 },
+      origenConteo: 'facturacion',
+    });
+    expect(r.origenConteo).toBe('facturacion');
+    expect(ORIGEN_CONTEO_LABELS.facturacion).toMatch(/no desde el registro clínico/);
+  });
+
+  test('dos bloques diarios de 8 semanas disparan el tope', () => {
+    const r = evaluarTerapia(HBOT, { condiciones: [], sesionesAcumuladas: { hbot: 8 * 7 * 2 } });
+    expect(r.resultado).toBe('evaluar');
   });
 });

@@ -11,7 +11,8 @@
 // Puro: recibe los datos ya cargados y devuelve el veredicto. Sin red, sin UI.
 import type { Condition } from '@medplum/fhirtypes';
 import { conditionMatches } from '../ckm/clinical';
-import type { Contraindicacion, Terapia } from './therapy-catalog';
+import type { Contraindicacion, LimiteAcumulado, Terapia } from './therapy-catalog';
+import { limitesAlcanzados } from './therapy-catalog';
 
 /** Qué se puede hacer con esta terapia, para este paciente, hoy. */
 export type Resultado = 'permitir' | 'diferir' | 'bloquear' | 'evaluar';
@@ -29,9 +30,29 @@ export interface HallazgoSeguridad {
   motivo: string;
 }
 
+/**
+ * De dónde salió el conteo de sesiones. Importa para saber cuánto se le puede
+ * creer: la facturación cuenta lo COMPRADO, no lo administrado. Alguien compra
+ * un pack de diez y hace seis, o recibe una sesión de cortesía que no se
+ * factura. Para mostrarle un total al paciente alcanza; para sostener un
+ * umbral de seguridad, no.
+ */
+export type OrigenConteo = 'administradas' | 'facturacion' | 'desconocido';
+
+export const ORIGEN_CONTEO_LABELS: Record<OrigenConteo, string> = {
+  administradas: 'sesiones registradas al administrarse',
+  facturacion: 'estimado desde la facturación, no desde el registro clínico',
+  desconocido: 'origen del conteo sin determinar',
+};
+
 export interface EvaluacionTerapia {
   terapia: Terapia;
   resultado: Resultado;
+  /** Topes de exposición acumulada ya alcanzados. */
+  limites: LimiteAcumulado[];
+  /** Sesiones contadas y de dónde salió el número. */
+  sesionesAcumuladas?: number;
+  origenConteo?: OrigenConteo;
   /** Hallazgos agrupados por lo que provocan. */
   bloqueos: HallazgoSeguridad[];
   evaluaciones: HallazgoSeguridad[];
@@ -45,6 +66,10 @@ export interface EvaluacionTerapia {
 export interface DatosPaciente {
   /** Conditions ACTIVAS del paciente. */
   condiciones: Condition[];
+  /** Sesiones acumuladas por id de terapia, a lo largo de TODA la historia. */
+  sesionesAcumuladas?: Record<string, number>;
+  /** De dónde salió ese conteo. */
+  origenConteo?: OrigenConteo;
   /**
    * Situaciones del día que difieren una sesión sin ser antecedentes: fiebre,
    * infección aguda, alcohol. No viven en Conditions porque son transitorias.
@@ -104,7 +129,20 @@ export function evaluarTerapia(terapia: Terapia, datos: DatosPaciente): Evaluaci
   const diferimientos = diferimientosDelDia(terapia, datos);
   const tamizajePendiente = terapia.tamizajePrevio.filter((t) => t.obligatorio).map((t) => t.texto);
 
-  const base = { terapia, bloqueos, evaluaciones, condicionales, diferimientos, tamizajePendiente };
+  const sesionesAcumuladas = datos.sesionesAcumuladas?.[terapia.id];
+  const limites = sesionesAcumuladas !== undefined ? limitesAlcanzados(terapia, sesionesAcumuladas) : [];
+
+  const base = {
+    terapia,
+    bloqueos,
+    evaluaciones,
+    condicionales,
+    diferimientos,
+    tamizajePendiente,
+    limites,
+    sesionesAcumuladas,
+    origenConteo: datos.origenConteo,
+  };
 
   if (bloqueos.length > 0) {
     return {
@@ -120,12 +158,19 @@ export function evaluarTerapia(terapia: Terapia, datos: DatosPaciente): Evaluaci
       mensaje: `La sesión de hoy se difiere: ${diferimientos.map((h) => h.contraindicacion.texto).join('; ')}. El paciente sigue siendo candidato.`,
     };
   }
-  if (evaluaciones.length > 0 || condicionales.length > 0) {
-    const todas = [...evaluaciones, ...condicionales];
+  // Un tope de exposición alcanzado exige evaluación aunque los antecedentes
+  // estén limpios: el riesgo no viene de lo que el paciente tiene, sino de
+  // cuántas sesiones lleva.
+  const topes = limites.filter((l) => l.severidad === 'evaluacion');
+  if (evaluaciones.length > 0 || condicionales.length > 0 || topes.length > 0) {
+    const motivos = [
+      ...[...evaluaciones, ...condicionales].map((h) => h.contraindicacion.texto),
+      ...topes.map((l) => `${sesionesAcumuladas} sesiones acumuladas: ${l.texto}`),
+    ];
     return {
       ...base,
       resultado: 'evaluar',
-      mensaje: `Requiere evaluación antes de indicar: ${todas.map((h) => h.contraindicacion.texto).join('; ')}.`,
+      mensaje: `Requiere evaluación antes de indicar: ${motivos.join('; ')}.`,
     };
   }
   return {
