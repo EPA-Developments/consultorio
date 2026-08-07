@@ -11,6 +11,7 @@ import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
 import { cleanResource } from '../utils';
 import { LE8Panel } from '../ckm/components/LE8Panel';
+import { BioPanel } from '../bio/components/BioPanel';
 import { GLP1Panel } from '../glp1/components/GLP1Panel';
 import { LabOrderPanel } from '../laborders/components/LabOrderPanel';
 import { ClinicalImpressionDisplay } from './ClinicalImpressionDisplay';
@@ -37,6 +38,7 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
     ['observations', 'Observaciones'],
     ['le8', 'Salud CV · LE8'],
     ['glp1', 'Elegibilidad GLP-1'],
+    ['bio', 'Panel Bio'],
     ['ordenes', 'Órdenes de laboratorio'],
   ];
   // Get the current tab
@@ -115,6 +117,9 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
         </Tabs.Panel>
         <Tabs.Panel value="glp1">
           <GLP1Panel patient={props.patient} />
+        </Tabs.Panel>
+        <Tabs.Panel value="bio">
+          <BioPanel patient={props.patient} />
         </Tabs.Panel>
         <Tabs.Panel value="ordenes">
           <LabOrderPanel patient={props.patient} />
