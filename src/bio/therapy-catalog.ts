@@ -142,10 +142,7 @@ export const OBJETIVO_LABELS: Record<Objetivo, string> = {
  * para una competencia dura hasta el evento, y una rutina de recuperación no
  * tiene fin previsto.
  */
-export type Duracion =
-  | { tipo: 'semanas'; semanas: number }
-  | { tipo: 'hasta-evento' }
-  | { tipo: 'abierta' };
+export type Duracion = { tipo: 'semanas'; semanas: number } | { tipo: 'hasta-evento' } | { tipo: 'abierta' };
 
 export interface Esquema {
   objetivo: Objetivo;
@@ -176,6 +173,18 @@ export interface Terapia {
   medicalizacion: Medicalizacion;
   validacion: Validacion;
   resumen: string;
+  /**
+   * Códigos del catálogo de servicios de recepción que corresponden a esta
+   * terapia (`https://biowellness.ar/fhir/CodeSystem/servicio`). Una terapia
+   * puede tener varios: la cámara monoplaza y la multiplaza son dos servicios
+   * distintos y **la misma exposición** — el tope de 100 sesiones es de HBOT,
+   * no de un equipo.
+   *
+   * Está incompleto a propósito. Solo figuran los códigos que recepción mostró
+   * textualmente; el contador reporta los que no reconoce en vez de contar de
+   * menos en silencio.
+   */
+  codigosServicio?: string[];
   /** Un esquema por objetivo: la frecuencia depende de para qué se indica. */
   esquemas: Esquema[];
   /** Topes de exposición acumulada, si la terapia los tiene. */
@@ -263,6 +272,23 @@ export function duracionTexto(duracion: Duracion): string {
     default:
       return 'abierta';
   }
+}
+
+/** Sistema de códigos del catálogo de servicios de recepción. */
+export const SISTEMA_SERVICIO = 'https://biowellness.ar/fhir/CodeSystem/servicio';
+
+/**
+ * Índice código de servicio → id de terapia. Varios códigos pueden apuntar a la
+ * misma terapia (las tres cámaras son un solo HBOT a efectos de exposición).
+ */
+export function indiceCodigosServicio(terapias: Terapia[] = CATALOGO.terapias): Map<string, string> {
+  const idx = new Map<string, string>();
+  for (const t of terapias) {
+    for (const codigo of t.codigosServicio ?? []) {
+      idx.set(codigo, t.id);
+    }
+  }
+  return idx;
 }
 
 /**

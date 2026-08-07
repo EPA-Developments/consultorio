@@ -9,12 +9,13 @@
 // medicalización y las contraindicaciones.
 import { Accordion, Alert, Badge, Card, Chip, Group, List, Loader, Stack, Text, ThemeIcon, Title } from '@mantine/core';
 import type { Patient } from '@medplum/fhirtypes';
-import { IconAlertTriangle, IconBan, IconClock, IconFlask, IconInfoCircle } from '@tabler/icons-react';
+import { IconAlertTriangle, IconBan, IconClock, IconFlask, IconHistory, IconInfoCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { useBioSafety } from '../hooks/useBioSafety';
-import { RESULTADO_LABELS } from '../safety';
+import { ORIGEN_CONTEO_LABELS, RESULTADO_LABELS } from '../safety';
 import type { EvaluacionTerapia, HallazgoSeguridad } from '../safety';
+import type { ConteoSesiones } from '../session-count';
 import {
   duracionTexto,
   EJE_LABELS,
@@ -23,6 +24,7 @@ import {
   OBJETIVO_LABELS,
   sesionesDelEsquema,
   SEVERIDAD_LABELS,
+  terapiaPorId,
 } from '../therapy-catalog';
 import type { Eje } from '../therapy-catalog';
 
@@ -34,7 +36,7 @@ const SITUACIONES = [
 
 export function BioPanel(props: { patient: Patient }): JSX.Element {
   const [situaciones, setSituaciones] = useState<string[]>([]);
-  const { evaluaciones, loading } = useBioSafety(props.patient, situaciones);
+  const { evaluaciones, conteo, loading } = useBioSafety(props.patient, situaciones);
 
   if (loading) {
     return <Loader m="xl" />;
@@ -85,6 +87,8 @@ export function BioPanel(props: { patient: Patient }): JSX.Element {
         </Text>
       </Card>
 
+      {conteo && <Acumulado conteo={conteo} />}
+
       {bloqueadas.length > 0 && (
         <Card withBorder radius="md" p="md" style={{ borderColor: 'var(--mantine-color-red-4)' }}>
           <Group gap="xs" mb="xs">
@@ -124,6 +128,68 @@ export function BioPanel(props: { patient: Patient }): JSX.Element {
         );
       })}
     </Stack>
+  );
+}
+
+/**
+ * Sesiones que el paciente lleva hechas, contadas desde los turnos cerrados de
+ * recepción.
+ *
+ * Cuando el conteo no es confiable **no se muestra un número**. Un total bajo
+ * presentado como total es peor que no tenerlo: tranquiliza sobre una
+ * exposición acumulada que nadie midió.
+ */
+function Acumulado(props: { conteo: ConteoSesiones }): JSX.Element {
+  const { conteo } = props;
+  const entradas = Object.entries(conteo.porTerapia);
+
+  if (!conteo.confiable) {
+    return (
+      <Alert color="orange" variant="light" icon={<IconAlertTriangle size={16} />}>
+        <Text size="sm" fw={600}>
+          No se puede determinar el acumulado de sesiones
+        </Text>
+        <Text size="sm">
+          Hay turnos con códigos de servicio que el catálogo no reconoce ({conteo.codigosSinMapear.join(', ')}), así que
+          no se sabe a qué terapia atribuirlos. Los topes de exposición acumulada quedan sin evaluar hasta completar el
+          mapeo.
+        </Text>
+      </Alert>
+    );
+  }
+
+  return (
+    <Card withBorder radius="md" p="md">
+      <Group gap={6} mb="xs">
+        <IconHistory size={16} />
+        <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
+          Sesiones acumuladas
+        </Text>
+      </Group>
+      {entradas.length === 0 ? (
+        <Text size="sm" c="dimmed">
+          El catálogo todavía no tiene los códigos de servicio de recepción, así que no hay nada que contar.
+        </Text>
+      ) : (
+        <Group gap="lg">
+          {entradas.map(([id, n]) => (
+            <div key={id}>
+              <Text size="xl" fw={700} lh={1.1}>
+                {n}
+              </Text>
+              <Text size="xs" c="dimmed">
+                {terapiaPorId(id)?.nombre ?? id}
+              </Text>
+            </div>
+          ))}
+        </Group>
+      )}
+      <Text size="xs" c="dimmed" mt="xs">
+        A lo largo de toda la historia, no de la serie en curso · {ORIGEN_CONTEO_LABELS[conteo.origenConteo]}.
+        {conteo.sinCerrar > 0 &&
+          ` Incluye ${conteo.sinCerrar} ${conteo.sinCerrar === 1 ? 'turno' : 'turnos'} donde el paciente asistió y el turno nunca se cerró.`}
+      </Text>
+    </Card>
   );
 }
 
@@ -193,7 +259,12 @@ function TerapiaItem(props: { evaluacion: EvaluacionTerapia }): JSX.Element {
             <Stack gap={4}>
               {terapia.indicaciones.map((i) => (
                 <Group key={i.texto} gap={8} wrap="nowrap" align="flex-start">
-                  <Badge size="xs" variant="light" color={EVIDENCIA_LABELS[i.evidencia].color} style={{ flexShrink: 0 }}>
+                  <Badge
+                    size="xs"
+                    variant="light"
+                    color={EVIDENCIA_LABELS[i.evidencia].color}
+                    style={{ flexShrink: 0 }}
+                  >
                     {EVIDENCIA_LABELS[i.evidencia].label}
                   </Badge>
                   <Text size="sm">{i.texto}</Text>
@@ -240,8 +311,7 @@ function TerapiaItem(props: { evaluacion: EvaluacionTerapia }): JSX.Element {
                 return (
                   <div key={e.objetivo}>
                     <Text size="sm">
-                      <strong>{OBJETIVO_LABELS[e.objetivo]}</strong> — {frecuencia} ·{' '}
-                      {duracionTexto(e.duracion)}
+                      <strong>{OBJETIVO_LABELS[e.objetivo]}</strong> — {frecuencia} · {duracionTexto(e.duracion)}
                       {total !== undefined ? ` · hasta ${total} sesiones` : ''}
                     </Text>
                     {e.nota && (
@@ -276,6 +346,9 @@ function TerapiaItem(props: { evaluacion: EvaluacionTerapia }): JSX.Element {
               </Stack>
               <Text size="xs" c="dimmed" mt={4}>
                 Se cuentan a lo largo de todas las series, no dentro de una.
+                {props.evaluacion.sesionesAcumuladas !== undefined
+                  ? ` Este paciente lleva ${props.evaluacion.sesionesAcumuladas}.`
+                  : ' Este paciente no tiene acumulado determinado.'}
               </Text>
             </div>
           )}

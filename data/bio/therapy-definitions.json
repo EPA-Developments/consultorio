@@ -15,6 +15,9 @@
         "estado": "borrador"
       },
       "resumen": "Oxígeno al 100 % a presión mayor que la atmosférica, en ciclos con pausas de aire.",
+      "codigosServicio": [
+        "HBOT_MONO"
+      ],
       "esquemas": [
         {
           "objetivo": "preparacion-deportiva",
@@ -213,6 +216,9 @@
         "estado": "borrador"
       },
       "resumen": "Ciclos alternados de aire con baja y alta oxigenación, con la intensidad ajustada a la saturación del paciente.",
+      "codigosServicio": [
+        "IHHT"
+      ],
       "esquemas": [
         {
           "objetivo": "preparacion-deportiva",
