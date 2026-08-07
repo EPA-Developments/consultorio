@@ -1,0 +1,530 @@
+{
+  "version": "2026-08-07",
+  "nota": "Catálogo de terapias del Panel Bio. Es DATO, no código: se corrige acá sin tocar la aplicación, igual que el catálogo de biomarcadores. Ninguna terapia arranca validada; el estado de validación lo pone el equipo médico.",
+  "terapias": [
+    {
+      "id": "hbot",
+      "nombre": "HBOT",
+      "nombreCompleto": "Oxigenoterapia hiperbárica",
+      "ejes": ["rejuvenecer", "reparar"],
+      "medicalizacion": "evaluacion-medica",
+      "validacion": { "estado": "borrador" },
+      "resumen": "Oxígeno al 100 % a presión mayor que la atmosférica, en ciclos con pausas de aire.",
+      "parametros": [
+        {
+          "clave": "presion_ata",
+          "etiqueta": "Presión",
+          "unidad": "ATA",
+          "tipo": "numero",
+          "min": 1.8,
+          "max": 2.4,
+          "sugerido": 2.0,
+          "nota": "2,0 ATA es la presión del protocolo publicado para la indicación de longevidad. Por encima de 1,6 ATA hay riesgo de convulsión por toxicidad del SNC en cualquier paciente."
+        },
+        {
+          "clave": "fio2",
+          "etiqueta": "FiO₂",
+          "unidad": "%",
+          "tipo": "numero",
+          "sugerido": 100
+        },
+        {
+          "clave": "duracion_min",
+          "etiqueta": "Duración",
+          "unidad": "min",
+          "tipo": "numero",
+          "sugerido": 60
+        },
+        {
+          "clave": "air_breaks",
+          "etiqueta": "Pausas de aire",
+          "unidad": "cantidad",
+          "tipo": "numero",
+          "sugerido": 3,
+          "nota": "No son una medida de seguridad: son el mecanismo. El efecto regenerativo viene de la FLUCTUACIÓN de oxígeno (paradoja hiperóxica-hipóxica), no del nivel absoluto. Registrar cuántas y de cuánto."
+        },
+        {
+          "clave": "velocidad_compresion",
+          "etiqueta": "Velocidad de compresión",
+          "unidad": "min hasta presión",
+          "tipo": "numero",
+          "nota": "La barotrauma ótica se juega acá: la mayoría de los casos ocurre en los primeros metros de compresión."
+        }
+      ],
+      "serie": { "semanas": 8, "frecuenciasSemanales": [2, 3] },
+      "indicaciones": [
+        { "texto": "Programas de longevidad y rejuvenecimiento", "evidencia": "senal-consistente-n-pequeno" },
+        { "texto": "Reparación tisular y cicatrización", "evidencia": "ensayo-humano" }
+      ],
+      "contraindicaciones": [
+        {
+          "id": "neumotorax",
+          "texto": "Neumotórax no tratado",
+          "severidad": "bloquea",
+          "icd10": "^J93",
+          "evidencia": "ensayo-humano",
+          "fuente": "Única contraindicación absoluta reconocida. La despresurización puede precipitar un neumotórax a tensión."
+        },
+        {
+          "id": "epoc-retenedor",
+          "texto": "EPOC con retención de CO₂ o bullas enfisematosas",
+          "severidad": "evaluacion",
+          "icd10": "^J44",
+          "evidencia": "senal-consistente-n-pequeno"
+        },
+        {
+          "id": "quimio-reciente",
+          "texto": "Quimioterapia con bleomicina en los últimos 3-4 meses, o con compromiso pulmonar",
+          "severidad": "evaluacion",
+          "evidencia": "senal-consistente-n-pequeno",
+          "fuente": "Antes se consideraba contraindicación absoluta. El consenso actual es que sin compromiso pulmonar y pasados 3-4 meses no lo es; no hay casos documentados de toxicidad pulmonar por HBOT."
+        },
+        {
+          "id": "claustrofobia",
+          "texto": "Claustrofobia severa",
+          "severidad": "evaluacion",
+          "evidencia": "sin-datos"
+        },
+        {
+          "id": "embarazo",
+          "texto": "Embarazo",
+          "severidad": "condicional",
+          "icd10": "^(O[0-9]|Z3[34])",
+          "evidencia": "sin-datos"
+        },
+        {
+          "id": "fiebre",
+          "texto": "Fiebre o infección aguda de vías aéreas superiores",
+          "severidad": "difiere",
+          "evidencia": "senal-consistente-n-pequeno",
+          "fuente": "La congestión impide compensar y multiplica el riesgo de barotrauma. Difiere la sesión, no el tratamiento."
+        }
+      ],
+      "tamizajePrevio": [
+        { "texto": "Evaluación otorrinolaringológica y timpánica", "obligatorio": true },
+        { "texto": "Agudeza visual y refracción basal", "obligatorio": true, "nota": "La miopía transitoria aparece en series largas." },
+        { "texto": "Radiografía o evaluación pulmonar si hay antecedente respiratorio", "obligatorio": false }
+      ],
+      "seguimiento": [
+        { "texto": "Barotrauma ótica", "cuando": "cada sesión" },
+        { "texto": "Agudeza visual", "cuando": "fin de serie" }
+      ]
+    },
+    {
+      "id": "ihht",
+      "nombre": "IHHT",
+      "nombreCompleto": "Hipoxia-hiperoxia intermitente",
+      "ejes": ["rejuvenecer", "recuperar"],
+      "medicalizacion": "evaluacion-medica",
+      "validacion": { "estado": "borrador" },
+      "resumen": "Ciclos alternados de aire con baja y alta oxigenación, con la intensidad ajustada a la saturación del paciente.",
+      "parametros": [
+        {
+          "clave": "spo2_objetivo",
+          "etiqueta": "SpO₂ objetivo de la fase hipóxica",
+          "unidad": "%",
+          "tipo": "numero",
+          "nota": "ESTA es la dosis, no el porcentaje de O₂ del equipo. Dos pacientes con el mismo ajuste desaturan distinto."
+        },
+        {
+          "clave": "spo2_corte",
+          "etiqueta": "SpO₂ de corte",
+          "unidad": "%",
+          "tipo": "numero",
+          "nota": "Punto individual definido por el test de tolerancia previo; el equipo corta solo."
+        },
+        { "clave": "o2_hipoxia", "etiqueta": "O₂ en fase hipóxica", "unidad": "%", "tipo": "numero", "min": 10, "max": 21 },
+        { "clave": "o2_hiperoxia", "etiqueta": "O₂ en fase hiperóxica", "unidad": "%", "tipo": "numero", "min": 21, "max": 40 },
+        { "clave": "ciclos", "etiqueta": "Ciclos", "unidad": "cantidad", "tipo": "numero" },
+        { "clave": "duracion_min", "etiqueta": "Duración", "unidad": "min", "tipo": "numero", "sugerido": 30 }
+      ],
+      "serie": { "semanas": 8, "frecuenciasSemanales": [2, 3] },
+      "indicaciones": [
+        { "texto": "Fatiga crónica y falta de energía", "evidencia": "senal-consistente-n-pequeno" },
+        { "texto": "Preparación y recuperación deportiva", "evidencia": "senal-consistente-n-pequeno" },
+        { "texto": "Programas de longevidad y salud metabólica", "evidencia": "mecanistico-sin-ensayos" },
+        { "texto": "Adaptación previa a la altura", "evidencia": "ensayo-humano" },
+        { "texto": "Apoyo a la función cognitiva", "evidencia": "senal-consistente-n-pequeno" }
+      ],
+      "contraindicaciones": [
+        {
+          "id": "hipertension-pulmonar",
+          "texto": "Hipertensión pulmonar",
+          "severidad": "bloquea",
+          "icd10": "^I27",
+          "evidencia": "mecanistico-sin-ensayos",
+          "fuente": "La hipoxia es vasoconstrictor pulmonar. No hay ensayos de IHHT en este grupo, pero el fundamento fisiológico es sólido: evidencia débil no significa riesgo débil."
+        },
+        {
+          "id": "epilepsia",
+          "texto": "Epilepsia no controlada",
+          "severidad": "bloquea",
+          "icd10": "^G40",
+          "evidencia": "mecanistico-sin-ensayos",
+          "fuente": "La hipoxia baja el umbral convulsivo."
+        },
+        {
+          "id": "anemia-severa",
+          "texto": "Anemia severa u otros trastornos del transporte de oxígeno",
+          "severidad": "bloquea",
+          "icd10": "^D5[0-9]|^D6[0-4]",
+          "evidencia": "mecanistico-sin-ensayos",
+          "fuente": "Falta en el material publicado. La capacidad de transporte ya está comprometida."
+        },
+        {
+          "id": "cardiaca-severa",
+          "texto": "Enfermedad cardiovascular severa: angina inestable, infarto reciente, insuficiencia descompensada",
+          "severidad": "evaluacion",
+          "icd10": "^I2[0-5]|^I50",
+          "evidencia": "senal-consistente-n-pequeno"
+        },
+        {
+          "id": "pulmonar-severa",
+          "texto": "EPOC, fibrosis pulmonar u otra enfermedad pulmonar severa",
+          "severidad": "evaluacion",
+          "icd10": "^J4[0-7]|^J84",
+          "evidencia": "senal-consistente-n-pequeno",
+          "fuente": "Nombradas aparte: en el material publicado quedaban tapadas bajo 'pulmonar severa'."
+        },
+        {
+          "id": "cancer-activo",
+          "texto": "Cáncer activo",
+          "severidad": "evaluacion",
+          "icd10": "^C",
+          "evidencia": "sin-datos",
+          "fuente": "Falta en el material publicado."
+        },
+        {
+          "id": "apnea",
+          "texto": "Apnea del sueño no tratada",
+          "severidad": "evaluacion",
+          "icd10": "^G47\\.3",
+          "evidencia": "mecanistico-sin-ensayos"
+        },
+        {
+          "id": "embarazo",
+          "texto": "Embarazo, salvo indicación expresa",
+          "severidad": "condicional",
+          "icd10": "^(O[0-9]|Z3[34])",
+          "evidencia": "sin-datos"
+        },
+        {
+          "id": "fiebre",
+          "texto": "Fiebre o infección aguda",
+          "severidad": "difiere",
+          "evidencia": "senal-consistente-n-pequeno"
+        }
+      ],
+      "tamizajePrevio": [
+        {
+          "texto": "Test de tolerancia a la hipoxia",
+          "obligatorio": true,
+          "nota": "Define los puntos de corte individuales con los que el equipo se apaga solo. Sin esto, la dosis no está individualizada."
+        }
+      ],
+      "seguimiento": [
+        { "texto": "Oximetría continua durante toda la sesión", "cuando": "cada sesión" },
+        { "texto": "Registrar la SpO₂ mínima alcanzada", "cuando": "cada sesión" }
+      ]
+    },
+    {
+      "id": "red-light",
+      "nombre": "Red Light",
+      "nombreCompleto": "Fotobiomodulación full spectrum",
+      "ejes": ["rejuvenecer", "reparar"],
+      "medicalizacion": "bienestar",
+      "validacion": { "estado": "borrador" },
+      "resumen": "Paneles full body con siete longitudes de onda entre 590 y 850 nm.",
+      "parametros": [
+        { "clave": "longitudes_onda", "etiqueta": "Longitudes de onda", "unidad": "nm", "tipo": "texto", "sugerido": "590–850 (7 λ)" },
+        { "clave": "irradiancia", "etiqueta": "Irradiancia", "unidad": "mW/cm²", "tipo": "numero", "nota": "Con la distancia, determina la dosis real. Sin esto no se puede reproducir una sesión." },
+        { "clave": "distancia_cm", "etiqueta": "Distancia al panel", "unidad": "cm", "tipo": "numero" },
+        { "clave": "duracion_min", "etiqueta": "Duración", "unidad": "min", "tipo": "numero" },
+        { "clave": "dosis_j_cm2", "etiqueta": "Dosis", "unidad": "J/cm²", "tipo": "numero", "nota": "Derivada de irradiancia × tiempo. La respuesta no es monótona: más no es mejor." }
+      ],
+      "serie": { "semanas": 8, "frecuenciasSemanales": [2, 3] },
+      "indicaciones": [
+        { "texto": "Rejuvenecimiento cutáneo", "evidencia": "ensayo-humano" },
+        { "texto": "Reparación de tejido y antiinflamatorio local", "evidencia": "senal-consistente-n-pequeno" },
+        { "texto": "Programas de longevidad", "evidencia": "mecanistico-sin-ensayos" }
+      ],
+      "contraindicaciones": [
+        {
+          "id": "fotosensibilidad",
+          "texto": "Medicación o condición fotosensibilizante",
+          "severidad": "evaluacion",
+          "evidencia": "senal-consistente-n-pequeno"
+        },
+        {
+          "id": "lesion-pigmentada",
+          "texto": "Lesión pigmentada sin evaluar en el área de exposición",
+          "severidad": "evaluacion",
+          "evidencia": "sin-datos"
+        },
+        {
+          "id": "embarazo",
+          "texto": "Embarazo",
+          "severidad": "condicional",
+          "icd10": "^(O[0-9]|Z3[34])",
+          "evidencia": "sin-datos"
+        }
+      ],
+      "tamizajePrevio": [
+        { "texto": "Revisión de medicación fotosensibilizante", "obligatorio": true }
+      ],
+      "seguimiento": []
+    },
+    {
+      "id": "recovery-pro",
+      "nombre": "Recovery Pro",
+      "nombreCompleto": "Circuito de contraste: sauna, inmersión en frío y Red Light",
+      "ejes": ["recuperar"],
+      "medicalizacion": "bienestar",
+      "validacion": { "estado": "borrador" },
+      "resumen": "Circuito de contraste en orden fijo: calor, frío y luz. Se registra como UNA sesión con tres modalidades.",
+      "modalidades": ["sauna", "inmersion-frio", "red-light"],
+      "parametros": [
+        { "clave": "sauna_temp", "etiqueta": "Temperatura de sauna", "unidad": "°C", "tipo": "numero" },
+        { "clave": "sauna_min", "etiqueta": "Tiempo en sauna", "unidad": "min", "tipo": "numero" },
+        {
+          "clave": "agua_temp",
+          "etiqueta": "Temperatura del agua",
+          "unidad": "°C",
+          "tipo": "numero",
+          "min": 10,
+          "max": 15,
+          "nota": "Para adultos mayores se recomienda no bajar de 12 °C con supervisión. Registrar la temperatura real, no el rango del equipo."
+        },
+        { "clave": "inmersion_min", "etiqueta": "Tiempo de inmersión", "unidad": "min", "tipo": "numero" },
+        { "clave": "ciclos", "etiqueta": "Ciclos de contraste", "unidad": "cantidad", "tipo": "numero" },
+        { "clave": "duracion_min", "etiqueta": "Duración total", "unidad": "min", "tipo": "numero", "sugerido": 60 }
+      ],
+      "serie": { "semanas": 8, "frecuenciasSemanales": [2, 3] },
+      "indicaciones": [
+        { "texto": "Recuperación deportiva y del esfuerzo", "evidencia": "ensayo-humano" },
+        { "texto": "Manejo del estrés y del sueño", "evidencia": "senal-consistente-n-pequeno" },
+        { "texto": "Rigidez y tensión muscular", "evidencia": "senal-consistente-n-pequeno" },
+        { "texto": "Rutinas de longevidad y bienestar", "evidencia": "mecanistico-sin-ensayos" }
+      ],
+      "contraindicaciones": [
+        {
+          "id": "cardiovascular-no-controlada",
+          "texto": "Enfermedad cardiovascular no controlada, angina inestable o infarto reciente",
+          "severidad": "bloquea",
+          "icd10": "^I2[0-5]|^I50",
+          "evidencia": "senal-consistente-n-pequeno",
+          "fuente": "La respuesta de shock por frío es la causa más común de muerte en inmersión."
+        },
+        {
+          "id": "arritmia",
+          "texto": "Arritmia o hipertensión sin control",
+          "severidad": "bloquea",
+          "icd10": "^I4[7-9]|^I1[0-6]",
+          "evidencia": "senal-consistente-n-pequeno"
+        },
+        {
+          "id": "urticaria-frigore",
+          "texto": "Urticaria a frigore o crioglobulinemia",
+          "severidad": "bloquea",
+          "icd10": "^L50\\.2|^D89\\.1",
+          "evidencia": "senal-consistente-n-pequeno",
+          "fuente": "Falta en el material publicado. Puede progresar a hipotensión, síncope y shock."
+        },
+        {
+          "id": "raynaud",
+          "texto": "Fenómeno de Raynaud",
+          "severidad": "evaluacion",
+          "icd10": "^I73\\.0",
+          "evidencia": "senal-consistente-n-pequeno",
+          "fuente": "Falta en el material publicado. Hay ataques documentados durante la inmersión."
+        },
+        {
+          "id": "epilepsia",
+          "texto": "Epilepsia",
+          "severidad": "bloquea",
+          "icd10": "^G40",
+          "evidencia": "mecanistico-sin-ensayos"
+        },
+        {
+          "id": "embarazo",
+          "texto": "Embarazo",
+          "severidad": "bloquea",
+          "icd10": "^(O[0-9]|Z3[34])",
+          "evidencia": "senal-consistente-n-pequeno",
+          "fuente": "La hipertermia del primer trimestre es un riesgo teratogénico conocido."
+        },
+        {
+          "id": "neuropatia",
+          "texto": "Neuropatía periférica con sensibilidad disminuida",
+          "severidad": "evaluacion",
+          "icd10": "^G6[02-4]|^E1[0-4]\\.4",
+          "evidencia": "mecanistico-sin-ensayos",
+          "fuente": "Riesgo de quemadura en sauna y de lesión por frío sin percibirlo."
+        },
+        {
+          "id": "alcohol",
+          "texto": "Bajo efecto de alcohol o sustancias",
+          "severidad": "difiere",
+          "evidencia": "senal-consistente-n-pequeno",
+          "fuente": "Falta en el material publicado. Es un factor real de muerte súbita asociado a sauna."
+        },
+        {
+          "id": "fiebre",
+          "texto": "Fiebre o infección aguda",
+          "severidad": "difiere",
+          "evidencia": "senal-consistente-n-pequeno"
+        }
+      ],
+      "tamizajePrevio": [
+        { "texto": "Tamizaje cardiovascular", "obligatorio": true, "nota": "El contraste térmico exige un corazón sano; es la propia advertencia del material publicado." }
+      ],
+      "seguimiento": [
+        { "texto": "Tolerancia al contraste y síntomas cardiovasculares", "cuando": "cada sesión" }
+      ]
+    },
+    {
+      "id": "botas",
+      "nombre": "Botas",
+      "nombreCompleto": "Compresión neumática secuencial y crioterapia localizada",
+      "ejes": ["recuperar"],
+      "medicalizacion": "bienestar",
+      "validacion": { "estado": "borrador" },
+      "resumen": "Compresión neumática intermitente para retorno venoso y drenaje, con frío terapéutico localizado.",
+      "parametros": [
+        { "clave": "presion_mmhg", "etiqueta": "Presión", "unidad": "mmHg", "tipo": "numero" },
+        { "clave": "camaras", "etiqueta": "Cámaras", "unidad": "cantidad", "tipo": "numero" },
+        { "clave": "crio_temp", "etiqueta": "Temperatura del frío", "unidad": "°C", "tipo": "numero" },
+        { "clave": "duracion_min", "etiqueta": "Duración", "unidad": "min", "tipo": "numero", "sugerido": 30 }
+      ],
+      "serie": { "semanas": 8, "frecuenciasSemanales": [2, 3] },
+      "indicaciones": [
+        { "texto": "Recuperación muscular y drenaje", "evidencia": "senal-consistente-n-pequeno" },
+        { "texto": "Retorno venoso y linfático", "evidencia": "ensayo-humano" }
+      ],
+      "contraindicaciones": [
+        {
+          "id": "tvp",
+          "texto": "Trombosis venosa profunda o tromboembolismo, confirmado o sospechado",
+          "severidad": "bloquea",
+          "icd10": "^I8[02]|^I26",
+          "evidencia": "senal-consistente-n-pequeno",
+          "fuente": "La compresión sobre una TVP puede movilizar el trombo."
+        },
+        {
+          "id": "infeccion-miembro",
+          "texto": "Celulitis, herida abierta o quemadura en el miembro",
+          "severidad": "bloquea",
+          "icd10": "^L03",
+          "evidencia": "senal-consistente-n-pequeno"
+        },
+        {
+          "id": "ic-descompensada",
+          "texto": "Insuficiencia cardíaca descompensada",
+          "severidad": "bloquea",
+          "icd10": "^I50",
+          "evidencia": "senal-consistente-n-pequeno",
+          "fuente": "El retorno venoso aumentado puede sobrecargar."
+        },
+        {
+          "id": "arteriopatia",
+          "texto": "Arteriopatía periférica severa",
+          "severidad": "evaluacion",
+          "icd10": "^I70\\.2|^I73\\.9",
+          "evidencia": "senal-consistente-n-pequeno"
+        },
+        {
+          "id": "neuropatia",
+          "texto": "Neuropatía severa con sensibilidad disminuida",
+          "severidad": "evaluacion",
+          "icd10": "^G6[02-4]|^E1[0-4]\\.4",
+          "evidencia": "mecanistico-sin-ensayos"
+        },
+        {
+          "id": "raynaud",
+          "texto": "Fenómeno de Raynaud (por el frío localizado)",
+          "severidad": "evaluacion",
+          "icd10": "^I73\\.0",
+          "evidencia": "senal-consistente-n-pequeno"
+        }
+      ],
+      "tamizajePrevio": [
+        { "texto": "Descartar TVP: edema asimétrico, dolor unilateral, inmovilización o cirugía reciente", "obligatorio": true }
+      ],
+      "seguimiento": []
+    },
+    {
+      "id": "iv-therapy",
+      "nombre": "IV Therapy",
+      "nombreCompleto": "Vitaminas, minerales y cofactores endovenosos",
+      "ejes": ["rejuvenecer", "recuperar"],
+      "medicalizacion": "acto-medico",
+      "validacion": { "estado": "borrador" },
+      "alcancePendiente": "La línea Anti-Aging NAD+ corresponde al Camino Regenerar, no al Panel Bio. Falta definir si la terapia entera se mueve o solo esa línea.",
+      "resumen": "Infusión endovenosa. Es la única terapia del catálogo que constituye un acto médico completo, con prescripción.",
+      "parametros": [
+        { "clave": "formulacion", "etiqueta": "Formulación", "tipo": "texto", "nota": "Se carga desde la orden real, con ingredientes y miligramos. El sistema NO precarga cócteles." },
+        { "clave": "volumen_ml", "etiqueta": "Volumen", "unidad": "mL", "tipo": "numero" },
+        { "clave": "duracion_min", "etiqueta": "Tiempo de infusión", "unidad": "min", "tipo": "numero" }
+      ],
+      "serie": { "semanas": 8, "frecuenciasSemanales": [1, 2] },
+      "indicaciones": [
+        { "texto": "Reposición hidroelectrolítica con indicación", "evidencia": "ensayo-humano" },
+        { "texto": "Corrección de déficit documentado por laboratorio", "evidencia": "ensayo-humano" },
+        { "texto": "Performance y longevidad", "evidencia": "sin-datos" }
+      ],
+      "contraindicaciones": [
+        {
+          "id": "g6pd",
+          "texto": "Déficit de G6PD, o G6PD sin determinar, con vitamina C en dosis alta",
+          "severidad": "bloquea",
+          "icd10": "^D55\\.0",
+          "evidencia": "ensayo-humano",
+          "fuente": "Riesgo de hemólisis. Sin resultado disponible se bloquea igual: acá el dato ausente no es 'seguir'."
+        },
+        {
+          "id": "erc-avanzada",
+          "texto": "Enfermedad renal crónica avanzada, diálisis o litiasis por oxalato, con vitamina C en dosis alta",
+          "severidad": "bloquea",
+          "icd10": "^N18\\.[45]|^N20",
+          "evidencia": "senal-consistente-n-pequeno"
+        },
+        {
+          "id": "ic-descompensada",
+          "texto": "Insuficiencia cardíaca descompensada",
+          "severidad": "bloquea",
+          "icd10": "^I50",
+          "evidencia": "senal-consistente-n-pequeno",
+          "fuente": "Sobrecarga de volumen."
+        },
+        {
+          "id": "anafilaxia",
+          "texto": "Anafilaxia previa a un componente de la formulación",
+          "severidad": "bloquea",
+          "evidencia": "ensayo-humano",
+          "fuente": "Se evalúa contra el ingrediente, no contra 'IV Therapy'."
+        },
+        {
+          "id": "embarazo",
+          "texto": "Embarazo o lactancia",
+          "severidad": "condicional",
+          "icd10": "^(O[0-9]|Z3[34])",
+          "evidencia": "sin-datos"
+        },
+        {
+          "id": "fiebre",
+          "texto": "Infección aguda no evaluada",
+          "severidad": "difiere",
+          "evidencia": "sin-datos"
+        }
+      ],
+      "tamizajePrevio": [
+        { "texto": "G6PD cuantitativo antes de la primera infusión con vitamina C en dosis alta", "obligatorio": true },
+        { "texto": "Función renal (creatinina y eGFR)", "obligatorio": true },
+        { "texto": "Ionograma, calcio corregido y magnesio", "obligatorio": true }
+      ],
+      "seguimiento": [
+        { "texto": "Reacción a la infusión y sitio de acceso venoso", "cuando": "cada sesión" }
+      ]
+    }
+  ]
+}
