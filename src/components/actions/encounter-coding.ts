@@ -3,11 +3,11 @@
 // POR QUÉ ESTÁN ACÁ Y NO EN UN ValueSet DEL SERVIDOR
 //
 // El formulario apuntaba a `https://example.com/encounter-types`, un ValueSet
-// del template de Medplum que vive en `data/core/encounter-types.json` y que
-// solo llega al servidor si alguien corre la pantalla `/upload/core`. Nadie la
-// corrió, así que el desplegable tiraba "ValueSet not found" y el campo quedaba
-// vacío. Un formulario que depende de un paso de seed que no está documentado
-// en ningún flujo se rompe así.
+// del template de Medplum que solo llegaba al servidor si alguien corría una
+// pantalla de seed que nadie corrió (el seed ya se eliminó del repo). El
+// desplegable tiraba "ValueSet not found" y el campo quedaba vacío. Un
+// formulario que depende de un paso de seed que no está documentado en ningún
+// flujo se rompe así.
 //
 // Además el ValueSet del template trae 15 opciones en inglés —obstetricia,
 // odontología, guardia, internación de largo plazo— que no son de esta
