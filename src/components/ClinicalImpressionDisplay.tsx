@@ -18,7 +18,7 @@ export function ClinicalImpressionDisplay(props: ClinicalImpressionDisplayProps)
   }
 
   if (impressions.length === 0) {
-    return <Blockquote color="dark">No Notes</Blockquote>;
+    return <Blockquote color="dark">Sin notas</Blockquote>;
   }
 
   return (

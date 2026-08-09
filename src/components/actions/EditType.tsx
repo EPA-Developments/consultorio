@@ -9,6 +9,7 @@ import type { CodeableConcept, Coding, Encounter, Questionnaire, QuestionnaireRe
 import { QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import type { JSX } from 'react';
+import { TIPOS_ENCUENTRO } from './encounter-coding';
 
 interface EditTypeProps {
   encounter: Encounter;
@@ -28,7 +29,7 @@ export function EditType(props: EditTypeProps): JSX.Element {
 
   function updateEncounterType(type?: Coding): void {
     if (!type) {
-      throw new Error('Invalid type');
+      throw new Error('Tipo de atención inválido');
     }
     const encounterId = props.encounter.id as string;
     const typeConcept: CodeableConcept = {
@@ -47,15 +48,15 @@ export function EditType(props: EditTypeProps): JSX.Element {
         props.onChange(encounter);
         showNotification({
           icon: <IconCircleCheck />,
-          title: 'Success',
-          message: 'Type edited',
+          title: 'Listo',
+          message: 'Tipo de atención actualizado',
         });
       })
       .catch((err) => {
         showNotification({
           color: 'red',
           icon: <IconCircleOff />,
-          title: 'Error',
+          title: 'No se pudo actualizar el tipo',
           message: normalizeErrorString(err),
         });
       });
@@ -64,7 +65,7 @@ export function EditType(props: EditTypeProps): JSX.Element {
   return (
     <div>
       <Button fullWidth onClick={handlers.open}>
-        Edit Encounter Type
+        Cambiar el tipo de atención
       </Button>
       <Modal opened={opened} onClose={handlers.close}>
         <QuestionnaireForm questionnaire={editTypeQuestionnaire} onSubmit={handleQuestionnaireSubmit} />
@@ -77,13 +78,13 @@ const editTypeQuestionnaire: Questionnaire = {
   resourceType: 'Questionnaire',
   status: 'active',
   id: 'edit-type',
-  title: 'Edit Encounter Type',
+  title: 'Cambiar el tipo de atención',
   item: [
     {
       linkId: 'type',
       type: 'choice',
-      text: 'New Type:',
-      answerValueSet: 'https://example.com/encounter-types',
+      text: 'Nuevo tipo:',
+      answerOption: TIPOS_ENCUENTRO,
     },
   ],
 };

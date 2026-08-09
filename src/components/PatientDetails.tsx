@@ -57,8 +57,8 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
         props.onChange(patient as Patient);
         showNotification({
           icon: <IconCircleCheck />,
-          title: 'Success',
-          message: 'Patient edited',
+          title: 'Listo',
+          message: 'Paciente actualizado',
         });
         navigate(`/Patient/${id}/details`)?.catch(console.error);
         window.scrollTo(0, 0);
@@ -67,7 +67,7 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
         showNotification({
           color: 'red',
           icon: <IconCircleOff />,
-          title: 'Error',
+          title: 'No se pudo actualizar el paciente',
           message: normalizeErrorString(err),
         });
       });

@@ -21,9 +21,15 @@ export function EncounterDetails(props: EncounterDetailsProps): JSX.Element {
 
   const id = props.encounter.id;
 
-  const tabs = ['Note', 'Details', 'History'];
+  // [valor, etiqueta]: el valor es el segmento de la URL y NO se traduce; lo
+  // que se traduce es lo que se lee. Mezclarlos rompería los enlaces guardados.
+  const tabs: [string, string][] = [
+    ['note', 'Nota'],
+    ['details', 'Detalles'],
+    ['history', 'Historial'],
+  ];
   const tab = window.location.pathname.split('/').pop();
-  const currentTab = tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
+  const currentTab = tab && tabs.some(([valor]) => valor === tab) ? tab : tabs[0][0];
 
   // Get the encounter type so the correct questionnaire can be retrieved
   const encounterType = props.encounter.type?.[0].coding?.[0].code;
@@ -88,11 +94,11 @@ export function EncounterDetails(props: EncounterDetailsProps): JSX.Element {
 
   return (
     <Document>
-      <Tabs defaultValue="details" value={currentTab.toLowerCase()} onChange={handleTabChange}>
+      <Tabs value={currentTab} onChange={handleTabChange}>
         <Tabs.List mb="sm">
-          {tabs.map((tab) => (
-            <Tabs.Tab key={tab} value={tab.toLowerCase()}>
-              {tab}
+          {tabs.map(([valor, etiqueta]) => (
+            <Tabs.Tab key={valor} value={valor}>
+              {etiqueta}
             </Tabs.Tab>
           ))}
         </Tabs.List>

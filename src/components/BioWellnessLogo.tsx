@@ -16,7 +16,12 @@ export function BioWellnessLogo(props: BioWellnessLogoProps): JSX.Element {
 
   if (failed) {
     return (
-      <Text component="span" fw={700} fz={Math.round(height * 0.62)} style={{ lineHeight: 1, letterSpacing: '-0.01em' }}>
+      <Text
+        component="span"
+        fw={700}
+        fz={Math.round(height * 0.62)}
+        style={{ lineHeight: 1, letterSpacing: '-0.01em' }}
+      >
         <Text component="span" inherit c="copper.7">
           Bio
         </Text>
