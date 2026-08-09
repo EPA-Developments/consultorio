@@ -14,6 +14,8 @@ export interface LE8ClinicalData {
   /** Los 4 componentes clínicos disponibles (los que falten quedan fuera). */
   inputs: ClinicalLE8Inputs;
   loading: boolean;
+  /** true si falló la lectura: "Sin dato" sería mentirle al que mira la rueda. */
+  error: boolean;
 }
 
 // Referencia estable para el estado vacío, así los consumidores que derivan
@@ -23,15 +25,15 @@ const EMPTY: ClinicalLE8Inputs = {};
 /** Hook que devuelve los componentes clínicos de LE8 del paciente. */
 export function useLE8ClinicalInputs(patient: Patient | undefined): LE8ClinicalData {
   const medplum = useMedplum();
-  const [state, setState] = useState<LE8ClinicalData>({ inputs: EMPTY, loading: true });
+  const [state, setState] = useState<LE8ClinicalData>({ inputs: EMPTY, loading: true, error: false });
 
   useEffect(() => {
     if (!patient?.id) {
-      setState({ inputs: EMPTY, loading: false });
+      setState({ inputs: EMPTY, loading: false, error: false });
       return;
     }
     let cancelled = false;
-    setState({ inputs: EMPTY, loading: true });
+    setState({ inputs: EMPTY, loading: true, error: false });
 
     (async () => {
       const patientId = patient.id as string;
@@ -50,11 +52,11 @@ export function useLE8ClinicalInputs(patient: Patient | undefined): LE8ClinicalD
       const active = conditions.filter(isActiveCondition);
       const { onAntihypertensive } = deriveMedicationFlags(medications);
       const inputs = clinicalLE8Inputs(values, { diabetes: hasDiabetes(active), onAntihypertensive });
-      setState({ inputs, loading: false });
+      setState({ inputs, loading: false, error: false });
     })().catch((err) => {
       console.error('useLE8ClinicalInputs', err);
       if (!cancelled) {
-        setState({ inputs: EMPTY, loading: false });
+        setState({ inputs: EMPTY, loading: false, error: true });
       }
     });
 

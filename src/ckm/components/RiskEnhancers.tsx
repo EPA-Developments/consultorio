@@ -7,6 +7,7 @@ import { IconInfoCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { RISK_ENHANCERS } from '../biomarkers';
 import type { EnhancerDefinition, EnhancerReading } from '../biomarkers';
+import { ErrorCarga } from '../../components/ErrorCarga';
 import { useRiskEnhancers } from '../hooks/useRiskEnhancers';
 
 const SECTION_HELP =
@@ -19,10 +20,15 @@ export interface RiskEnhancersProps {
 }
 
 export function RiskEnhancers(props: RiskEnhancersProps): JSX.Element | null {
-  const { readings, loading } = useRiskEnhancers(props.patientId);
+  const { readings, loading, error } = useRiskEnhancers(props.patientId);
 
   if (loading) {
     return null;
+  }
+  // "ApoB sin dato" con la lectura caída es una afirmación clínica falsa: el
+  // médico decidiría no intensificar sobre un dato que sí existe.
+  if (error) {
+    return <ErrorCarga que="los potenciadores de riesgo (ApoB, Lp(a))" />;
   }
 
   return (

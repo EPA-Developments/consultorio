@@ -1,6 +1,8 @@
 // Hook del Home del médico: carga en paralelo los recursos de todos los widgets
-// y los transforma con el módulo puro home-data. Ninguna búsqueda auxiliar que
-// falle debe tumbar el home (cada búsqueda cae a vacío ante error). Solo lee.
+// y los transforma con el módulo puro home-data. Ninguna búsqueda que falle
+// tumba el home — pero tampoco se disfraza de vacío: cada falla queda en
+// `fallas` y el Home la muestra. "Pacientes 0 / Sin alertas / Sin tareas" con
+// el servidor caído es un tablero que miente con cara de tranquilo. Solo lee.
 import type {
   Appointment,
   CarePlan,
@@ -49,16 +51,19 @@ export interface HomeData {
   results: WorklistItem[];
   birthdays: WorklistItem[];
   loading: boolean;
+  /** Qué búsquedas fallaron; los ceros de esas tarjetas no son datos. */
+  fallas: string[];
 }
 
 const EMPTY_KPIS: HomeKpis = { total: 0, byStage: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 }, highRisk: 0, withAlerts: 0 };
 const LAB_CODE = LABORATORY_CATEGORY.coding?.[0]?.code as string;
 
-async function settled<T>(p: Promise<T[]>, label: string): Promise<T[]> {
+async function settled<T>(p: Promise<T[]>, label: string, fallas: string[]): Promise<T[]> {
   try {
     return await p;
   } catch (err) {
     console.error(`Home: error cargando ${label}`, err);
+    fallas.push(label);
     return [];
   }
 }
@@ -78,6 +83,7 @@ const EMPTY: HomeData = {
   results: [],
   birthdays: [],
   loading: true,
+  fallas: [],
 };
 
 export function useHomeData(): HomeData {
@@ -95,9 +101,10 @@ export function useHomeData(): HomeData {
     const practitionerRef = practitionerId ? `Practitioner/${practitionerId}` : undefined;
 
     void (async () => {
+      const fallas: string[] = [];
       const [rows, proposals, tasks, carePlans, questionnaires, encounters, appointments, results, birthdayPatients] =
         await Promise.all([
-          settled<DashboardRow>(loadDashboardRows(medplum), 'panel'),
+          settled<DashboardRow>(loadDashboardRows(medplum), 'panel', fallas),
           settled<ServiceRequest>(
             medplum.searchResources('ServiceRequest', {
               intent: 'proposal',
@@ -106,21 +113,25 @@ export function useHomeData(): HomeData {
               _sort: '-authored',
               _count: '100',
             }),
-            'solicitudes de laboratorio'
+            'solicitudes de laboratorio',
+            fallas
           ),
           practitionerRef
             ? settled<Task>(
                 medplum.searchResources('Task', { owner: practitionerRef, _sort: '-_lastUpdated', _count: '50' }),
-                'tareas'
+                'tareas',
+                fallas
               )
             : Promise.resolve([] as Task[]),
           settled<CarePlan>(
             medplum.searchResources('CarePlan', { status: 'draft', _sort: '-_lastUpdated', _count: '50' }),
-            'planes de cuidado'
+            'planes de cuidado',
+            fallas
           ),
           settled<QuestionnaireResponse>(
             medplum.searchResources('QuestionnaireResponse', { _sort: '-_lastUpdated', _count: '80' }),
-            'cuestionarios'
+            'cuestionarios',
+            fallas
           ),
           practitionerRef
             ? settled<Encounter>(
@@ -129,7 +140,8 @@ export function useHomeData(): HomeData {
                   _sort: '-_lastUpdated',
                   _count: '50',
                 }),
-                'evoluciones'
+                'evoluciones',
+                fallas
               )
             : Promise.resolve([] as Encounter[]),
           practitionerRef
@@ -140,14 +152,16 @@ export function useHomeData(): HomeData {
                   _sort: 'date',
                   _count: '30',
                 }),
-                'turnos'
+                'turnos',
+                fallas
               )
             : Promise.resolve([] as Appointment[]),
           settled<DiagnosticReport>(
             medplum.searchResources('DiagnosticReport', { _sort: '-_lastUpdated', _count: '20' }),
-            'resultados'
+            'resultados',
+            fallas
           ),
-          settled<Patient>(medplum.searchResources('Patient', { _count: '500' }), 'cumpleaños'),
+          settled<Patient>(medplum.searchResources('Patient', { _count: '500' }), 'cumpleaños', fallas),
         ]);
       if (cancelled) {
         return;
@@ -167,6 +181,7 @@ export function useHomeData(): HomeData {
         results: buildResultItems(results),
         birthdays: buildBirthdayItems(birthdayPatients, currentMonth),
         loading: false,
+        fallas,
       });
     })();
     return () => {

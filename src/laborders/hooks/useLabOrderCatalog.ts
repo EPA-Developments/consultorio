@@ -18,10 +18,12 @@ export interface LabOrderCatalog {
   items: LabOrderItem[];
   byPanel: LabOrderPanelGroup[];
   loading: boolean;
+  /** true si falló la lectura del catálogo: "0 análisis" no sería un hecho. */
+  error: boolean;
 }
 
 export function useLabOrderCatalog(): LabOrderCatalog {
-  const { definitions, loading } = useObservationDefinitions();
+  const { definitions, loading, error } = useObservationDefinitions();
 
   const byPanel = useMemo<LabOrderPanelGroup[]>(
     () =>
@@ -35,5 +37,5 @@ export function useLabOrderCatalog(): LabOrderCatalog {
 
   const items = useMemo(() => byPanel.flatMap((g) => g.items), [byPanel]);
 
-  return { items, byPanel, loading };
+  return { items, byPanel, loading, error };
 }

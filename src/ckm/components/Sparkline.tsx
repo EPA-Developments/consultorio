@@ -15,7 +15,14 @@ export interface SparklineProps {
 }
 
 export function Sparkline(props: SparklineProps): JSX.Element | null {
-  const { values, width = 84, height = 24, color = 'var(--mantine-color-gray-5)', dotColor, label = 'Tendencia' } = props;
+  const {
+    values,
+    width = 84,
+    height = 24,
+    color = 'var(--mantine-color-gray-5)',
+    dotColor,
+    label = 'Tendencia',
+  } = props;
   if (values.length < 2) {
     return null;
   }
