@@ -11,7 +11,7 @@
 //   npm run build:bots   (genera data/core/example-bots.json)
 //   MEDPLUM_CLIENT_ID=xxx MEDPLUM_CLIENT_SECRET=xxx npm run deploy-bots-server
 import { MedplumClient } from '@medplum/core';
-import type { Bot, Bundle, BundleEntry } from '@medplum/fhirtypes';
+import type { Bot, Bundle, BundleEntry, Subscription } from '@medplum/fhirtypes';
 import fs from 'fs';
 
 const BUNDLE_FILE = 'data/core/example-bots.json';
@@ -83,8 +83,8 @@ async function main(): Promise<void> {
   // 3. Ejecutar la transacción (Binarys + Bots + Subscriptions). En proyectos con
   //    "strict isolation" la transacción entera puede rechazarse por cantidad de
   //    entries. NO es fatal: el código EJECUTABLE se despliega igual en el paso 4
-  //    ($deploy, que actualiza el Lambda y el Bot.executableCode), y los Bots ya
-  //    existen. Si faltaran Subscriptions, se recrean con --recreate-subs.
+  //    ($deploy, que actualiza el Lambda y el Bot.executableCode), los Bots ya
+  //    existen, y las Subscriptions se reconcilian en el paso 5.
   try {
     await medplum.executeBatch(JSON.parse(transactionString) as Bundle);
     console.log('  Transacción ejecutada (código fuente + suscripciones).');
@@ -92,8 +92,7 @@ async function main(): Promise<void> {
     const msg = (err as Error).message ?? String(err);
     if (/strict isolation|too many entries/i.test(msg)) {
       console.log(`  ⚠ La transacción no se aplicó ("${msg}"). No es fatal.`);
-      console.log('     El código ejecutable se despliega igual abajo (paso 4, $deploy).');
-      console.log('     Si faltan Subscriptions: npm run ckm-bots-doctor -- --recreate-subs');
+      console.log('     El código ejecutable se despliega en el paso 4 y las Subscriptions se reconcilian en el 5.');
     } else {
       throw err;
     }
@@ -150,6 +149,33 @@ async function main(): Promise<void> {
       const msg = (err as Error).message ?? String(err);
       console.log(`  ✗ ${botName}: ${msg}`);
       failures.push(`${botName}: ${msg}`);
+    }
+  }
+
+  // 5. Asegurar las Subscriptions, SIN depender de la transacción del paso 3.
+  //    En este servidor esa transacción falla siempre ("too many entries"), y
+  //    su ifNoneExist era el único camino por el que nacía la Subscription de
+  //    un bot NUEVO: el bot quedaba desplegado y mudo — deployado pero fuera
+  //    del circuito. Acá se reconcilia una por una, idempotente: crea la que
+  //    falta y corrige la criteria si quedó vieja.
+  const subsWanted = (JSON.parse(transactionString) as Bundle).entry
+    ?.map((e) => e.resource)
+    .filter((r): r is Subscription => r?.resourceType === 'Subscription');
+  if (subsWanted && subsWanted.length > 0) {
+    console.log('\nSubscriptions:');
+    const existing = await medplum.searchResources('Subscription', { _count: '100' });
+    for (const wanted of subsWanted) {
+      const endpoint = wanted.channel?.endpoint;
+      const actual = existing.find((s) => s.channel?.endpoint === endpoint);
+      if (!actual) {
+        const created = await medplum.createResource(wanted);
+        console.log(`  + creada ${wanted.reason}: ${created.id} -> ${endpoint}`);
+      } else if (actual.criteria !== wanted.criteria || actual.status !== 'active') {
+        await medplum.updateResource({ ...actual, criteria: wanted.criteria, status: 'active' });
+        console.log(`  · actualizada ${wanted.reason}: criteria/status reconciliados (${actual.id})`);
+      } else {
+        console.log(`  ✓ ${wanted.reason}: ok (${actual.id})`);
+      }
     }
   }
 

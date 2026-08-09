@@ -18,7 +18,7 @@ import type { Observation, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { SDOH_QUESTIONNAIRE_URL } from '../ckm/constants';
 import { CKM_OBSERVATION_CODES } from '../ckm/observations';
 
-const CKM_BOT_NAMES = ['ckm-recalculate', 'sdoh-response'];
+const CKM_BOT_NAMES = ['ckm-recalculate', 'sdoh-response', 'ckm-alerts'];
 
 async function main(): Promise<void> {
   const baseUrl = process.env.MEDPLUM_BASE_URL ?? 'https://api.medplum.com.ar';
@@ -161,6 +161,9 @@ async function recreateSubscriptions(medplum: MedplumClient): Promise<void> {
   const specs = [
     { name: 'ckm-recalculate', criteria: `Observation?code=${CKM_OBSERVATION_CODES.join(',')}` },
     { name: 'sdoh-response', criteria: `QuestionnaireResponse?questionnaire=${SDOH_QUESTIONNAIRE_URL}` },
+    // Mismos códigos que ckm-recalculate: dos Subscriptions sobre el mismo
+    // criteria, una por bot, para que las alertas no puedan frenar el recálculo.
+    { name: 'ckm-alerts', criteria: `Observation?code=${CKM_OBSERVATION_CODES.join(',')}` },
   ];
   for (const spec of specs) {
     const bot = await medplum.searchOne('Bot', `name=${spec.name}`);
