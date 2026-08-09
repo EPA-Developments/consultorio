@@ -170,7 +170,8 @@ PREVENT): power of zero (CAC=0 baja), ≥300 a Alto. Solo ASCVD.
 
 ### Etapa 5 — Biomarcadores como fuente de verdad FHIR (`afb5c2c`)
 
-Carga las **50 ObservationDefinitions** del panel BioWellness (metabólico,
+Carga las **109 ObservationDefinitions** del panel BioWellness (94 del panel
+canónico + 15 extras del seed original; metabólico,
 lipídico, inflamación, micronutrientes, hormonal, renal-hepático, longevidad,
 microbiota, tóxicos, autonómico) a Medplum (uploader CLI + UI) y lee sus rangos
 **dinámicamente** (`observation-definitions.ts`).
@@ -474,7 +475,7 @@ Convenciones que atraviesan todo el código y conviene mantener:
 | `ckm-doctor` / `ckm-bots-doctor`                                    | diagnóstico del panel y de los bots/subscriptions                                          |
 | `dedupe-practitioners` / `dedupe-organizations`                     | detecta Practitioners/Organizations duplicados y borra los huérfanos (dry-run por defecto) |
 | `import-vsac` / `upload-med-valueset` / `upload-condition-valueset` | terminología                                                                               |
-| `upload-biomarker-defs`                                             | subir las 50 ObservationDefinitions BioWellness                                            |
+| `upload-biomarker-defs`                                             | subir las 109 ObservationDefinitions BioWellness                                           |
 | `upload-le8`                                                        | subir los 4 Questionnaire de Life's Essential 8                                            |
 | `seed-ckm-demo` / `seed-biomarkers-demo`                            | datos de demostración                                                                      |
 | `verify-prevent` / `verify-alerts` / `verify-careplan`              | validaciones end-to-end                                                                    |
