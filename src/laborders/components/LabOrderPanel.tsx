@@ -34,7 +34,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { JSX } from 'react';
 import { ErrorCarga } from '../../components/ErrorCarga';
-import { MATRICULA_SYSTEM } from '../../ckm/argentina';
+import { matriculaOf } from '../practitioner-validation';
 import {
   approveProposals,
   chunk,
@@ -201,7 +201,7 @@ export function LabOrderPanel(props: { patient: Patient }): JSX.Element {
       return;
     }
     const name = profile.name?.[0] ? formatHumanName(profile.name[0]) : 'el profesional';
-    const matricula = profile.identifier?.find((i) => i.system === MATRICULA_SYSTEM)?.value;
+    const matricula = matriculaOf(profile as Practitioner);
     const fecha = new Date().toLocaleDateString('es-AR');
     const approvalNote = `Aprobada y emitida por ${name}${matricula ? ` (Matrícula ${matricula})` : ''} el ${fecha}. Originada como solicitud del paciente.`;
     const approved = approveProposals({ proposals, requester: createReference(profile), approvalNote });

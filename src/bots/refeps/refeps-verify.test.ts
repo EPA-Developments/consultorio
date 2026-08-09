@@ -42,6 +42,16 @@ describe('signClientAssertion', () => {
 });
 
 describe('queryFor', () => {
+  // El Practitioner real del admin: CUIT bajo el dominio de AFIP y con guiones.
+  test('acepta el CUIT bajo http://afip.gob.ar y lo manda solo con dígitos', () => {
+    const p: Practitioner = {
+      resourceType: 'Practitioner',
+      gender: undefined,
+      identifier: [{ system: 'http://afip.gob.ar', value: '20-20541993-5' }],
+    };
+    expect(queryFor(p)).toStrictEqual({ by: 'cuil', cuil: '20205419935' });
+  });
+
   test('prefiere DNI + género, que es lo que siempre está cargado', () => {
     expect(queryFor(medico())).toStrictEqual({ by: 'dni', dni: '17801010', gender: 'male' });
   });

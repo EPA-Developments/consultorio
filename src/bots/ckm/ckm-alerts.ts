@@ -31,6 +31,27 @@ import { extractCKMValues, getCKMObservationHistory } from '../../ckm/observatio
 /** Días sin re-alertar la misma regla sobre el mismo paciente. */
 export const COOLDOWN_DIAS = 30;
 
+/** Sistema del identifier de idempotencia de cada instancia de alerta. */
+export const ALERT_INSTANCE_SYSTEM = `${ALERT_RULE_SYSTEM}-instancia`;
+
+/**
+ * Identificador determinístico de la instancia: regla + paciente + mes.
+ *
+ * Existe por una carrera que el cooldown solo no cubre: un laboratorio entra
+ * como varias Observations en ráfaga, cada una dispara una ejecución del bot,
+ * y todas leen los DetectedIssue previos ANTES de que ninguna haya escrito.
+ * En la verificación de producción la misma alerta salió triplicada. Con un
+ * identifier determinístico + ifNoneExist, el servidor deduplica lo que el
+ * chequeo previo no puede ver.
+ *
+ * El balde mensual es deliberadamente más grueso que el cooldown de 30 días
+ * corridos: el cooldown fino lo sigue decidiendo enCooldown(); esto solo tiene
+ * que igualar a las ejecuciones concurrentes, que comparten el mes.
+ */
+export function instanciaDe(ruleId: string, patientId: string, ahora: Date): string {
+  return `${ruleId}-${patientId}-${ahora.toISOString().slice(0, 7)}`;
+}
+
 const CATEGORIA_ALERTA = {
   coding: [{ system: 'http://terminology.hl7.org/CodeSystem/communication-category', code: 'alert' }],
 };
@@ -62,14 +83,16 @@ export function enCooldown(existentes: DetectedIssue[], ruleId: string, ahora: D
   });
 }
 
-/** Los tres recursos de una alerta disparada, como transacción. */
+/** Los tres recursos de una alerta disparada, como transacción idempotente. */
 export function recursosDeAlerta(alerta: TriggeredAlert, patientId: string, ahora: Date): Bundle {
   const subject = { reference: `Patient/${patientId}` };
   const fecha = ahora.toISOString();
+  const instancia = { system: ALERT_INSTANCE_SYSTEM, value: instanciaDe(alerta.ruleId, patientId, ahora) };
 
   const issue: DetectedIssue = {
     resourceType: 'DetectedIssue',
     status: 'final',
+    identifier: [instancia],
     patient: subject,
     identifiedDateTime: fecha,
     code: { coding: [{ system: ALERT_RULE_SYSTEM, code: alerta.ruleId, display: alerta.label }] },
@@ -81,6 +104,7 @@ export function recursosDeAlerta(alerta: TriggeredAlert, patientId: string, ahor
     status: 'requested',
     intent: 'order',
     priority: 'urgent',
+    identifier: [instancia],
     for: subject,
     authoredOn: fecha,
     code: { text: `Revisar tendencia: ${alerta.label}` },
@@ -91,15 +115,19 @@ export function recursosDeAlerta(alerta: TriggeredAlert, patientId: string, ahor
     resourceType: 'Communication',
     // 'in-progress' = sin leer: el panel filtra status !== 'completed'.
     status: 'in-progress',
+    identifier: [instancia],
     category: [CATEGORIA_ALERTA],
     subject,
     sent: fecha,
     payload: [{ contentString: alerta.message }],
   };
 
+  // ifNoneExist en los TRES: si otra ejecución concurrente ya creó la
+  // instancia, el servidor devuelve la existente en vez de duplicarla.
+  const ifNoneExist = `identifier=${instancia.system}|${instancia.value}`;
   const entries: BundleEntry[] = [issue, task, communication].map((r) => ({
     resource: r,
-    request: { method: 'POST', url: r.resourceType },
+    request: { method: 'POST', url: r.resourceType, ifNoneExist },
   }));
   return { resourceType: 'Bundle', type: 'transaction', entry: entries };
 }

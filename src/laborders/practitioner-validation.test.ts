@@ -8,7 +8,10 @@ import {
   normalizeMatricula,
 } from './practitioner-validation';
 
-function medico(matricula?: string, nombre: HumanName = { given: ['Alejandro'], family: "D'Alessandro" }): Practitioner {
+function medico(
+  matricula?: string,
+  nombre: HumanName = { given: ['Alejandro'], family: "D'Alessandro" }
+): Practitioner {
   return {
     resourceType: 'Practitioner',
     name: [nombre],
@@ -19,6 +22,15 @@ function medico(matricula?: string, nombre: HumanName = { given: ['Alejandro'], 
 describe('normalizeMatricula', () => {
   test('recorta, colapsa espacios y pasa a mayúsculas', () => {
     expect(normalizeMatricula('  mn   12345 ')).toBe('MN 12345');
+  });
+
+  // "MN-92179" y "M.N. 92179" son la misma matrícula que "MN 92179": el guion
+  // y el punto son tipografía, no dato. Cargada con guion en el admin, pasaba
+  // como formato desconocido.
+  test('el guion y el punto son separadores, no parte del valor', () => {
+    expect(normalizeMatricula('MN-92179')).toBe('MN 92179');
+    expect(normalizeMatricula('M.N. 92179')).toBe('M N 92179');
+    expect(checkMatricula('MN-92179').warning).toBeUndefined();
   });
 });
 
@@ -117,5 +129,41 @@ describe('EmissionBlockedError', () => {
     expect(err.name).toBe('EmissionBlockedError');
     expect(err.problems).toHaveLength(1);
     expect(err.message).toMatch(/No se puede emitir/);
+  });
+});
+
+describe('matriculaOf con los sistemas reales del admin', () => {
+  // El caso de producción: el Practitioner cargado a mano lleva la matrícula
+  // bajo el dominio de REFEPS (que es el registro donde vive) y el circuito la
+  // daba por inexistente, bloqueando la emisión.
+  test('acepta la matrícula bajo http://refeps.msal.gob.ar', () => {
+    const p: Practitioner = {
+      resourceType: 'Practitioner',
+      identifier: [
+        { system: 'http://refeps.msal.gob.ar', value: 'MN-92179' },
+        { system: 'http://afip.gob.ar', value: '20-20541993-5' },
+      ],
+    };
+    expect(matriculaOf(p)).toBe('MN-92179');
+    expect(checkMatricula(matriculaOf(p)).valid).toBe(true);
+  });
+
+  test('el sistema canónico tiene prioridad si están los dos', () => {
+    const p: Practitioner = {
+      resourceType: 'Practitioner',
+      identifier: [
+        { system: 'http://refeps.msal.gob.ar', value: 'MN-99999' },
+        { system: MATRICULA_SYSTEM, value: 'MN 92179' },
+      ],
+    };
+    expect(matriculaOf(p)).toBe('MN 92179');
+  });
+
+  test('el CUIT de AFIP no se confunde con una matrícula', () => {
+    const p: Practitioner = {
+      resourceType: 'Practitioner',
+      identifier: [{ system: 'http://afip.gob.ar', value: '20-20541993-5' }],
+    };
+    expect(matriculaOf(p)).toBeUndefined();
   });
 });

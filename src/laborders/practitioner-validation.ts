@@ -13,7 +13,7 @@
 // existir. Pero emitir sin matrícula alguna es un defecto propio, no una
 // brecha regulatoria, y ese sí se puede cerrar ya.
 import type { Practitioner } from '@medplum/fhirtypes';
-import { MATRICULA_SYSTEM } from '../ckm/argentina';
+import { identifierIn, MATRICULA_SYSTEMS } from '../ckm/argentina';
 
 /**
  * Forma habitual de la matrícula argentina: MN (Nacional) o MP (Provincial)
@@ -39,9 +39,12 @@ export interface MatriculaCheck {
   warning?: string;
 }
 
-/** Normaliza: recorta, colapsa espacios y pasa a mayúsculas. */
+/**
+ * Normaliza: recorta, trata guiones y puntos como separador ("MN-92179" y
+ * "M.N. 92179" son la misma matrícula), colapsa espacios y pasa a mayúsculas.
+ */
 export function normalizeMatricula(value: string): string {
-  return value.trim().replace(/\s+/g, ' ').toUpperCase();
+  return value.trim().replace(/[-.]+/g, ' ').replace(/\s+/g, ' ').trim().toUpperCase();
 }
 
 export function checkMatricula(value: string | undefined): MatriculaCheck {
@@ -62,9 +65,14 @@ export function checkMatricula(value: string | undefined): MatriculaCheck {
   return { valid: true, normalized };
 }
 
-/** Matrícula del Practitioner, tal como está cargada. */
+/**
+ * Matrícula del Practitioner, tal como está cargada. Acepta el system canónico
+ * y los sinónimos reales (REFEPS): un profesional con la matrícula bajo
+ * http://refeps.msal.gob.ar quedaba como "sin matrícula cargada" y el circuito
+ * entero de emisión se le bloqueaba.
+ */
 export function matriculaOf(practitioner: Practitioner | undefined): string | undefined {
-  return practitioner?.identifier?.find((i) => i.system === MATRICULA_SYSTEM)?.value;
+  return identifierIn(practitioner?.identifier, MATRICULA_SYSTEMS);
 }
 
 export interface EmissionCheck {

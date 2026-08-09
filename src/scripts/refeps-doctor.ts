@@ -14,7 +14,7 @@
 // NUNCA imprime el valor de un secreto: solo si está o no está.
 import { MedplumClient } from '@medplum/core';
 import type { Practitioner, Project } from '@medplum/fhirtypes';
-import { MATRICULA_SYSTEM } from '../ckm/argentina';
+import { identifierIn, MATRICULA_SYSTEMS } from '../ckm/argentina';
 import { REFEPS_BOT_NAME } from '../laborders/refeps-client';
 
 /** Secrets que el bot necesita. `secreto: true` significa que no se imprime. */
@@ -30,7 +30,7 @@ function arg(flag: string): string | undefined {
 }
 
 function matriculaDe(p: Practitioner): string | undefined {
-  return p.identifier?.find((i) => i.system === MATRICULA_SYSTEM)?.value;
+  return identifierIn(p.identifier, MATRICULA_SYSTEMS);
 }
 
 function nombreDe(p: Practitioner): string {
@@ -124,7 +124,11 @@ async function main(): Promise<void> {
       const found = res.found as { value: string; profession?: string; jurisdiction?: string; enabled?: boolean }[];
       if (found?.length) {
         for (const m of found) {
-          const detalle = [m.profession, m.jurisdiction, m.enabled === undefined ? 'sin dato de habilitación (v1)' : `habilitada=${m.enabled}`]
+          const detalle = [
+            m.profession,
+            m.jurisdiction,
+            m.enabled === undefined ? 'sin dato de habilitación (v1)' : `habilitada=${m.enabled}`,
+          ]
             .filter(Boolean)
             .join(' · ');
           console.log(`      REFEPS: ${m.value}${detalle ? ` (${detalle})` : ''}`);
