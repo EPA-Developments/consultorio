@@ -15,7 +15,7 @@ describe('Carga del panel CKM', () => {
     }
   });
 
-  test('arma las filas con estadío, PREVENT, RiskAssessment y alerta (datos como los del seed)', async () => {
+  test('arma las filas con estadío, PREVENT y alerta (datos como los del seed)', async () => {
     const medplum = new MockClient();
     const patient = await medplum.createResource<Patient>({
       resourceType: 'Patient',
@@ -25,7 +25,9 @@ describe('Carga del panel CKM', () => {
         {
           url: HGRAPH_DATA_URL,
           valueString: JSON.stringify({
-            metrics: [{ id: 'cac', label: 'Score de calcio', value: 220, unit: 'Agatston', score: 0.45, status: 'moderate' }],
+            metrics: [
+              { id: 'cac', label: 'Score de calcio', value: 220, unit: 'Agatston', score: 0.45, status: 'moderate' },
+            ],
             prevent: { ascvd10y: 18.2, hf10y: 12.4, cvdTotal30y: 41.9 },
           }),
         },
@@ -34,14 +36,6 @@ describe('Carga del panel CKM', () => {
     const otherPatient = await medplum.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Sin'], family: 'Datos' }],
-    });
-    await medplum.createResource({
-      resourceType: 'RiskAssessment',
-      status: 'final',
-      subject: { reference: `Patient/${patient.id}` },
-      identifier: [{ system: 'https://seguimiento.medplum.com.ar/seed-patient', value: `ckm-seed-risk-${patient.id}` }],
-      occurrenceDateTime: '2026-06-12T18:00:00Z',
-      prediction: [{ outcome: { text: 'ASCVD 10 años' }, probabilityDecimal: 18.2 }],
     });
     await medplum.createResource({
       resourceType: 'Communication',
@@ -65,7 +59,6 @@ describe('Carga del panel CKM', () => {
       cac: 220,
       hasAlert: true,
     });
-    expect(jorge?.riskUpdated).toBeDefined();
 
     const sinDatos = rows.find((r) => r.patient.id === otherPatient.id);
     expect(sinDatos).toMatchObject({
@@ -76,7 +69,6 @@ describe('Carga del panel CKM', () => {
       cac: undefined,
       hasAlert: false,
     });
-    expect(sinDatos?.riskUpdated).toBeUndefined();
   });
 
   test('una alerta completada (leída) no marca la fila', async () => {

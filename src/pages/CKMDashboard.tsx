@@ -1,7 +1,6 @@
 // Panel de trabajo del especialista CKM: pacientes filtrables por estadío y
 // nombre, ordenables por estadío y por riesgo PREVENT, con alertas sin leer.
 import { Group, MultiSelect, Paper, Table, Text, TextInput, Tooltip, UnstyledButton } from '@mantine/core';
-import { formatDate } from '@medplum/core';
 import { Loading, useMedplum } from '@medplum/react';
 import { IconAlertCircle, IconChevronDown, IconChevronUp, IconSearch, IconSelector } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
@@ -97,7 +96,6 @@ export function CKMDashboard(): JSX.Element {
               sort={sort}
               onSort={toggleSort}
             />
-            <Table.Th>RiskAssessment</Table.Th>
             <Table.Th>Alertas</Table.Th>
           </Table.Tr>
         </Table.Thead>
@@ -121,7 +119,6 @@ export function CKMDashboard(): JSX.Element {
               <RiskCell outcome="ascvd10y" value={row.ascvd10y} cac={row.cac} />
               <RiskCell outcome="hf10y" value={row.hf10y} />
               <RiskCell outcome="cvdTotal30y" value={row.cvdTotal30y} />
-              <Table.Td>{row.riskUpdated ? formatDate(row.riskUpdated) : '—'}</Table.Td>
               <Table.Td>
                 {row.hasAlert && (
                   <Tooltip label="Tiene alertas sin leer" withArrow>

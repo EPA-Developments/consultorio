@@ -49,6 +49,15 @@ const Bots: BotDescription[] = [
     runtimeVersion: CKM_RUNTIME,
   },
   {
+    // Alertas "3 strikes". Bot PROPIO, aislado del recálculo a propósito: si
+    // falla, el estadío y los scores se siguen calculando. Escucha los mismos
+    // códigos que ckm-recalculate (dos Subscriptions sobre el mismo criteria).
+    src: 'src/bots/ckm/ckm-alerts.ts',
+    dist: 'dist/bots/ckm/ckm-alerts.js',
+    criteria: `Observation?code=${CKM_OBSERVATION_CODES.join(',')}`,
+    runtimeVersion: CKM_RUNTIME,
+  },
+  {
     // Disparo MANUAL (medplum.executeBot desde el chart): sin criteria, no crea Subscription.
     src: 'src/bots/ckm/careplan-generate.ts',
     dist: 'dist/bots/ckm/careplan-generate.js',
