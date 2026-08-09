@@ -2,7 +2,15 @@ import type { Bundle, Communication, DetectedIssue, Observation, Patient, Task }
 import { ALERT_RULE_SYSTEM } from '../../ckm/alert-rules';
 import type { TriggeredAlert } from '../../ckm/alert-rules';
 import { LOINC, LOINC_BP_PANEL, LOINC_SYSTEM } from '../../ckm/constants';
-import { COOLDOWN_DIAS, enCooldown, evaluarYAlertar, handler, recursosDeAlerta } from './ckm-alerts';
+import {
+  ALERT_INSTANCE_SYSTEM,
+  COOLDOWN_DIAS,
+  enCooldown,
+  evaluarYAlertar,
+  handler,
+  instanciaDe,
+  recursosDeAlerta,
+} from './ckm-alerts';
 
 const AHORA = new Date('2026-08-09T12:00:00Z');
 
@@ -139,6 +147,30 @@ describe('Los tres recursos de una alerta', () => {
     expect(c.category?.[0]?.coding?.[0]).toMatchObject({ code: 'alert' });
     expect(c.subject?.reference).toBe('Patient/p1');
     expect(c.payload?.[0]?.contentString).toContain('Presión sistólica elevada');
+  });
+
+  // La carrera que la verificación de producción mostró: un laboratorio entra
+  // como varias Observations en ráfaga, y la misma alerta salió TRIPLICADA
+  // porque las ejecuciones concurrentes leen el cooldown antes de que ninguna
+  // escriba. El ifNoneExist con identifier determinístico es lo que deduplica.
+  test('los tres recursos llevan ifNoneExist con el identifier de instancia', () => {
+    const esperado = `identifier=${ALERT_INSTANCE_SYSTEM}|sbp-high-p1-2026-08`;
+    for (const e of bundle.entry ?? []) {
+      expect(e.request?.ifNoneExist).toBe(esperado);
+      expect((e.resource as DetectedIssue).identifier?.[0]?.value).toBe('sbp-high-p1-2026-08');
+    }
+  });
+
+  test('dos ejecuciones concurrentes en el mismo mes producen la MISMA instancia', () => {
+    const unSegundoDespues = new Date(AHORA.getTime() + 1000);
+    expect(instanciaDe('sbp-high', 'p1', AHORA)).toBe(instanciaDe('sbp-high', 'p1', unSegundoDespues));
+  });
+
+  test('la instancia cambia por regla, por paciente y por mes', () => {
+    const base = instanciaDe('sbp-high', 'p1', AHORA);
+    expect(instanciaDe('ldl-high', 'p1', AHORA)).not.toBe(base);
+    expect(instanciaDe('sbp-high', 'p2', AHORA)).not.toBe(base);
+    expect(instanciaDe('sbp-high', 'p1', new Date('2026-09-09T12:00:00Z'))).not.toBe(base);
   });
 });
 

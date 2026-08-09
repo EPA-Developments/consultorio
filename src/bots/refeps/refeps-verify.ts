@@ -21,7 +21,7 @@
 import { createHmac } from 'node:crypto';
 import type { BotEvent, MedplumClient } from '@medplum/core';
 import type { Bundle, Practitioner } from '@medplum/fhirtypes';
-import { CUIL_SYSTEM, DNI_SYSTEM, MATRICULA_SYSTEM } from '../../ckm/argentina';
+import { CUIL_SYSTEMS, DNI_SYSTEM, identifierIn, MATRICULA_SYSTEMS } from '../../ckm/argentina';
 import {
   accessTokenFrom,
   buildAuthRequest,
@@ -71,9 +71,11 @@ export function queryFor(practitioner: Practitioner): PractitionerQuery | undefi
   if (dni && (gender === 'male' || gender === 'female')) {
     return { by: 'dni', dni, gender };
   }
-  const cuil = identifierValue(practitioner, CUIL_SYSTEM);
+  // El CUIT/CUIL se acepta con el system de AFIP (que es quien lo emite) y se
+  // manda al Bus solo con dígitos: "20-20541993-5" es formato de imprenta.
+  const cuil = identifierIn(practitioner.identifier, CUIL_SYSTEMS);
   if (cuil) {
-    return { by: 'cuil', cuil };
+    return { by: 'cuil', cuil: cuil.replace(/\D/g, '') };
   }
   return undefined;
 }
@@ -112,7 +114,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     throw new Error('No se pudo resolver el profesional a verificar.');
   }
 
-  const declaredMatricula = identifierValue(practitioner, MATRICULA_SYSTEM);
+  const declaredMatricula = identifierIn(practitioner.identifier, MATRICULA_SYSTEMS);
   if (!declaredMatricula) {
     return {
       verdict: 'matricula-no-coincide',
@@ -138,10 +140,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   }
 
   // 1. Token. Un scope por servicio: pedirlos todos juntos hace que se rechace.
-  const assertion = signClientAssertion(
-    buildClientAssertionClaims({ issuer, nowSeconds: Date.now() / 1000 }),
-    secret
-  );
+  const assertion = signClientAssertion(buildClientAssertionClaims({ issuer, nowSeconds: Date.now() / 1000 }), secret);
   const authRequest = buildAuthRequest({ env: environment, clientAssertion: assertion });
   const authResponse = await fetch(authRequest.url, {
     method: authRequest.method,

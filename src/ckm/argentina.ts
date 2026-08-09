@@ -15,16 +15,48 @@ export const CUIL_SYSTEM = 'https://www.afip.gob.ar/cuit';
 /** `system` de la matrícula del profesional (en Practitioner). */
 export const MATRICULA_SYSTEM = 'https://www.argentina.gob.ar/matricula-nacional';
 
+/**
+ * Sistemas ACEPTADOS al leer, además del canónico. Mismo patrón que
+ * LOINC_SYNONYMS: la escritura usa el canónico, la lectura tolera los
+ * sinónimos que aparecen en los datos reales.
+ *
+ * Existen porque los Practitioner cargados a mano en el admin usan sistemas
+ * razonables que no son los nuestros: la matrícula bajo el dominio de REFEPS
+ * (que es el registro donde vive) y el CUIT bajo el de AFIP (que es quien lo
+ * emite). Rechazarlos por el `system` deja al profesional como "sin matrícula"
+ * cuando la matrícula está cargada y es correcta.
+ */
+export const MATRICULA_SYSTEMS = [
+  MATRICULA_SYSTEM,
+  'http://refeps.msal.gob.ar',
+  'https://refeps.msal.gob.ar',
+  'https://federador.msal.gob.ar/refeps',
+];
+
+export const CUIL_SYSTEMS = [CUIL_SYSTEM, 'http://afip.gob.ar', 'https://afip.gob.ar', 'http://www.afip.gob.ar'];
+
+/** Primer identifier cuyo system esté en la lista (en orden de la lista). */
+export function identifierIn(
+  identifiers: { system?: string; value?: string }[] | undefined,
+  systems: string[]
+): string | undefined {
+  for (const system of systems) {
+    const found = identifiers?.find((i) => i.system === system && i.value);
+    if (found) {
+      return found.value;
+    }
+  }
+  return undefined;
+}
+
 /** URL canónica del perfil Patient AR (StructureDefinition). */
-export const PATIENT_AR_PROFILE_URL =
-  'https://seguimiento.medplum.com.ar/fhir/StructureDefinition/PatientArgentina';
+export const PATIENT_AR_PROFILE_URL = 'https://seguimiento.medplum.com.ar/fhir/StructureDefinition/PatientArgentina';
 
 /** Extensión FHIR estándar de identidad de género (backport de R5). */
 export const GENDER_IDENTITY_EXTENSION = 'http://hl7.org/fhir/StructureDefinition/patient-genderIdentity';
 
 /** CodeSystem local de género autopercibido (incluye "X" no binario, Ley 26.743). */
-export const GENDER_IDENTITY_SYSTEM =
-  'https://seguimiento.medplum.com.ar/fhir/CodeSystem/genero-autopercibido';
+export const GENDER_IDENTITY_SYSTEM = 'https://seguimiento.medplum.com.ar/fhir/CodeSystem/genero-autopercibido';
 
 export interface CodedOption {
   code: string;
@@ -103,7 +135,10 @@ export function genderIdentityConcept(code: string): CodeableConcept | undefined
   if (!option) {
     return undefined;
   }
-  return { coding: [{ system: GENDER_IDENTITY_SYSTEM, code: option.code, display: option.display }], text: option.display };
+  return {
+    coding: [{ system: GENDER_IDENTITY_SYSTEM, code: option.code, display: option.display }],
+    text: option.display,
+  };
 }
 
 /**
