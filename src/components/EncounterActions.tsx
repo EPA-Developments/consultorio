@@ -13,7 +13,7 @@ interface EncounterActionsProps {
 export function EncounterActions(props: EncounterActionsProps): JSX.Element {
   return (
     <Stack p="xs" m="xs">
-      <Title>Encounter Actions</Title>
+      <Title>Acciones de la evolución</Title>
       <EditType encounter={props.encounter} onChange={props.onChange} />
     </Stack>
   );

@@ -16,6 +16,7 @@ import { QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
+import { CLASES_ENCUENTRO, TIPOS_ENCUENTRO } from './encounter-coding';
 
 interface CreateEncounterProps {
   readonly opened: boolean;
@@ -33,7 +34,6 @@ export function CreateEncounter({ opened, handlers }: CreateEncounterProps): JSX
 
   function handleQuestionnaireSubmit(formData: QuestionnaireResponse): void {
     const answers = getQuestionnaireAnswers(formData);
-    console.log(answers);
     const patientReference = answers['patient'].valueReference as Reference<Patient>;
     const encounterClass = answers['class'].valueCoding as Coding;
     const encounterType = answers['type']?.valueCoding ?? undefined;
@@ -81,8 +81,8 @@ export function CreateEncounter({ opened, handlers }: CreateEncounterProps): JSX
       .then((encounter) => {
         showNotification({
           icon: <IconCircleCheck />,
-          title: 'Success',
-          message: 'Encounter created',
+          title: 'Listo',
+          message: 'Evolución creada',
         });
         navigate(`/Encounter/${encounter.id}`)?.catch(console.error);
       })
@@ -90,7 +90,7 @@ export function CreateEncounter({ opened, handlers }: CreateEncounterProps): JSX
         showNotification({
           color: 'red',
           icon: <IconCircleOff />,
-          title: 'Error',
+          title: 'No se pudo crear la evolución',
           message: normalizeErrorString(err),
         });
       });
@@ -98,7 +98,7 @@ export function CreateEncounter({ opened, handlers }: CreateEncounterProps): JSX
 
   return (
     <Modal opened={opened} onClose={handlers.close}>
-      <p>Create an Encounter</p>
+      <p>Nueva evolución</p>
       <QuestionnaireForm questionnaire={createEncounterQuestionnaire} onSubmit={handleQuestionnaireSubmit} />
     </Modal>
   );
@@ -107,13 +107,13 @@ export function CreateEncounter({ opened, handlers }: CreateEncounterProps): JSX
 const createEncounterQuestionnaire: Questionnaire = {
   resourceType: 'Questionnaire',
   status: 'active',
-  title: 'Create an Encounter',
+  title: 'Nueva evolución',
   id: 'new-encounter',
   item: [
     {
       linkId: 'patient',
       type: 'reference',
-      text: 'Which patient is the subject of this encounter?',
+      text: '¿De qué paciente es esta evolución?',
       required: true,
       extension: [
         {
@@ -131,7 +131,7 @@ const createEncounterQuestionnaire: Questionnaire = {
     {
       linkId: 'date',
       type: 'date',
-      text: 'What is the date of the encounter?',
+      text: '¿Qué fecha tiene?',
       required: true,
       initial: [
         {
@@ -142,15 +142,15 @@ const createEncounterQuestionnaire: Questionnaire = {
     {
       linkId: 'class',
       type: 'choice',
-      text: 'What is the encounter class?',
+      text: '¿Dónde se atendió?',
       required: true,
-      answerValueSet: 'http://terminology.hl7.org/ValueSet/v3-ActEncounterCode',
+      answerOption: CLASES_ENCUENTRO,
     },
     {
       linkId: 'type',
       type: 'choice',
-      text: 'What type of encounter is this?',
-      answerValueSet: 'https://example.com/encounter-types',
+      text: '¿Qué tipo de atención fue?',
+      answerOption: TIPOS_ENCUENTRO,
     },
   ],
 };
