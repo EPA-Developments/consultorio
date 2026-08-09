@@ -13,12 +13,15 @@ import { useObservationDefinitions } from './useObservationDefinitions';
 export interface RiskEnhancersData {
   readings: EnhancerReading[];
   loading: boolean;
+  /** true si falló la búsqueda: "ApoB sin dato" sería una afirmación falsa. */
+  error: boolean;
 }
 
 export function useRiskEnhancers(patientId: string | undefined): RiskEnhancersData {
   const medplum = useMedplum();
   const { byLoinc, loading: defsLoading } = useObservationDefinitions();
   const [observations, setObservations] = useState<Observation[]>();
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     if (!patientId) {
@@ -26,6 +29,7 @@ export function useRiskEnhancers(patientId: string | undefined): RiskEnhancersDa
       return;
     }
     let cancelled = false;
+    setError(false);
     medplum
       .searchResources('Observation', {
         subject: `Patient/${patientId}`,
@@ -41,6 +45,7 @@ export function useRiskEnhancers(patientId: string | undefined): RiskEnhancersDa
       .catch((err) => {
         console.error('Potenciadores de riesgo: error buscando Observations', err);
         if (!cancelled) {
+          setError(true);
           setObservations([]);
         }
       });
@@ -51,5 +56,5 @@ export function useRiskEnhancers(patientId: string | undefined): RiskEnhancersDa
 
   const readings = useMemo(() => readEnhancers(observations ?? [], byLoinc), [observations, byLoinc]);
 
-  return { readings, loading: observations === undefined || defsLoading };
+  return { readings, loading: observations === undefined || defsLoading, error };
 }

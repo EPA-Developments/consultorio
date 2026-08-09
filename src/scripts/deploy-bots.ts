@@ -29,22 +29,13 @@ interface BotDescription {
 // el servidor), útil cuando crear Lambdas nuevos da "Bots not enabled".
 const CKM_RUNTIME = (process.env.CKM_BOT_RUNTIME as 'awslambda' | 'vmcontext') || 'awslambda';
 
+// Los tres bots de nota del template (general/obstetric/gynecology-encounter-
+// note) se eliminaron: la nota de evolución escribe sus recursos directamente
+// desde el cliente (src/encounters/nota-evolucion.ts), con los códigos LOINC
+// canónicos que ckm-recalculate ya escucha. Si el servidor conserva esos Bots y
+// sus Subscriptions de despliegues anteriores, borrarlos desde el admin: sus
+// criteria apuntan a cuestionarios que ya no existen y no van a disparar nunca.
 const Bots: BotDescription[] = [
-  {
-    src: 'src/bots/core/general-encounter-note.ts',
-    dist: 'dist/bots/core/general-encounter-note.js',
-    criteria: 'QuestionnaireResponse?questionnaire=$encounter-note',
-  },
-  {
-    src: 'src/bots/core/obstetric-encounter-note.ts',
-    dist: 'dist/bots/core/obstetric-encounter-note.js',
-    criteria: 'QuestionnaireResponse?questionnaire=$obstetric-visit',
-  },
-  {
-    src: 'src/bots/core/gynecology-encounter-note.ts',
-    dist: 'dist/bots/core/gynecology-encounter-note.js',
-    criteria: 'QuestionnaireResponse?questionnaire=$gynecology-visit',
-  },
   {
     src: 'src/bots/ckm/ckm-recalculate.ts',
     dist: 'dist/bots/ckm/ckm-recalculate.js',
@@ -55,6 +46,15 @@ const Bots: BotDescription[] = [
     src: 'src/bots/ckm/sdoh-response.ts',
     dist: 'dist/bots/ckm/sdoh-response.js',
     criteria: `QuestionnaireResponse?questionnaire=${SDOH_QUESTIONNAIRE_URL}`,
+    runtimeVersion: CKM_RUNTIME,
+  },
+  {
+    // Alertas "3 strikes". Bot PROPIO, aislado del recálculo a propósito: si
+    // falla, el estadío y los scores se siguen calculando. Escucha los mismos
+    // códigos que ckm-recalculate (dos Subscriptions sobre el mismo criteria).
+    src: 'src/bots/ckm/ckm-alerts.ts',
+    dist: 'dist/bots/ckm/ckm-alerts.js',
+    criteria: `Observation?code=${CKM_OBSERVATION_CODES.join(',')}`,
     runtimeVersion: CKM_RUNTIME,
   },
   {

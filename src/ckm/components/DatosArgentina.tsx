@@ -62,12 +62,7 @@ export function DatosArgentina(props: DatosArgentinaProps): JSX.Element {
           <IconFlag size={18} />
           <Title order={4}>Datos Argentina</Title>
         </Group>
-        <TextInput
-          label="DNI"
-          placeholder="30123456"
-          value={dni}
-          onChange={(e) => setDni(e.currentTarget.value)}
-        />
+        <TextInput label="DNI" placeholder="30123456" value={dni} onChange={(e) => setDni(e.currentTarget.value)} />
         <TextInput
           label="CUIL / CUIT"
           placeholder="20-30123456-3"

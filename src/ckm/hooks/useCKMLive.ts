@@ -22,9 +22,11 @@ import { getLatestCKMObservations } from '../observations';
 
 export interface CKMLiveData extends CKMSnapshot {
   loading: boolean;
+  /** true si falló el cálculo en vivo: sin métricas ≠ sin datos cargados. */
+  error: boolean;
 }
 
-const EMPTY: CKMLiveData = { metrics: [], loading: false };
+const EMPTY: CKMLiveData = { metrics: [], loading: false, error: false };
 
 /**
  * Calcula el CKM del paciente leyendo del servidor.
@@ -44,7 +46,7 @@ export function useCKMLive(patient: Patient | undefined, enabled: boolean): CKML
       return;
     }
     let cancelled = false;
-    setData({ metrics: [], loading: true });
+    setData({ metrics: [], loading: true, error: false });
 
     void (async () => {
       try {
@@ -61,11 +63,15 @@ export function useCKMLive(patient: Patient | undefined, enabled: boolean): CKML
           return;
         }
         const active = (conditions as Condition[]).filter(isActiveCondition);
-        setData({ ...computeCKMSnapshot(values, patient as Patient, active, medications), loading: false });
+        setData({
+          ...computeCKMSnapshot(values, patient as Patient, active, medications),
+          loading: false,
+          error: false,
+        });
       } catch (err) {
         console.error('CKM en vivo: error calculando', err);
         if (!cancelled) {
-          setData({ metrics: [], loading: false });
+          setData({ metrics: [], loading: false, error: true });
         }
       }
     })();

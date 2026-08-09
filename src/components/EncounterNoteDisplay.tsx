@@ -18,19 +18,14 @@ interface EncounterNoteDisplayProps {
 }
 
 export function EncounterNoteDisplay(props: EncounterNoteDisplayProps): JSX.Element {
-  // Ensure that the correct response is being displayed
-  function checkForValidResponse(): void {
-    const response = props.response;
-    const encounter = props.encounter;
-
-    if (response.encounter?.reference !== `Encounter/${encounter.id}`) {
-      throw new Error('Invalid note');
-    }
+  // Antes estos dos casos eran `throw` dentro del render: tiraban abajo la
+  // pantalla entera de la evolución. Un dato inconsistente se informa, no
+  // rompe la página.
+  if (props.response.encounter?.reference !== `Encounter/${props.encounter.id}`) {
+    return <Paper>La nota encontrada pertenece a otra evolución; no se muestra para no mezclar historias.</Paper>;
   }
-  checkForValidResponse();
-
   if (!props.response.item) {
-    throw new Error('No answers provided');
+    return <Paper>La nota existe pero está vacía.</Paper>;
   }
   const items = props.response.item;
 
@@ -45,9 +40,6 @@ function getItemDisplay(item: QuestionnaireResponseItem, order: TitleOrder): JSX
   const title = item.text;
   const answer = item.answer;
   const nestedAnswers = item.item;
-  if (item.linkId === 'problem-list') {
-    return <></>;
-  }
 
   return (
     <Stack>
@@ -63,7 +55,7 @@ function getItemDisplay(item: QuestionnaireResponseItem, order: TitleOrder): JSX
 
 function getAnswerDisplay(answer?: QuestionnaireResponseItemAnswer): JSX.Element {
   if (!answer) {
-    throw new Error('No answer');
+    return <p>—</p>;
   }
   const [[key, value]] = Object.entries(answer);
 

@@ -9,6 +9,7 @@ import { IconFlask, IconInfoCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { CKMStageBadge } from './CKMStageBadge';
 import { getCKMStage } from '../extensions';
+import { ErrorCarga } from '../../components/ErrorCarga';
 import { useStudyRecommendations } from '../hooks/useStudyRecommendations';
 import type { StudyGap, StudyStatus } from '../studies';
 
@@ -25,7 +26,7 @@ const STATUS_META: Record<StudyStatus, { color: string; label: string }> = {
 
 export function StudiesPanel(props: StudiesPanelProps): JSX.Element {
   const { patient } = props;
-  const { gaps, loading } = useStudyRecommendations(patient);
+  const { gaps, loading, error } = useStudyRecommendations(patient);
   const stage = getCKMStage(patient);
 
   const count = (s: StudyStatus): number => gaps.filter((g) => g.status === s).length;
@@ -41,7 +42,9 @@ export function StudiesPanel(props: StudiesPanelProps): JSX.Element {
           {stage !== undefined && <CKMStageBadge stage={stage} size="md" />}
         </Group>
 
-        {loading ? (
+        {error ? (
+          <ErrorCarga que="los estudios a solicitar" />
+        ) : loading ? (
           <Text size="sm" c="dimmed">
             Calculando…
           </Text>
@@ -52,9 +55,21 @@ export function StudiesPanel(props: StudiesPanelProps): JSX.Element {
         ) : (
           <>
             <Group gap="xs">
-              {count('missing') > 0 && <Badge color="red" variant="light">🔴 {count('missing')} pendientes</Badge>}
-              {count('overdue') > 0 && <Badge color="yellow" variant="light">🟡 {count('overdue')} vencidos</Badge>}
-              {count('current') > 0 && <Badge color="teal" variant="light">🟢 {count('current')} al día</Badge>}
+              {count('missing') > 0 && (
+                <Badge color="red" variant="light">
+                  🔴 {count('missing')} pendientes
+                </Badge>
+              )}
+              {count('overdue') > 0 && (
+                <Badge color="yellow" variant="light">
+                  🟡 {count('overdue')} vencidos
+                </Badge>
+              )}
+              {count('current') > 0 && (
+                <Badge color="teal" variant="light">
+                  🟢 {count('current')} al día
+                </Badge>
+              )}
             </Group>
 
             <Stack gap={6}>

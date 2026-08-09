@@ -20,6 +20,7 @@ import {
 } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Link } from 'react-router';
+import { ErrorCarga } from '../../components/ErrorCarga';
 import { useHomeData } from '../hooks/useHomeData';
 import { WorklistCard } from './WorklistCard';
 
@@ -41,6 +42,14 @@ export function HomePage(): JSX.Element {
           Tu tablero de trabajo de hoy.
         </Text>
       </div>
+
+      {/* Si algo no cargó, decirlo ANTES de los números: "Pacientes 0 /
+          Sin alertas" con el servidor caído es un tablero que miente. */}
+      {data.fallas.length > 0 && (
+        <ErrorCarga
+          que={`parte del tablero (${data.fallas.join(', ')}). Los ceros y vacíos de esas tarjetas no son datos`}
+        />
+      )}
 
       {/* KPIs */}
       <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="md">

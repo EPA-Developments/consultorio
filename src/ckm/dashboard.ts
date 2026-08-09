@@ -1,6 +1,11 @@
-// Carga de datos del panel CKM (/ckm): pacientes + último RiskAssessment +
-// alertas sin leer. Separado del componente para poder testearlo con
-// MockClient y reusarlo.
+// Carga de datos del panel CKM (/ckm): pacientes + alertas sin leer.
+// Separado del componente para poder testearlo con MockClient y reusarlo.
+//
+// Acá había una columna "RiskAssessment" que leía un recurso que NINGÚN flujo
+// de producción crea (los scores PREVENT viven como extensiones del Patient;
+// RiskAssessment solo lo escribía el seed de demo). La columna mostraba "—"
+// para todos los pacientes reales, para siempre. Se eliminó: una columna
+// permanentemente vacía enseña a ignorar el panel.
 import type { MedplumClient } from '@medplum/core';
 import { formatHumanName } from '@medplum/core';
 import type { HumanName, Patient } from '@medplum/fhirtypes';
@@ -17,7 +22,6 @@ export interface DashboardRow {
   cvdTotal30y?: number;
   /** Score de calcio coronario (Agatston), si está entre las métricas. Reclasifica ASCVD. */
   cac?: number;
-  riskUpdated?: string;
   hasAlert: boolean;
 }
 
@@ -51,8 +55,8 @@ export function compareRows(sort: DashboardSort, a: DashboardRow, b: DashboardRo
 }
 
 export async function loadDashboardRows(medplum: MedplumClient): Promise<DashboardRow[]> {
-  // TODO: optimizar con una query GraphQL que traiga Patient +
-  // RiskAssessment + Communication en una sola llamada y pagine de verdad.
+  // TODO: optimizar con una query GraphQL que traiga Patient + Communication
+  // en una sola llamada y pagine de verdad.
   const patients = await medplum.searchResources('Patient', { _count: '50', _sort: '-_lastUpdated' });
   if (patients.length === 0) {
     return [];
@@ -61,29 +65,15 @@ export async function loadDashboardRows(medplum: MedplumClient): Promise<Dashboa
 
   // Las búsquedas auxiliares no deben tumbar el panel completo si fallan:
   // se registra el error y la columna queda vacía.
-  const [riskResult, alertResult] = await Promise.allSettled([
-    medplum.searchResources('RiskAssessment', { subject: subjects, _sort: '-_lastUpdated', _count: '500' }),
+  const [alertResult] = await Promise.allSettled([
     medplum.searchResources('Communication', { subject: subjects, category: 'alert', _count: '500' }),
   ]);
-  if (riskResult.status === 'rejected') {
-    console.error('Panel CKM: error buscando RiskAssessment', riskResult.reason);
-  }
   if (alertResult.status === 'rejected') {
     console.error('Panel CKM: error buscando Communications de alerta', alertResult.reason);
   }
-  const riskAssessments = riskResult.status === 'fulfilled' ? riskResult.value : [];
   // "Sin leer" = no completada; el filtro de status va del lado del cliente
   // para no depender del modificador :not del servidor
   const alerts = (alertResult.status === 'fulfilled' ? alertResult.value : []).filter((c) => c.status !== 'completed');
-
-  // El primer RiskAssessment por paciente es el más reciente (_sort desc)
-  const riskUpdatedByPatient = new Map<string, string>();
-  for (const risk of riskAssessments) {
-    const subject = risk.subject?.reference;
-    if (subject && risk.meta?.lastUpdated && !riskUpdatedByPatient.has(subject)) {
-      riskUpdatedByPatient.set(subject, risk.meta.lastUpdated);
-    }
-  }
   const alertedPatients = new Set(alerts.map((a) => a.subject?.reference));
 
   return patients.map((patient) => {
@@ -97,7 +87,6 @@ export async function loadDashboardRows(medplum: MedplumClient): Promise<Dashboa
       hf10y: prevent?.hf10y,
       cvdTotal30y: prevent?.cvdTotal30y,
       cac: hGraph.metrics?.find((m) => m.id === 'cac')?.value,
-      riskUpdated: riskUpdatedByPatient.get(`Patient/${patient.id}`),
       hasAlert: alertedPatients.has(`Patient/${patient.id}`),
     };
   });

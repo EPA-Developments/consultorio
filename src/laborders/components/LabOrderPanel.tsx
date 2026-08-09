@@ -33,6 +33,7 @@ import {
 } from '@tabler/icons-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { JSX } from 'react';
+import { ErrorCarga } from '../../components/ErrorCarga';
 import { MATRICULA_SYSTEM } from '../../ckm/argentina';
 import {
   approveProposals,
@@ -50,7 +51,7 @@ import { useLabOrderCatalog } from '../hooks/useLabOrderCatalog';
 
 export function LabOrderPanel(props: { patient: Patient }): JSX.Element {
   const medplum = useMedplum();
-  const { items, byPanel, loading } = useLabOrderCatalog();
+  const { items, byPanel, loading, error: catalogoError } = useLabOrderCatalog();
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [cobertura, setCobertura] = useState<string>(COBERTURAS_PRIVADAS[0]);
@@ -58,6 +59,7 @@ export function LabOrderPanel(props: { patient: Patient }): JSX.Element {
   const [approvingId, setApprovingId] = useState<string>();
   const [reloadKey, setReloadKey] = useState(0);
   const [existing, setExisting] = useState<ServiceRequest[]>();
+  const [existingError, setExistingError] = useState(false);
 
   const byId = useMemo(() => new Map(items.map((i) => [i.biomarcadorId ?? '', i])), [items]);
 
@@ -72,6 +74,7 @@ export function LabOrderPanel(props: { patient: Patient }): JSX.Element {
   useEffect(() => {
     let cancelled = false;
     setExisting(undefined);
+    setExistingError(false);
     medplum
       .searchResources('ServiceRequest', {
         subject: `Patient/${props.patient.id}`,
@@ -87,6 +90,9 @@ export function LabOrderPanel(props: { patient: Patient }): JSX.Element {
       .catch((err) => {
         console.error('LabOrderPanel: error buscando órdenes', err);
         if (!cancelled) {
+          // "Sin órdenes emitidas" con la lectura caída invita a EMITIR DE
+          // NUEVO una orden que ya existe: el paciente termina con dos.
+          setExistingError(true);
           setExisting([]);
         }
       });
@@ -230,6 +236,11 @@ export function LabOrderPanel(props: { patient: Patient }): JSX.Element {
   if (loading) {
     return <Loader m="xl" />;
   }
+  // Con el catálogo caído, el recetario mostraría el título y "0 análisis a
+  // solicitar" — y la culpa parecería del seed, no de la lectura.
+  if (catalogoError) {
+    return <ErrorCarga que="el catálogo de análisis" />;
+  }
 
   const isPractitioner = medplum.getProfile()?.resourceType === 'Practitioner';
   const noPractitioner = !isPractitioner;
@@ -353,6 +364,7 @@ export function LabOrderPanel(props: { patient: Patient }): JSX.Element {
       {/* Órdenes ya emitidas. */}
       <ExistingOrders
         existing={existing}
+        error={existingError}
         onPrint={printOrder}
         onApprove={approveOrder}
         canApprove={isPractitioner}
@@ -364,6 +376,7 @@ export function LabOrderPanel(props: { patient: Patient }): JSX.Element {
 
 function ExistingOrders(props: {
   existing?: ServiceRequest[];
+  error?: boolean;
   onPrint: (requisitionId: string, reqs: ServiceRequest[]) => void | Promise<void>;
   onApprove: (requisitionId: string, reqs: ServiceRequest[]) => void | Promise<void>;
   canApprove: boolean;
@@ -371,6 +384,9 @@ function ExistingOrders(props: {
 }): JSX.Element {
   if (props.existing === undefined) {
     return <Loader size="sm" />;
+  }
+  if (props.error) {
+    return <ErrorCarga que="las órdenes emitidas de este paciente" />;
   }
   if (props.existing.length === 0) {
     return (

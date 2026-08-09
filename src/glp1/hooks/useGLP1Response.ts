@@ -23,6 +23,12 @@ export interface GLP1ResponseData {
   /** true si el paciente no tiene ningún plan GLP-1 vigente. */
   sinPlan: boolean;
   loading: boolean;
+  /**
+   * true si falló la lectura. Antes el catch dejaba `sinPlan: false` sin
+   * assessment y la sección desaparecía entera, en silencio: un paciente CON
+   * plan vigente aparecía como si el seguimiento no existiera.
+   */
+  error: boolean;
 }
 
 function pesoSeries(observations: Observation[]): DatedValue[] {
@@ -47,7 +53,7 @@ export function useGLP1Response(patient: Patient | undefined): GLP1ResponseData 
       return;
     }
     let cancelled = false;
-    setData({ sinPlan: false, loading: true });
+    setData({ sinPlan: false, loading: true, error: false });
 
     void (async () => {
       try {
@@ -63,7 +69,7 @@ export function useGLP1Response(patient: Patient | undefined): GLP1ResponseData 
           return;
         }
         if (!timeline) {
-          setData({ sinPlan: true, loading: false });
+          setData({ sinPlan: true, loading: false, error: false });
           return;
         }
 
@@ -97,11 +103,12 @@ export function useGLP1Response(patient: Patient | undefined): GLP1ResponseData 
           timeline,
           sinPlan: false,
           loading: false,
+          error: false,
         });
       } catch (err) {
         console.error('GLP-1: error leyendo la respuesta al tratamiento', err);
         if (!cancelled) {
-          setData({ sinPlan: false, loading: false });
+          setData({ sinPlan: false, loading: false, error: true });
         }
       }
     })();
@@ -111,5 +118,5 @@ export function useGLP1Response(patient: Patient | undefined): GLP1ResponseData 
     };
   }, [medplum, patientId]);
 
-  return data ?? { sinPlan: false, loading: false };
+  return data ?? { sinPlan: false, loading: false, error: false };
 }

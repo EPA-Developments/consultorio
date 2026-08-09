@@ -22,9 +22,15 @@ export function ResourcePage(): JSX.Element | null {
   const { resourceType, id } = useParams();
   const [resource, setResource] = useState<Resource | undefined>(undefined);
 
-  const tabs = ['Details', 'Edit', 'History'];
+  // [valor, etiqueta]: el valor es el segmento de la URL y NO se traduce; lo
+  // que se traduce es lo que se lee. Mezclarlos rompería los enlaces guardados.
+  const tabs: [string, string][] = [
+    ['details', 'Detalles'],
+    ['edit', 'Editar'],
+    ['history', 'Historial'],
+  ];
   const tab = window.location.pathname.split('/').pop();
-  const currentTab = tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0];
+  const currentTab = tab && tabs.some(([valor]) => valor === tab) ? tab : tabs[0][0];
 
   function handleTabChange(newTab: string | null): void {
     navigate(`/${resourceType}/${id}/${newTab ?? ''}`)?.catch(console.error);
@@ -47,8 +53,8 @@ export function ResourcePage(): JSX.Element | null {
         setResource(resource);
         showNotification({
           icon: <IconCircleCheck />,
-          title: 'Success',
-          message: 'Resource edited.',
+          title: 'Listo',
+          message: 'Cambios guardados.',
         });
         navigate(`/${resourceType}/${id}/details`)?.catch(console.error);
         window.scroll(0, 0);
@@ -57,7 +63,7 @@ export function ResourcePage(): JSX.Element | null {
         showNotification({
           color: 'red',
           icon: <IconCircleOff />,
-          title: 'Error',
+          title: 'No se pudieron guardar los cambios',
           message: normalizeErrorString(err),
         });
       });
@@ -70,11 +76,11 @@ export function ResourcePage(): JSX.Element | null {
   return (
     <Document key={getReferenceString(resource)}>
       <Title>{getDisplayString(resource)}</Title>
-      <Tabs value={currentTab.toLowerCase()} onChange={handleTabChange}>
+      <Tabs value={currentTab} onChange={handleTabChange}>
         <Tabs.List mb="xs">
-          {tabs.map((tab) => (
-            <Tabs.Tab value={tab.toLowerCase()} key={tab.toLowerCase()}>
-              {tab}
+          {tabs.map(([valor, etiqueta]) => (
+            <Tabs.Tab value={valor} key={valor}>
+              {etiqueta}
             </Tabs.Tab>
           ))}
         </Tabs.List>

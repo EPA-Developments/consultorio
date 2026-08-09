@@ -13,6 +13,7 @@ import { CKMStageBadge } from '../ckm/components/CKMStageBadge';
 import { PreventSimulator } from '../ckm/components/PreventSimulator';
 import { getCKMStage } from '../ckm/extensions';
 import { usePreventBaseline } from '../ckm/hooks/usePreventBaseline';
+import { ErrorCarga } from '../components/ErrorCarga';
 
 export function SimulatorPage(): JSX.Element {
   const medplum = useMedplum();
@@ -54,7 +55,9 @@ export function SimulatorPage(): JSX.Element {
           </Text>
         </Stack>
 
-        {baseline.inputs ? (
+        {baseline.error ? (
+          <ErrorCarga que="los datos basales del paciente" />
+        ) : baseline.inputs ? (
           <PreventSimulator baseline={baseline.inputs} />
         ) : (
           <Alert color="yellow" icon={<IconAlertTriangle size={18} />} title="Datos insuficientes">

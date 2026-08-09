@@ -222,7 +222,15 @@ function RiskCard(props: { label: string; basal?: number; sim?: number }): JSX.E
           </Text>
         </Group>
         {delta !== undefined && (
-          <Badge color={color} variant="light" leftSection={<ThemeIcon size={14} color={color} variant="transparent"><Icon size={14} /></ThemeIcon>}>
+          <Badge
+            color={color}
+            variant="light"
+            leftSection={
+              <ThemeIcon size={14} color={color} variant="transparent">
+                <Icon size={14} />
+              </ThemeIcon>
+            }
+          >
             {delta > 0 ? '+' : ''}
             {delta} pts
           </Badge>

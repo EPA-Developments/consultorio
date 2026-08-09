@@ -25,6 +25,12 @@ export interface PreventBaseline {
   /** Etiquetas en español de los datos faltantes (para mensaje al usuario). */
   missing: string[];
   loading: boolean;
+  /**
+   * true si falló la LECTURA. Antes el catch dejaba `missing: []`, y el
+   * simulador mostraba "Falta cargar:" seguido de una lista vacía — un error
+   * de red disfrazado de datos insuficientes sin decir cuáles.
+   */
+  error: boolean;
 }
 
 const REQUIRED_LABELS: Record<string, string> = {
@@ -43,15 +49,15 @@ const REQUIRED_LABELS: Record<string, string> = {
  */
 export function usePreventBaseline(patient: Patient | undefined): PreventBaseline {
   const medplum = useMedplum();
-  const [state, setState] = useState<PreventBaseline>({ missing: [], loading: true });
+  const [state, setState] = useState<PreventBaseline>({ missing: [], loading: true, error: false });
 
   useEffect(() => {
     if (!patient?.id) {
-      setState({ missing: [], loading: false });
+      setState({ missing: [], loading: false, error: false });
       return;
     }
     let cancelled = false;
-    setState({ missing: [], loading: true });
+    setState({ missing: [], loading: true, error: false });
 
     (async () => {
       const patientId = patient.id as string;
@@ -85,7 +91,7 @@ export function usePreventBaseline(patient: Patient | undefined): PreventBaselin
         });
 
       if (inputs) {
-        setState({ inputs, missing: [], loading: false });
+        setState({ inputs, missing: [], loading: false, error: false });
         return;
       }
 
@@ -111,11 +117,11 @@ export function usePreventBaseline(patient: Patient | undefined): PreventBaselin
       if (values.bmi?.value === undefined) {
         missing.push(REQUIRED_LABELS.bmi);
       }
-      setState({ missing, loading: false });
+      setState({ missing, loading: false, error: false });
     })().catch((err) => {
       console.error('usePreventBaseline', err);
       if (!cancelled) {
-        setState({ missing: [], loading: false });
+        setState({ missing: [], loading: false, error: true });
       }
     });
 

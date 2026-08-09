@@ -26,7 +26,14 @@ export function CKMStageBadge(props: CKMStageBadgeProps): JSX.Element {
 
   return (
     <Tooltip label={info.description} withArrow maw={320} multiline>
-      <Badge variant="filled" autoContrast color={info.color} size="sm" leftSection={stage} style={{ cursor: 'default' }}>
+      <Badge
+        variant="filled"
+        autoContrast
+        color={info.color}
+        size="sm"
+        leftSection={stage}
+        style={{ cursor: 'default' }}
+      >
         {info.label}
       </Badge>
     </Tooltip>

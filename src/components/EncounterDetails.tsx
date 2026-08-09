@@ -1,23 +1,42 @@
-// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
-// SPDX-License-Identifier: Apache-2.0
-import { Tabs } from '@mantine/core';
-import { getQuestionnaireAnswers, getReferenceString } from '@medplum/core';
-import type { Encounter, Patient, Questionnaire, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
-import { Document, Loading, QuestionnaireForm, ResourceHistoryTable, ResourceTable, useMedplum } from '@medplum/react';
+// Pantalla de la evolución: la nota, los detalles y el historial.
+//
+// La nota usa el cuestionario embebido en el código (ver nota-evolucion.ts).
+// El diseño anterior lo buscaba en el servidor por código de tipo y, como el
+// seed nunca se corrió y los códigos no coincidían, TODA la pantalla quedaba en
+// un spinner infinito. La regla que quedó de eso: acá ningún estado de carga
+// puede ser eterno y ningún error puede ser invisible.
+import { Alert, Tabs } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
+import { getReferenceString, normalizeErrorString } from '@medplum/core';
+import type { Encounter, Practitioner, QuestionnaireResponse } from '@medplum/fhirtypes';
+import {
+  Document,
+  Loading,
+  QuestionnaireForm,
+  ResourceHistoryTable,
+  ResourceTable,
+  useMedplum,
+  useMedplumProfile,
+} from '@medplum/react';
+import { IconAlertTriangle, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
+import { NOTA_EVOLUCION, recursosDeLaNota } from '../encounters/nota-evolucion';
 import { EncounterNoteDisplay } from './EncounterNoteDisplay';
 
 interface EncounterDetailsProps {
   encounter: Encounter;
 }
 
+/** Estado de la búsqueda de la nota: cargando, resuelta (con o sin nota), o error. */
+type EstadoNota = { estado: 'cargando' } | { estado: 'listo'; nota?: QuestionnaireResponse } | { estado: 'error' };
+
 export function EncounterDetails(props: EncounterDetailsProps): JSX.Element {
   const medplum = useMedplum();
+  const profile = useMedplumProfile();
   const navigate = useNavigate();
-  const [response, setResponse] = useState<QuestionnaireResponse>();
-  const [questionnaire, setQuestionnaire] = useState<Questionnaire>();
+  const [nota, setNota] = useState<EstadoNota>({ estado: 'cargando' });
 
   const id = props.encounter.id;
 
@@ -31,65 +50,57 @@ export function EncounterDetails(props: EncounterDetailsProps): JSX.Element {
   const tab = window.location.pathname.split('/').pop();
   const currentTab = tab && tabs.some(([valor]) => valor === tab) ? tab : tabs[0][0];
 
-  // Get the encounter type so the correct questionnaire can be retrieved
-  const encounterType = props.encounter.type?.[0].coding?.[0].code;
-  const GENERAL_ENCOUNTER_CODE = '1287706006';
-
   useEffect(() => {
-    // Search for a response if there is one
+    let cancelled = false;
     medplum
-      .searchOne('QuestionnaireResponse', {
-        encounter: getReferenceString(props.encounter),
+      .searchOne('QuestionnaireResponse', { encounter: getReferenceString(props.encounter) })
+      .then((r) => {
+        if (!cancelled) {
+          setNota({ estado: 'listo', nota: r });
+        }
       })
-      .then(setResponse)
-      .catch(console.error);
-
-    // Get the questionnaire
-    medplum
-      .searchOne('Questionnaire', {
-        // If the code is for gynecology or obstetrics, use it, otherwise search for the default
-        context: encounterType ?? GENERAL_ENCOUNTER_CODE,
-      })
-      .then(setQuestionnaire)
-      .catch(console.error);
-  }, [response, questionnaire, encounterType, medplum, props.encounter]);
+      .catch((err) => {
+        console.error('Evolución: error buscando la nota', err);
+        if (!cancelled) {
+          setNota({ estado: 'error' });
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [medplum, props.encounter]);
 
   function handleTabChange(newTab: string | null): void {
     navigate(`/Encounter/${id}/${newTab ?? ''}`)?.catch(console.error);
   }
 
   async function handleQuestionnaireSubmit(formData: QuestionnaireResponse): Promise<void> {
-    // Add details to the QuestionnaireResponse based on the encounter
-    const encounterNote: QuestionnaireResponse = {
-      ...formData,
-      encounter: { reference: getReferenceString(props.encounter) },
-      subject: { reference: getReferenceString(props.encounter.subject as Reference<Patient>) },
-    };
-
-    const answers = getQuestionnaireAnswers(formData);
-
+    const practitioner = profile?.resourceType === 'Practitioner' ? (profile as Practitioner) : undefined;
+    // Una sola transacción: la respuesta, los signos vitales con sus códigos
+    // canónicos y la impresión clínica entran juntos o no entra nada.
+    const bundle = recursosDeLaNota(formData, props.encounter, practitioner);
     try {
-      // Store the QuestionnaireResponse in the database and set it so that the page renders correctly
-      const response = await medplum.createResource(encounterNote);
-      setResponse(response);
-
-      // If an answer was provided for the visit length, update the encounter to include the length
-      const updatedEncounter: Encounter = {
-        ...props.encounter,
-        length: answers['visit-length']?.valueInteger
-          ? { value: answers['visit-length'].valueInteger, unit: 'minutes' }
-          : undefined,
-      };
-      await medplum.upsertResource(updatedEncounter, {
-        _id: id,
+      const resultado = await medplum.executeBatch(bundle);
+      const creada = resultado.entry
+        ?.map((e) => e.resource)
+        .find((r) => r?.resourceType === 'QuestionnaireResponse') as QuestionnaireResponse | undefined;
+      setNota({ estado: 'listo', nota: creada ?? formData });
+      showNotification({
+        icon: <IconCircleCheck />,
+        title: 'Listo',
+        message: 'Nota guardada. Los signos vitales entraron a la historia del paciente.',
       });
     } catch (err) {
-      console.error(err);
+      // La nota NO se guardó (la transacción es atómica): hay que decirlo,
+      // porque el médico acaba de escribirla y la va a perder si navega.
+      showNotification({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'No se pudo guardar la nota',
+        message: normalizeErrorString(err),
+        autoClose: false,
+      });
     }
-  }
-
-  if (!questionnaire) {
-    return <Loading />;
   }
 
   return (
@@ -103,11 +114,19 @@ export function EncounterDetails(props: EncounterDetailsProps): JSX.Element {
           ))}
         </Tabs.List>
         <Tabs.Panel value="note">
-          {response ? (
-            <EncounterNoteDisplay response={response} encounter={props.encounter} />
-          ) : (
-            <QuestionnaireForm questionnaire={questionnaire} onSubmit={handleQuestionnaireSubmit} />
+          {nota.estado === 'cargando' && <Loading />}
+          {nota.estado === 'error' && (
+            <Alert color="red" variant="light" icon={<IconAlertTriangle size={16} />}>
+              No se pudo cargar la nota de esta evolución. No significa que no exista: falló la lectura. Recargá la
+              página; si persiste, avisá al equipo técnico.
+            </Alert>
           )}
+          {nota.estado === 'listo' &&
+            (nota.nota ? (
+              <EncounterNoteDisplay response={nota.nota} encounter={props.encounter} />
+            ) : (
+              <QuestionnaireForm questionnaire={NOTA_EVOLUCION} onSubmit={handleQuestionnaireSubmit} />
+            ))}
         </Tabs.Panel>
         <Tabs.Panel value="details">
           <ResourceTable value={props.encounter} ignoreMissingValues={true} />

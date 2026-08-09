@@ -6,6 +6,7 @@
 import { Badge, Group, Loader, Paper, RingProgress, Stack, Table, Text, Title } from '@mantine/core';
 import type { Patient } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
+import { ErrorCarga } from '../../components/ErrorCarga';
 import { useLE8ClinicalInputs } from '../hooks/useLE8ClinicalInputs';
 import { useLE8QuestionnaireInputs } from '../hooks/useLE8QuestionnaireInputs';
 import { computeLE8, LE8_LABELS, LE8_ORDER, le8Category } from '../le8';
@@ -29,6 +30,11 @@ export function LE8Panel(props: { patient: Patient }): JSX.Element {
 
   if (clinical.loading || behavioral.loading) {
     return <Loader m="xl" />;
+  }
+  // Con la lectura caída, la rueda pintaría los 4 componentes clínicos como
+  // "Sin dato" — un compuesto incompleto inventado, no observado.
+  if (clinical.error) {
+    return <ErrorCarga que="los componentes clínicos de LE8" />;
   }
 
   const inputs: LE8Inputs = { ...clinical.inputs, ...behavioral.inputs };
@@ -165,7 +171,10 @@ export function LE8Panel(props: { patient: Patient }): JSX.Element {
                 <Text span fw={600}>
                   PSQI global:
                 </Text>{' '}
-                {behavioral.psqi.global} / 21 <Text span c="dimmed">(menor = mejor calidad)</Text>
+                {behavioral.psqi.global} / 21{' '}
+                <Text span c="dimmed">
+                  (menor = mejor calidad)
+                </Text>
               </Text>
             )}
             {behavioral.mepaScore !== undefined && (

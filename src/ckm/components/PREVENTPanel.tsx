@@ -9,6 +9,7 @@ import type { JSX } from 'react';
 import { Link } from 'react-router';
 import { getPREVENTInputs } from '../extensions';
 import { useCKMData } from '../hooks/useCKMData';
+import { ErrorCarga } from '../../components/ErrorCarga';
 import { useCKMLive } from '../hooks/useCKMLive';
 import { CAC_RECLASS_LEGEND, isProvisional, PROVISIONAL_NOTE } from '../risk';
 import type { PreventOutcome } from '../risk';
@@ -61,6 +62,9 @@ export function PREVENTPanel(props: PREVENTPanelProps): JSX.Element {
             Calculado en vivo a partir de las observaciones cargadas (el recálculo automático todavía no lo guardó).
           </Text>
         )}
+        {/* Sin esto, un error del cálculo en vivo se veía como "Sin métricas
+            CKM registradas": el médico entendía que faltaban datos cargados. */}
+        {needsLive && live.error && <ErrorCarga que="las métricas CKM calculadas en vivo" />}
         <HGraph metrics={hGraphMetrics ?? []} />
         <SimpleGrid cols={3}>
           <ScoreStat label="ASCVD 10 años" outcome="ascvd10y" value={preventScores?.ascvd10y} cac={cac} />

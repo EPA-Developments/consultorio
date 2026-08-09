@@ -7,6 +7,7 @@ import { Alert, Badge, Card, Group, List, Loader, Stack, Text, ThemeIcon, Title 
 import type { Patient } from '@medplum/fhirtypes';
 import { IconChartLine, IconInfoCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
+import { ErrorCarga } from '../../components/ErrorCarga';
 import { useGLP1Response } from '../hooks/useGLP1Response';
 import { REVISION_ANTES_DE_CONCLUIR } from '../monitoring';
 import { VERDICT_LABELS } from '../response';
@@ -18,10 +19,16 @@ import { ResponseChart } from './ResponseChart';
  * "todavía no hay plan" sería ruido en un panel que trata de elegibilidad.
  */
 export function GLP1ResponseSection(props: { patient: Patient }): JSX.Element | null {
-  const { assessment, timeline, sinPlan, loading } = useGLP1Response(props.patient);
+  const { assessment, timeline, sinPlan, loading, error } = useGLP1Response(props.patient);
 
   if (loading) {
     return <Loader m="xl" />;
+  }
+  // Desaparecer en silencio era el defecto: un paciente CON plan vigente
+  // aparecía como si el seguimiento no existiera. Sin plan es la única razón
+  // legítima para no mostrar nada.
+  if (error) {
+    return <ErrorCarga que="la respuesta al tratamiento GLP-1" />;
   }
   if (sinPlan || !assessment || !timeline) {
     return null;

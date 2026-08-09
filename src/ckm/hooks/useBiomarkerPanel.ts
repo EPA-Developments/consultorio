@@ -17,6 +17,8 @@ export interface BiomarkerPanelData {
   gender?: string;
   ageYears?: number;
   loading: boolean;
+  /** true si falló alguna lectura: "0/N con datos" sería un paciente inventado. */
+  error: boolean;
 }
 
 const EMPTY_OBSERVATIONS: Observation[] = [];
@@ -26,9 +28,10 @@ const MAX_OBSERVATIONS = 3000;
 
 export function useBiomarkerPanel(patientId: string | undefined): BiomarkerPanelData {
   const medplum = useMedplum();
-  const { definitions, loading: defsLoading } = useObservationDefinitions();
+  const { definitions, loading: defsLoading, error: defsError } = useObservationDefinitions();
   const patient = useResource<Patient>(patientId ? { reference: `Patient/${patientId}` } : undefined);
   const [observations, setObservations] = useState<Observation[]>();
+  const [obsError, setObsError] = useState(false);
 
   const codes = useMemo(
     () => [...new Set(definitions.map((d) => d.code).filter((c): c is string => Boolean(c)))],
@@ -41,6 +44,7 @@ export function useBiomarkerPanel(patientId: string | undefined): BiomarkerPanel
       return;
     }
     let cancelled = false;
+    setObsError(false);
     void (async () => {
       try {
         const all: Observation[] = [];
@@ -64,6 +68,7 @@ export function useBiomarkerPanel(patientId: string | undefined): BiomarkerPanel
       } catch (err) {
         console.error('Panel de biomarcadores: error buscando Observations', err);
         if (!cancelled) {
+          setObsError(true);
           setObservations(EMPTY_OBSERVATIONS);
         }
       }
@@ -89,5 +94,6 @@ export function useBiomarkerPanel(patientId: string | undefined): BiomarkerPanel
     // clasificador espera undefined para "no sé la edad".
     ageYears: Number.isFinite(edad) ? edad : undefined,
     loading: defsLoading || observations === undefined,
+    error: defsError || obsError,
   };
 }

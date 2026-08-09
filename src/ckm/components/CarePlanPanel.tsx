@@ -107,7 +107,11 @@ export function CarePlanPanel(props: CarePlanPanelProps): JSX.Element {
           </Button>
         </Group>
 
-        {plans === undefined && <Text size="sm" c="dimmed">Cargando…</Text>}
+        {plans === undefined && (
+          <Text size="sm" c="dimmed">
+            Cargando…
+          </Text>
+        )}
         {plans?.length === 0 && (
           <Text size="sm" c="dimmed">
             Sin planes. Generá un borrador con IA a partir del estadío y el riesgo CKM del paciente.
@@ -118,9 +122,7 @@ export function CarePlanPanel(props: CarePlanPanelProps): JSX.Element {
           <Accordion variant="contained" chevronPosition="left">
             {plans.map((plan) => (
               <Accordion.Item key={plan.id} value={plan.id as string}>
-                <Accordion.Control
-                  icon={isAiGenerated(plan) ? <IconRobot size={16} /> : undefined}
-                >
+                <Accordion.Control icon={isAiGenerated(plan) ? <IconRobot size={16} /> : undefined}>
                   <Group justify="space-between" wrap="nowrap" pr="sm">
                     <Text size="sm" lineClamp={1}>
                       {plan.title ?? 'Plan de cuidados'}

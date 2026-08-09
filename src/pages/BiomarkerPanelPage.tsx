@@ -3,7 +3,20 @@
 // último valor del paciente, los rangos convencional/óptimo y un estado
 // (Óptimo/Normal/Alto/Bajo) clasificado contra los rangos de su
 // ObservationDefinition. Solo lectura.
-import { Accordion, Alert, Anchor, Badge, Group, Loader, Paper, Stack, Table, Text, Title, Tooltip } from '@mantine/core';
+import {
+  Accordion,
+  Alert,
+  Anchor,
+  Badge,
+  Group,
+  Loader,
+  Paper,
+  Stack,
+  Table,
+  Text,
+  Title,
+  Tooltip,
+} from '@mantine/core';
 import { formatHumanName } from '@medplum/core';
 import type { HumanName } from '@medplum/fhirtypes';
 import { IconArrowLeft, IconDatabaseImport, IconInfoCircle } from '@tabler/icons-react';
@@ -11,6 +24,7 @@ import type { JSX } from 'react';
 import { Link, useParams } from 'react-router';
 import { Sparkline } from '../ckm/components/Sparkline';
 import { useBiomarkerPanel } from '../ckm/hooks/useBiomarkerPanel';
+import { ErrorCarga } from '../components/ErrorCarga';
 import { classifyBiomarkerValue } from '../ckm/observation-definitions';
 import type { BiomarkerDefinition, BiomarkerPanelGroup, CodedValue } from '../ckm/observation-definitions';
 
@@ -18,7 +32,8 @@ const DEFAULT_OPEN = ['metabolico', 'lipidico', 'inflamacion'];
 
 export function BiomarkerPanelPage(): JSX.Element {
   const { patientId } = useParams();
-  const { patient, groups, valuesByCode, historyByCode, gender, ageYears, loading } = useBiomarkerPanel(patientId);
+  const { patient, groups, valuesByCode, historyByCode, gender, ageYears, loading, error } =
+    useBiomarkerPanel(patientId);
 
   if (loading) {
     return <Loader m="xl" />;
@@ -38,17 +53,19 @@ export function BiomarkerPanelPage(): JSX.Element {
           </Anchor>
           <Title order={3}>Panel de biomarcadores</Title>
           <Text c="dimmed" size="sm">
-            {patientName} · {groups.reduce((n, g) => n + g.defs.length, 0)} biomarcadores BioWellness. Estado clasificado
-            contra los rangos convencional y óptimo (Medicina 3.0) de cada definición.
+            {patientName} · {groups.reduce((n, g) => n + g.defs.length, 0)} biomarcadores BioWellness. Estado
+            clasificado contra los rangos convencional y óptimo (Medicina 3.0) de cada definición.
           </Text>
         </Stack>
 
-        {groups.length === 0 ? (
+        {error ? (
+          <ErrorCarga que="el panel de biomarcadores" />
+        ) : groups.length === 0 ? (
           <Alert color="yellow" icon={<IconDatabaseImport size={18} />} title="No hay definiciones cargadas">
             <Text size="sm">
               No se encontraron ObservationDefinitions de biomarcadores. Cargá el panel desde{' '}
               <Anchor component={Link} to="/upload/biomarkers">
-                Upload Biomarker Definitions
+                la carga de definiciones
               </Anchor>{' '}
               y volvé a esta página.
             </Text>
