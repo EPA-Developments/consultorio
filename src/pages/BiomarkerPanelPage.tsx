@@ -65,7 +65,7 @@ export function BiomarkerPanelPage(): JSX.Element {
             <Text size="sm">
               No se encontraron ObservationDefinitions de biomarcadores. Cargá el panel desde{' '}
               <Anchor component={Link} to="/upload/biomarkers">
-                Upload Biomarker Definitions
+                la carga de definiciones
               </Anchor>{' '}
               y volvé a esta página.
             </Text>

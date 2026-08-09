@@ -23,9 +23,8 @@ interface LineChartProps {
 }
 
 const AsyncLine = lazy(async () => {
-  const { CategoryScale, Chart, Legend, LinearScale, LineElement, PointElement, Title, Tooltip } = await import(
-    'chart.js'
-  );
+  const { CategoryScale, Chart, Legend, LinearScale, LineElement, PointElement, Title, Tooltip } =
+    await import('chart.js');
   Chart.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
   const { Line } = await import('react-chartjs-2');
   return {
@@ -36,7 +35,7 @@ const AsyncLine = lazy(async () => {
 export function LineChart({ chartData }: LineChartProps): JSX.Element {
   return (
     <div className="my-5">
-      <Suspense fallback={<div>Loading...</div>}>
+      <Suspense fallback={<div>Cargando…</div>}>
         <AsyncLine options={lineChartOptions} data={chartData} />
       </Suspense>
     </div>

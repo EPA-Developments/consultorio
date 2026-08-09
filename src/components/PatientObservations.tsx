@@ -37,7 +37,8 @@ export function PatientObservations(props: PatientObservationsProps): JSX.Elemen
 
   const measurement = measurementStyles[currentTab[0]];
   const coding: Coding | undefined = measurement
-    ? { system: LOINC_SYSTEM, code: measurement.code, display: measurement.id }
+    ? // display: el título humano, no el id — termina en el mensaje de 'sin registros'
+      { system: LOINC_SYSTEM, code: measurement.code, display: measurement.title }
     : undefined;
 
   return (

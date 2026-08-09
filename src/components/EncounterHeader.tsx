@@ -17,19 +17,19 @@ export function EncounterHeader({ encounter, patient }: EncounterHeaderProps): J
     <Group>
       <Container m="sm">
         <Text size="sm" c="dimmed">
-          Encounter Type:
+          Tipo de atención
         </Text>
-        <Title order={5}>{encounter.type?.[0].coding?.[0].display}</Title>
+        <Title order={5}>{encounter.type?.[0].coding?.[0].display ?? 'Sin tipo'}</Title>
       </Container>
       <Container m="sm">
         <Text size="sm" c="dimmed">
-          Patient:
+          Paciente
         </Text>
-        <Title order={5}>{patient ? getDisplayString(patient) : 'Unknown'}</Title>
+        <Title order={5}>{patient ? getDisplayString(patient) : '—'}</Title>
       </Container>
       <Container m="sm">
         <Text size="sm" c="dimmed">
-          Date:
+          Fecha
         </Text>
         <Title order={5}>{displayDate}</Title>
       </Container>
@@ -37,12 +37,18 @@ export function EncounterHeader({ encounter, patient }: EncounterHeaderProps): J
   );
 }
 
+/**
+ * Fecha clínica de la evolución, sin aritmética de zona horaria.
+ *
+ * La versión del template hacía `getDate() + 1` para compensar que un string
+ * fecha-sin-hora se parsea como medianoche UTC (que en Argentina es el día
+ * anterior). La compensación fabricaba fechas imposibles en los bordes: una
+ * evolución del 2026-09-01 se mostraba como "2026-08-32". La fecha que declaró
+ * el médico está en los primeros 10 caracteres del string; se usa esa, sin
+ * pasar por Date.
+ */
 function getDisplayDate(isoStringDate?: string): string {
-  const date = isoStringDate ? new Date(isoStringDate) : new Date();
-
-  const year = date.getFullYear();
-  const month = ('0' + (date.getMonth() + 1)).slice(-2);
-  const day = ('0' + (date.getDate() + 1)).slice(-2);
-
-  return `${year}-${month}-${day}`;
+  const iso = isoStringDate ?? new Date().toISOString();
+  const [year, month, day] = iso.slice(0, 10).split('-');
+  return `${day}/${month}/${year}`;
 }

@@ -56,7 +56,7 @@ export function ObservationGraph(props: ObservationGraphProps): JSX.Element {
   if (observations.length === 0) {
     return (
       <Paper p="md" m="md">
-        No {props.code.display?.toLowerCase()} observations
+        Sin registros de {props.code.display ?? 'esta medición'} para este paciente.
       </Paper>
     );
   }
