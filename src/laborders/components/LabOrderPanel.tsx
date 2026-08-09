@@ -34,7 +34,8 @@ import {
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { JSX } from 'react';
 import { ErrorCarga } from '../../components/ErrorCarga';
-import { matriculaOf } from '../practitioner-validation';
+import { checkPractitionerForEmission, matriculaOf } from '../practitioner-validation';
+import { checkRefeps, isRejected } from '../refeps-client';
 import {
   approveProposals,
   chunk,
@@ -45,7 +46,7 @@ import {
   resolveDerivedSources,
 } from '../lab-order';
 import type { LabOrderItem } from '../lab-order';
-import { createLabOrder } from '../lab-order-create';
+import { createLabOrder, EXT_REFEPS_VERIFICACION } from '../lab-order-create';
 import { buildPrintData, printHtmlDocument, renderLabOrderHtml } from '../lab-order-print';
 import { useLabOrderCatalog } from '../hooks/useLabOrderCatalog';
 
@@ -131,19 +132,30 @@ export function LabOrderPanel(props: { patient: Patient }): JSX.Element {
     try {
       const orderItems = orderableIds.map((id) => byId.get(id)).filter((i): i is LabOrderItem => Boolean(i));
 
-      const { requests } = await createLabOrder(medplum, {
+      const { requests, refeps } = await createLabOrder(medplum, {
         patient: props.patient,
         items: orderItems,
         intent: 'order',
         note: `Cobertura: ${cobertura}`,
       });
 
-      showNotification({
-        icon: <IconCircleCheck />,
-        color: 'teal',
-        title: 'Orden generada',
-        message: `${requests.length} análisis solicitados (${cobertura}).`,
-      });
+      // La orden salió igual, pero "verificada" y "sin verificar" no son la
+      // misma noticia: la segunda se muestra en amarillo y sin cerrarse sola.
+      if (refeps?.unavailable) {
+        showNotification({
+          color: 'yellow',
+          title: 'Orden generada SIN verificación REFEPS',
+          message: `${requests.length} análisis solicitados (${cobertura}). El registro no respondió; la orden deja constancia de que salió sin verificar.`,
+          autoClose: false,
+        });
+      } else {
+        showNotification({
+          icon: <IconCircleCheck />,
+          color: 'teal',
+          title: 'Orden generada',
+          message: `${requests.length} análisis solicitados (${cobertura}). Matrícula verificada en REFEPS.`,
+        });
+      }
       clear();
       setReloadKey((k) => k + 1);
     } catch (err) {
@@ -200,13 +212,43 @@ export function LabOrderPanel(props: { patient: Patient }): JSX.Element {
     if (proposals.length === 0) {
       return;
     }
+
+    // Aprobar ES emitir: mismo acto legal, mismo gate que generateOrder.
+    // Este camino salteaba las dos validaciones y sellaba con la matrícula
+    // "si estaba".
+    setApprovingId(requisitionId);
+    const check = checkPractitionerForEmission(profile as Practitioner);
+    if (!check.canEmit) {
+      showNotification({ color: 'red', title: 'No se puede aprobar', message: check.problems.join(' ') });
+      setApprovingId(undefined);
+      return;
+    }
+    const refeps = await checkRefeps(medplum, profile as Practitioner);
+    if (isRejected(refeps)) {
+      showNotification({
+        color: 'red',
+        title: 'REFEPS rechazó la emisión',
+        message: refeps.verification?.message ?? 'La matrícula no está en condiciones según el registro.',
+        autoClose: false,
+      });
+      setApprovingId(undefined);
+      return;
+    }
+
     const name = profile.name?.[0] ? formatHumanName(profile.name[0]) : 'el profesional';
     const matricula = matriculaOf(profile as Practitioner);
     const fecha = new Date().toLocaleDateString('es-AR');
-    const approvalNote = `Aprobada y emitida por ${name}${matricula ? ` (Matrícula ${matricula})` : ''} el ${fecha}. Originada como solicitud del paciente.`;
-    const approved = approveProposals({ proposals, requester: createReference(profile), approvalNote });
-
-    setApprovingId(requisitionId);
+    const constancia = refeps.unavailable
+      ? 'Matrícula sin verificar contra REFEPS al emitir (registro sin respuesta).'
+      : 'Matrícula verificada en REFEPS.';
+    const approvalNote = `Aprobada y emitida por ${name}${matricula ? ` (Matrícula ${matricula})` : ''} el ${fecha}. ${constancia} Originada como solicitud del paciente.`;
+    const approved = approveProposals({ proposals, requester: createReference(profile), approvalNote }).map((r) => ({
+      ...r,
+      extension: [
+        ...(r.extension ?? []),
+        { url: EXT_REFEPS_VERIFICACION, valueString: refeps.unavailable ? 'no-verificable' : 'verificado' },
+      ],
+    }));
     try {
       for (const group of chunk(approved)) {
         const bundle: Bundle = {
@@ -219,12 +261,21 @@ export function LabOrderPanel(props: { patient: Patient }): JSX.Element {
         };
         await medplum.executeBatch(bundle);
       }
-      showNotification({
-        icon: <IconCircleCheck />,
-        color: 'teal',
-        title: 'Solicitud aprobada',
-        message: `${approved.length} análisis emitidos como orden médica.`,
-      });
+      if (refeps.unavailable) {
+        showNotification({
+          color: 'yellow',
+          title: 'Solicitud aprobada SIN verificación REFEPS',
+          message: `${approved.length} análisis emitidos. El registro no respondió; la orden deja constancia.`,
+          autoClose: false,
+        });
+      } else {
+        showNotification({
+          icon: <IconCircleCheck />,
+          color: 'teal',
+          title: 'Solicitud aprobada',
+          message: `${approved.length} análisis emitidos como orden médica. Matrícula verificada en REFEPS.`,
+        });
+      }
       setReloadKey((k) => k + 1);
     } catch (err) {
       showNotification({ color: 'red', title: 'Error al aprobar la solicitud', message: normalizeErrorString(err) });

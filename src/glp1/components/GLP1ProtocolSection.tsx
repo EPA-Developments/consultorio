@@ -9,7 +9,20 @@
 // - Las órdenes de laboratorio de cada control, con el recetario.
 // - El CarePlan con sus Task de control, que nace en 'draft' para que lo
 //   active el médico.
-import { Alert, Badge, Button, Card, Group, List, Select, Stack, Table, Text, ThemeIcon, Timeline } from '@mantine/core';
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  Group,
+  List,
+  Select,
+  Stack,
+  Table,
+  Text,
+  ThemeIcon,
+  Timeline,
+} from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
@@ -75,7 +88,10 @@ export function GLP1ProtocolSection(props: {
   const opciones = useMemo(() => {
     const sugeridas = assessment.molecules.map((m) => m.molecule);
     const conEsquema = moleculesFor(indication);
-    const ordenadas = [...sugeridas.filter((m) => conEsquema.includes(m)), ...conEsquema.filter((m) => !sugeridas.includes(m))];
+    const ordenadas = [
+      ...sugeridas.filter((m) => conEsquema.includes(m)),
+      ...conEsquema.filter((m) => !sugeridas.includes(m)),
+    ];
     return [...new Set(ordenadas)];
   }, [assessment.molecules, indication]);
 
@@ -103,14 +119,7 @@ export function GLP1ProtocolSection(props: {
       </Stack>
 
       <Group align="flex-end" gap="md">
-        <Select
-          label="Molécula"
-          data={opciones}
-          value={elegida}
-          onChange={setMolecula}
-          allowDeselect={false}
-          w={240}
-        />
+        <Select label="Molécula" data={opciones} value={elegida} onChange={setMolecula} allowDeselect={false} w={240} />
         <Select
           label="Cobertura"
           data={[...COBERTURAS_PRIVADAS]}
@@ -303,18 +312,27 @@ function VisitLabs(props: {
   async function emitir(): Promise<void> {
     setEmitiendo(true);
     try {
-      const { requests } = await createLabOrder(medplum, {
+      const { requests, refeps } = await createLabOrder(medplum, {
         patient: props.patient,
         items: plan.items,
         intent: 'order',
         note: monitoringOrderNote(props.visit.label, props.molecule, props.cobertura),
       });
-      showNotification({
-        icon: <IconCircleCheck />,
-        color: 'teal',
-        title: 'Orden generada',
-        message: `${requests.length} análisis solicitados para ${props.visit.label}.`,
-      });
+      if (refeps?.unavailable) {
+        showNotification({
+          color: 'yellow',
+          title: 'Orden generada SIN verificación REFEPS',
+          message: `${requests.length} análisis solicitados para ${props.visit.label}. El registro no respondió; la orden deja constancia.`,
+          autoClose: false,
+        });
+      } else {
+        showNotification({
+          icon: <IconCircleCheck />,
+          color: 'teal',
+          title: 'Orden generada',
+          message: `${requests.length} análisis solicitados para ${props.visit.label}. Matrícula verificada en REFEPS.`,
+        });
+      }
     } catch (err) {
       showNotification({ color: 'red', title: 'Error al generar la orden', message: normalizeErrorString(err) });
     } finally {
