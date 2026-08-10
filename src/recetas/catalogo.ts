@@ -12,6 +12,8 @@ import catalogoJson from '../../data/recetas/medicamentos.json';
 export interface MedicamentoCatalogo {
   dci: string;
   presentaciones: string[];
+  /** conceptId SNOMED CT AR (Fase 1 del plan de docs/VADEMECUM-SNOMED.md). */
+  snomedId?: string;
 }
 
 interface CatalogoRecetas {
@@ -32,4 +34,9 @@ export function estadoCatalogo(): 'borrador' | 'validado' {
 
 export function presentacionesDe(dci: string): string[] {
   return CATALOGO.medicamentos.find((m) => m.dci === dci)?.presentaciones ?? [];
+}
+
+/** conceptId SNOMED del catálogo para una DCI exacta, si está cargado. */
+export function snomedIdDe(dci: string): string | undefined {
+  return CATALOGO.medicamentos.find((m) => m.dci === dci)?.snomedId;
 }

@@ -33,7 +33,8 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "refeps-doctor": "tsx src/scripts/refeps-doctor.ts",
-    "invite-practitioners": "tsx src/scripts/invite-practitioners.ts"
+    "invite-practitioners": "tsx src/scripts/invite-practitioners.ts",
+    "snomed-subset": "tsx src/scripts/snomed-subset.ts"
   },
   "prettier": {
     "printWidth": 120,

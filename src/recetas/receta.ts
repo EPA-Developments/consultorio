@@ -23,9 +23,19 @@ import type { CodeableConcept, MedicationRequest, Reference } from '@medplum/fhi
 /** system del número de receta (groupIdentifier). */
 export const RECETA_SYSTEM = 'https://bio.medplum.com.ar/fhir/sid/receta';
 
+/** system de SNOMED CT (la Edición Argentina usa el system internacional). */
+export const SNOMED_SYSTEM = 'http://snomed.info/sct';
+
 export interface ItemReceta {
   /** Denominación Común Internacional. Obligatoria (Ley 25.649). */
   dci: string;
+  /**
+   * conceptId de SNOMED CT Edición Argentina, si el catálogo lo trae. Se carga
+   * desde la edición descargada con licencia MLDS, NUNCA de memoria ni de un
+   * buscador: un código equivocado es peor que ninguno, porque parece
+   * verificado. Sin código, la receta sale igual (DCI texto, Ley 25.649).
+   */
+  snomedId?: string;
   /** Forma y concentración: "comprimidos 500 mg". */
   presentacion?: string;
   /** Unidades a dispensar (envases o unidades, según presentación). */
@@ -77,7 +87,12 @@ export function validarReceta(items: ItemReceta[], diagnostico: string): string[
 
 function medicamentoConcept(item: ItemReceta): CodeableConcept {
   const texto = [item.dci.trim(), item.presentacion?.trim()].filter(Boolean).join(' — ');
-  return { text: texto };
+  return {
+    text: texto,
+    // El coding SNOMED viaja solo si el catálogo lo trae: la interoperabilidad
+    // se suma cuando hay dato verificado, no se inventa.
+    ...(item.snomedId ? { coding: [{ system: SNOMED_SYSTEM, code: item.snomedId, display: item.dci.trim() }] } : {}),
+  };
 }
 
 /** Construye los MedicationRequest de una receta ya validada. */
