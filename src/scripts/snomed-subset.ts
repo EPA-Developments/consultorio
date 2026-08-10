@@ -26,6 +26,7 @@
 import fs from 'fs';
 import path from 'path';
 import readline from 'readline';
+import { pathToFileURL } from 'url';
 
 const CATALOGO_FILE = 'data/recetas/medicamentos.json';
 
@@ -196,7 +197,14 @@ async function main(): Promise<void> {
   if (descFiles.length === 0) {
     throw new Error(`No encontré sct2_Description_*Snapshot*.txt bajo ${rf2Dir}. ¿Está descomprimida la release?`);
   }
-  console.log(`Release: ${descFiles.length} archivo(s) de descripciones\n`);
+  // Los nombres de archivo cuentan QUÉ se está escaneando: si solo aparece la
+  // extensión argentina, faltan las descripciones en español de los conceptos
+  // internacionales (ver el aviso al final).
+  console.log(`Release: ${descFiles.length} archivo(s) de descripciones`);
+  for (const f of descFiles) {
+    console.log(`  · ${path.relative(rf2Dir, f)}`);
+  }
+  console.log('');
 
   // Pasada 1: candidatos por término.
   const candidatosPorDci = new Map<string, Map<string, Candidato>>();
@@ -257,6 +265,7 @@ async function main(): Promise<void> {
 
   // Reporte y aplicación.
   let aplicados = 0;
+  let sinCandidatos = 0;
   for (const m of objetivos) {
     const candidatos = [...(candidatosPorDci.get(m.dci)?.values() ?? [])].filter((c) => !inactivos.has(c.conceptId));
 
@@ -268,6 +277,7 @@ async function main(): Promise<void> {
 
     console.log(`── ${m.dci} ──`);
     if (candidatos.length === 0) {
+      sinCandidatos++;
       console.log('  (sin candidatos: buscarlo a mano en el navegador oficial y cargarlo con su FSN a la vista)\n');
       continue;
     }
@@ -290,9 +300,31 @@ async function main(): Promise<void> {
     fs.writeFileSync(CATALOGO_FILE, JSON.stringify(catalogo, null, 2) + '\n');
     console.log(`${aplicados} snomedId escritos en ${CATALOGO_FILE}. Revisar el diff antes de commitear.`);
   }
+
+  // La mayoría sin candidatos no es "SNOMED no los tiene": es la firma de estar
+  // escaneando SOLO la extensión argentina. Los DCI internacionales (metformina,
+  // atorvastatina, ...) reciben sus descripciones en español de la Edición
+  // Internacional en Español de la que la extensión declara depender en su
+  // release note — es una descarga separada en MLDS.
+  if (!verificar && sinCandidatos > objetivos.length / 2) {
+    console.log(
+      'AVISO: la mayoría de los DCI salió sin candidatos. Si arriba se escaneó un solo\n' +
+        'archivo de descripciones, el directorio probablemente contiene solo la EXTENSIÓN\n' +
+        'argentina (conceptos creados en el país, como tirzepatida). Descargar también de\n' +
+        'MLDS la Edición Internacional en Español de la que depende esta release (la fecha\n' +
+        'exacta figura en su release note), descomprimir ambas bajo un mismo directorio\n' +
+        'padre y volver a correr con --rf2 apuntando a ese padre.'
+    );
+  }
 }
 
-main().catch((err) => {
-  console.error('\n✗ Error:', err.message ?? err);
-  process.exit(1);
-});
+// Ejecutar SOLO cuando se corre como script (misma guarda que
+// upload-biomarker-definitions): importar el módulo desde los tests de las
+// funciones puras no debe disparar main() ni su process.exit.
+const esEntrada = process.argv[1] ? import.meta.url === pathToFileURL(process.argv[1]).href : false;
+if (esEntrada) {
+  main().catch((err) => {
+    console.error('\n✗ Error:', err.message ?? err);
+    process.exit(1);
+  });
+}
