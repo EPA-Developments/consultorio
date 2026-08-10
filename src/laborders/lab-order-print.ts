@@ -12,7 +12,8 @@
 // pie lo aclara para no inducir a error.
 import { formatAddress, formatHumanName, getDisplayString } from '@medplum/core';
 import type { Patient, Practitioner, ServiceRequest } from '@medplum/fhirtypes';
-import { DNI_SYSTEM, getIdentifierValue, MATRICULA_SYSTEM } from '../ckm/argentina';
+import { DNI_SYSTEM, getIdentifierValue } from '../ckm/argentina';
+import { matriculaOf } from './practitioner-validation';
 import { EMISSION_STATUS, getSello, verificationUrl } from './lab-order-emission';
 import type { EmissionStatus } from './lab-order-emission';
 
@@ -151,7 +152,9 @@ export function buildPrintData(params: {
       : practitioner
         ? getDisplayString(practitioner)
         : undefined,
-    practitionerMatricula: practitioner?.identifier?.find((i) => i.system === MATRICULA_SYSTEM)?.value,
+    // matriculaOf acepta el system canónico y los sinónimos (REFEPS): la
+    // matrícula cargada en el admin tiene que imprimirse, no solo validarse.
+    practitionerMatricula: matriculaOf(practitioner),
     practitionerSpecialty: specialtyOf(practitioner),
     practitionerAddress: address ? formatAddress(address) : undefined,
     diagnosis: diagnosisFromRequests(requests),

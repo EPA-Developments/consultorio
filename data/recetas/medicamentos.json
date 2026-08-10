@@ -1,0 +1,60 @@
+{
+  "version": "2026-08-10",
+  "estado": "borrador",
+  "nota": "Lista de conveniencia para el formulario de recetas: DCI y presentaciones habituales de la práctica. NO incluye posologías a propósito: la posología la escribe el profesional en cada receta. Pendiente de validación por el equipo médico; la receta libre (DCI tipeada) siempre está disponible.",
+  "medicamentos": [
+    {
+      "dci": "semaglutida",
+      "presentaciones": [
+        "solución inyectable SC 0,25 mg/dosis (pluma prellenada)",
+        "solución inyectable SC 0,5 mg/dosis (pluma prellenada)",
+        "solución inyectable SC 1 mg/dosis (pluma prellenada)",
+        "solución inyectable SC 2,4 mg/dosis (pluma prellenada)",
+        "comprimidos 3 mg",
+        "comprimidos 7 mg",
+        "comprimidos 14 mg"
+      ]
+    },
+    {
+      "dci": "tirzepatida",
+      "presentaciones": [
+        "solución inyectable SC 2,5 mg/dosis",
+        "solución inyectable SC 5 mg/dosis",
+        "solución inyectable SC 7,5 mg/dosis",
+        "solución inyectable SC 10 mg/dosis"
+      ]
+    },
+    {
+      "dci": "liraglutida",
+      "presentaciones": ["solución inyectable SC 6 mg/mL (pluma multidosis)"]
+    },
+    {
+      "dci": "metformina",
+      "presentaciones": ["comprimidos 500 mg", "comprimidos 850 mg", "comprimidos 1000 mg", "comprimidos LP 750 mg"]
+    },
+    {
+      "dci": "atorvastatina",
+      "presentaciones": ["comprimidos 10 mg", "comprimidos 20 mg", "comprimidos 40 mg"]
+    },
+    {
+      "dci": "rosuvastatina",
+      "presentaciones": ["comprimidos 5 mg", "comprimidos 10 mg", "comprimidos 20 mg"]
+    },
+    {
+      "dci": "ezetimibe",
+      "presentaciones": ["comprimidos 10 mg"]
+    },
+    {
+      "dci": "colecalciferol",
+      "presentaciones": ["solución oral en gotas 100.000 UI/mL", "comprimidos 5.000 UI", "ampolla bebible 100.000 UI"]
+    },
+    {
+      "dci": "ácidos grasos omega-3",
+      "presentaciones": ["cápsulas 1000 mg (EPA+DHA)"]
+    },
+    {
+      "dci": "citrato de magnesio",
+      "presentaciones": ["polvo para solución oral", "comprimidos 400 mg"]
+    }
+  ]
+}
