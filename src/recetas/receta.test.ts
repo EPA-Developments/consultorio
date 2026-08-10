@@ -85,6 +85,21 @@ describe('Construcción de los MedicationRequest', () => {
     expect(requests[0].reasonCode?.[0]?.text).toContain('E11.9');
   });
 
+  // Fase 1 del plan SNOMED (docs/VADEMECUM-SNOMED.md): el coding viaja solo
+  // cuando el catálogo trae el conceptId de la edición descargada. Sin código,
+  // la receta sale como hoy — nunca se inventa uno.
+  test('con snomedId el medicamento sale codificado; sin él, solo texto', () => {
+    const [conCodigo] = buildReceta({ ...params, items: [{ ...METFORMINA, snomedId: '109081006' }] });
+    expect(conCodigo.medicationCodeableConcept?.coding?.[0]).toStrictEqual({
+      system: 'http://snomed.info/sct',
+      code: '109081006',
+      display: 'metformina',
+    });
+    const [sinCodigo] = buildReceta({ ...params, items: [METFORMINA] });
+    expect(sinCodigo.medicationCodeableConcept?.coding).toBeUndefined();
+    expect(sinCodigo.medicationCodeableConcept?.text).toContain('metformina');
+  });
+
   test('la marca sugerida queda como nota sustituible, nunca como el medicamento', () => {
     const [r] = buildReceta({ ...params, items: [{ ...METFORMINA, marcaSugerida: 'Glucophage' }] });
     expect(r.medicationCodeableConcept?.text).not.toContain('Glucophage');

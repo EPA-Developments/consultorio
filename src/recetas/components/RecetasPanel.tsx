@@ -27,7 +27,7 @@ import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { ErrorCarga } from '../../components/ErrorCarga';
 import { printHtmlDocument } from '../../laborders/lab-order-print';
-import { estadoCatalogo, medicamentosDelCatalogo, presentacionesDe } from '../catalogo';
+import { estadoCatalogo, medicamentosDelCatalogo, presentacionesDe, snomedIdDe } from '../catalogo';
 import { groupByReceta } from '../receta';
 import type { ItemReceta } from '../receta';
 import { createReceta } from '../receta-create';
@@ -87,7 +87,9 @@ export function RecetasPanel(props: { patient: Patient }): JSX.Element {
     try {
       const { recetaId, requests, refeps } = await createReceta(medplum, {
         patient: props.patient,
-        items: items.map(({ key: _key, ...item }) => item),
+        // Si la DCI matchea el catálogo, el conceptId SNOMED viaja solo: la
+        // codificación es del catálogo, no una decisión del formulario.
+        items: items.map(({ key: _key, ...item }) => ({ ...item, snomedId: item.snomedId ?? snomedIdDe(item.dci) })),
         diagnostico,
       });
       if (refeps.unavailable) {

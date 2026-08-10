@@ -1,0 +1,169 @@
+# Vademécum SNOMED CT Argentina: opciones y criterio de abordaje
+
+> **Qué es este documento.** El análisis de cómo codificar los medicamentos del
+> recetario con SNOMED CT Edición Argentina, las cuatro vías reales de acceso, y
+> el plan por fases para BioWellness y para el proyecto Favaloro | Medplum
+> Argentina. Hoy la receta lleva la DCI como texto (Ley 25.649, cumplida); la
+> codificación SNOMED es lo que la hace **interoperable** — y es el estándar
+> nacional definido por la Estrategia de Salud Digital, así que suma al
+> expediente ReNaPDiS.
+
+---
+
+## 1. El contexto que cambia todo: Argentina ya tiene la infraestructura
+
+Tres hechos verificados que simplifican el problema:
+
+1. **Argentina es miembro de SNOMED International** (desde 2018). Cualquier
+   institución pública o privada del territorio puede pedir una **licencia de
+   afiliado gratuita**, aprobada por el Centro Nacional de Terminología en
+   Salud, y descargar la **Edición Argentina** (Internacional + extensión
+   nacional, que incluye el módulo de medicamentos). Portal:
+   `https://mlds.ihtsdotools.org/ar`.
+
+2. **El Estado opera un Snowstorm nacional** (`snowstorm.gob.ar`): el servidor
+   de terminología oficial de la Red Nacional de Salud Digital, con la última
+   Edición Argentina cargada, acceso mediante **acuerdo de uso** para
+   prestadores de salud, y colecciones Postman de implementación — el mismo
+   formato de material que ya recorrimos con REFEPS.
+
+3. **El vademécum comercial existe como dato abierto**: el **VNM** (Vademécum
+   Nacional de Medicamentos, ANMAT) publica en `datos.salud.gob.ar` los
+   productos autorizados con nombre genérico, nombre comercial, laboratorio y
+   certificado. No es SNOMED, pero es el puente al nivel marca/presentación
+   comercial.
+
+La conclusión de la exploración: **no hay que construir un vademécum; hay que
+conectarse a los tres que ya existen**, cada uno para lo que sirve.
+
+---
+
+## 2. Las cuatro vías, de simple a compleja
+
+### A. Snowstorm nacional (`snowstorm.gob.ar`) — consulta en vivo
+
+**Qué es**: usar el servidor estatal como servicio de terminología: FHIR
+`ValueSet/$expand` con filtro (autocomplete) y ECL para recortar la jerarquía
+de medicamentos.
+
+- **A favor**: cero hosting, contenido oficial siempre actualizado, y el patrón
+  de integración ya lo tenemos construido (es un servicio estatal más, como el
+  Bus).
+- **En contra**: requiere el acuerdo de uso (trámite), y agrega una dependencia
+  de disponibilidad estatal en el camino del autocomplete. La lección REFEPS
+  aplica entera: _unavailable no puede bloquear la prescripción_ — si el
+  servidor no contesta, la DCI tipeada sigue valiendo.
+
+### B. Licencia MLDS + subconjunto como DATO en el repo
+
+**Qué es**: tramitar la licencia de afiliado (gratis), descargar la Edición
+Argentina (RF2), y extraer un **subconjunto** de conceptos de medicamentos al
+repo como dato — el mismo patrón del catálogo de 109 biomarcadores y del de
+terapias Bio: corregir el catálogo no requiere servidor de terminología.
+
+- **A favor**: sin dependencia de runtime, control total, encaja con la
+  filosofía del repo. Para el formulario de la práctica (decenas de DCI, no
+  miles) es la escala correcta.
+- **En contra**: el subconjunto se actualiza a mano con cada release semestral
+  de la edición (aceptable: los DCI de la práctica cambian poco).
+- **Atención (licencia)**: los conceptos SNOMED son contenido licenciado. El
+  uso dentro del territorio miembro con licencia de afiliado está cubierto,
+  pero el subset **no debe publicarse en un repositorio público** sin revisar
+  los términos. El repo hoy es privado; si eso cambia, este punto se revisa.
+
+### C. Medplum v5: `CodeSystem/$import` en `api.medplum.com.ar`
+
+**Qué es**: Medplum v5 tiene servicios de terminología nativos: `$import` para
+cargar sistemas grandes (SNOMED entra: 350k+ conceptos) y `ValueSet/$expand`
+con filtro y paginación para autocomplete. Se importa el módulo de medicamentos
+de la Edición Argentina (o la edición completa) **una vez en el servidor**, y
+cualquier pantalla lo consulta con `$expand`.
+
+- **A favor**: es LA opción para **Favaloro | Medplum Argentina** como
+  plataforma multi-proyecto: el CodeSystem se carga una vez (en un proyecto
+  compartido/linkeado) y sirve a todos los tenants — BioWellness, Favaloro y
+  los que vengan. Sin servidores extra: el que ya está (`Ver-5.1` soporta
+  esto).
+- **En contra**: requiere escribir el conversor RF2 → formato de `$import`, y
+  la actualización semestral es un re-import. Sin soporte ECL completo (para
+  eso está D).
+
+### D. Snowstorm propio (Docker + Elasticsearch)
+
+**Qué es**: self-hostear el mismo Snowstorm que corre el Estado, con la Edición
+Argentina cargada. Máxima autonomía y ECL completo.
+
+- **En contra**: un servicio más para operar (Elasticsearch incluido), y para
+  el caso de uso actual es sobredimensionado. Solo se justifica si C se queda
+  corto en capacidades de consulta y A no alcanza en disponibilidad.
+
+### Complemento (cualquier vía): VNM de ANMAT para el nivel comercial
+
+El CSV del VNM mapea genérico ↔ marca ↔ laboratorio ↔ certificado. Sirve para
+enriquecer las **presentaciones comerciales** y para validar que una marca
+sugerida exista y esté autorizada. Se ingiere como dato con un script (patrón
+`upload-biomarker-defs`), sin licencia de por medio.
+
+---
+
+## 3. El criterio de abordaje (por fases)
+
+### Fase 0 — Trámites, en paralelo, esta semana
+
+1. **Licencia MLDS de afiliado** en `mlds.ihtsdotools.org/ar` (gratuita;
+   habilita descargar la Edición Argentina). Sin esto no hay B ni C.
+2. **Acuerdo de uso del Snowstorm nacional** (Red Nacional de Salud Digital,
+   `argentina.gob.ar/salud/terminologia`). Habilita A.
+3. **Revisar el catálogo de servicios en `dominios.msal.gob.ar`** con las
+   credenciales que ya tenemos del Bus: si el dominio ya incluye un servicio de
+   terminología, parte del trámite 2 puede estar hecho.
+
+### Fase 1 — El recetario de BioWellness codifica SNOMED (vía B)
+
+Con la edición descargada: buscar los conceptId de los ~10 DCI del catálogo y
+agregarlos a `data/recetas/medicamentos.json`. El `MedicationRequest` sale con
+`medicationCodeableConcept.coding = {system: "http://snomed.info/sct", code}`
+además del texto. **El código ya está preparado para esto**: `ItemReceta`
+acepta `snomedId` opcional y `buildReceta` lo emite como coding cuando está —
+sin código, la receta sigue saliendo como hoy (DCI texto, legal y válida).
+
+Regla dura: **los conceptId se cargan desde la edición descargada, nunca de
+memoria ni de un buscador web** — un código SNOMED equivocado es peor que
+ninguno, porque parece verificado.
+
+### Fase 2 — Vademécum completo para Favaloro | Medplum Argentina (vía C)
+
+Conversor RF2 → `CodeSystem/$import` (script versionado, patrón
+`upload-biomarker-defs`), cargado en un proyecto compartido del servidor para
+servir a todos los tenants. `ValueSet` de la jerarquía de medicamentos +
+`$expand` con filtro para el autocomplete del formulario de recetas, que
+reemplaza (o complementa) al catálogo estático. Re-import semestral con cada
+release de la edición.
+
+### Fase 3 — Opcional: verificación en vivo (vía A)
+
+Si el acuerdo del Snowstorm nacional sale: un bot `terminologia-verify` (mismo
+patrón que `refeps-verify`) que valide el conceptId contra el servidor estatal
+al emitir, con la política conocida: _unavailable no bloquea_. Cinturón y
+tiradores: el catálogo local resuelve el 99%, el servidor nacional confirma.
+
+### Por qué en este orden
+
+- B primero porque **no agrega dependencias** y con ~10 conceptId el recetario
+  ya emite codificado — el beneficio ReNaPDiS se captura en días.
+- C después porque es la apuesta de plataforma (multi-tenant) y necesita el
+  conversor; se construye una vez y sirve a todos los proyectos.
+- A/D solo donde suman: A como verificación cruzada, D solo si hiciera falta
+  ECL avanzado self-hosted.
+
+---
+
+## 4. Decisiones que quedan abiertas
+
+1. **Nivel de codificación v1**: producto medicinal (DCI, ej. "metformina") vs
+   producto con forma/concentración (ej. "metformina 500 mg comprimido"). Para
+   la receta por genérico alcanza el primero; el segundo mapea mejor a
+   dispensación. Propuesta: DCI-level en Fase 1, forma/concentración en Fase 2.
+2. **Dónde vive el CodeSystem compartido** en el servidor (proyecto linkeado vs
+   por-proyecto): decisión de administración de Favaloro | Medplum Argentina.
+3. **El VNM**: si se ingiere en Fase 1 (validar marcas sugeridas) o Fase 2.
