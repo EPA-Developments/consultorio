@@ -125,9 +125,20 @@ sugerida exista y esté autorizada. Se ingiere como dato con un script (patrón
 
 Runbook concreto:
 
-1. En `mlds.ihtsdotools.org/ar` → **Mis Paquetes de la Versión** → descargar la
-   release vigente de la **Edición Argentina** (zip RF2) y descomprimirla en el
-   servidor.
+1. En `mlds.ihtsdotools.org/ar` → **Mis Paquetes de la Versión** → descargar
+   **dos** paquetes y descomprimirlos bajo un mismo directorio padre en el
+   servidor:
+   - la **Extensión Argentina** vigente (zip RF2, ~65 MB): trae los conceptos
+     creados en el país (ej. tirzepatida) y los refsets del DNM;
+   - la **Edición Internacional en Español** de la que esa release declara
+     depender (la fecha exacta figura en la release note; ej. la de Mayo 2026
+     depende de la del 10-05-2026): trae las descripciones en español de los
+     conceptos internacionales (metformina, atorvastatina, ...). Es un zip
+     mucho más grande; mismas vías de subida (S3/presigned o wget en el EC2).
+
+   Con solo la extensión, casi todos los DCI salen "sin candidatos" — no es que
+   SNOMED no los tenga, es que sus descripciones en español viven en la edición
+   base. El script lo avisa cuando detecta ese patrón.
 2. `npm run snomed-subset -- --rf2 /ruta/a/la/release` — propone candidatos
    para cada DCI del catálogo **con su FSN a la vista**, clasificados por
    etiqueta semántica: solo `(producto medicinal)` es lo prescribible a nivel
@@ -152,6 +163,14 @@ ninguno, porque parece verificado. El script no trae ningún código adentro:
 todos salen del RF2 que descargaste con tu licencia.
 
 ### Fase 2 — Vademécum completo para Favaloro | Medplum Argentina (vía C)
+
+Hallazgo de la release note de Mayo 2026 que simplifica esta fase: la extensión
+trae los **refsets del Diccionario Nacional de Medicamentos (DNM)** —
+presentaciones y medicamentos comerciales ANMAT, genéricos (clases MP/MPF/CD),
+con variantes "en estado comercializado", atributos de expendio controlado
+(estupefacientes/psicotrópicos por lista) y un Excel de mapeo a GTIN. Es decir:
+el recorte "vademécum argentino" ya viene definido como refset; el conversor
+puede importar ese subconjunto en lugar de la jerarquía entera.
 
 Conversor RF2 → `CodeSystem/$import` (script versionado, patrón
 `upload-biomarker-defs`), cargado en un proyecto compartido del servidor para
