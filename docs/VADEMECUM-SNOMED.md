@@ -120,16 +120,36 @@ sugerida exista y esté autorizada. Se ingiere como dato con un script (patrón
 
 ### Fase 1 — El recetario de BioWellness codifica SNOMED (vía B)
 
-Con la edición descargada: buscar los conceptId de los ~10 DCI del catálogo y
-agregarlos a `data/recetas/medicamentos.json`. El `MedicationRequest` sale con
+> **Estado**: la Fase 0 está completa (afiliado MLDS vigente desde 2023) y la
+> herramienta de extracción existe: `npm run snomed-subset`.
+
+Runbook concreto:
+
+1. En `mlds.ihtsdotools.org/ar` → **Mis Paquetes de la Versión** → descargar la
+   release vigente de la **Edición Argentina** (zip RF2) y descomprimirla en el
+   servidor.
+2. `npm run snomed-subset -- --rf2 /ruta/a/la/release` — propone candidatos
+   para cada DCI del catálogo **con su FSN a la vista**, clasificados por
+   etiqueta semántica: solo `(producto medicinal)` es lo prescribible a nivel
+   DCI; la `(sustancia)` es el químico y el `(producto medicinal clínico)` es
+   forma+concentración (Fase 2). Las combinaciones ("metformina y
+   glibenclamida") se excluyen del matcheo a propósito.
+3. `-- --aplicar` escribe en `data/recetas/medicamentos.json` **solo los
+   matches únicos e inequívocos**; los ambiguos se eligen a mano con el FSN a
+   la vista. Revisar el diff y commitear.
+4. `-- --verificar` re-chequea los snomedId cargados contra la release: guardia
+   contra typos, y contra conceptos inactivados cuando salga la release
+   semestral siguiente.
+
+El `MedicationRequest` sale con
 `medicationCodeableConcept.coding = {system: "http://snomed.info/sct", code}`
-además del texto. **El código ya está preparado para esto**: `ItemReceta`
-acepta `snomedId` opcional y `buildReceta` lo emite como coding cuando está —
-sin código, la receta sigue saliendo como hoy (DCI texto, legal y válida).
+además del texto; sin código, la receta sigue saliendo como hoy (DCI texto,
+legal y válida).
 
 Regla dura: **los conceptId se cargan desde la edición descargada, nunca de
 memoria ni de un buscador web** — un código SNOMED equivocado es peor que
-ninguno, porque parece verificado.
+ninguno, porque parece verificado. El script no trae ningún código adentro:
+todos salen del RF2 que descargaste con tu licencia.
 
 ### Fase 2 — Vademécum completo para Favaloro | Medplum Argentina (vía C)
 
