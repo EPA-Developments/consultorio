@@ -32,7 +32,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "refeps-doctor": "tsx src/scripts/refeps-doctor.ts"
+    "refeps-doctor": "tsx src/scripts/refeps-doctor.ts",
+    "invite-practitioners": "tsx src/scripts/invite-practitioners.ts"
   },
   "prettier": {
     "printWidth": 120,
