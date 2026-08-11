@@ -14,6 +14,13 @@ export interface MedicamentoCatalogo {
   presentaciones: string[];
   /** conceptId SNOMED CT AR (Fase 1 del plan de docs/VADEMECUM-SNOMED.md). */
   snomedId?: string;
+  /**
+   * Término con el que la edición SNOMED nombra al medicamento, cuando difiere
+   * de la DCI del formulario (ej. "ácidos grasos omega-3" → "ácido graso
+   * omega 3 derivado del pescado"). Lo usa snomed-subset para matchear y
+   * re-verificar; el formulario y la receta siguen mostrando la DCI.
+   */
+  terminoSnomed?: string;
 }
 
 interface CatalogoRecetas {

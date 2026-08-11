@@ -151,6 +151,19 @@ Runbook concreto:
 4. `-- --verificar` re-chequea los snomedId cargados contra la release: guardia
    contra typos, y contra conceptos inactivados cuando salga la release
    semestral siguiente.
+5. Cuando la edición nombra al medicamento distinto que el formulario (ej.
+   "ácidos grasos omega-3" → "ácido graso omega 3 derivado del pescado"), la
+   entrada del catálogo lleva `terminoSnomed` con la redacción de la edición:
+   el script matchea y re-verifica con ese alias, y el formulario y la receta
+   siguen mostrando la DCI de siempre.
+
+Limitación conocida de la pareja extensión + edición en español: ninguno de
+los dos paquetes trae el archivo de conceptos de la edición internacional, así
+que la actividad de un concepto internacional no es chequeable localmente
+(solo la de conceptos argentinos y del módulo español). Ante señales de
+inactivación — dos candidatos con el mismo FSN, descripciones inactivas — el
+desempate se hace en el navegador oficial (browser.ihtsdotools.org o el
+Snowstorm nacional), con el FSN y el estado a la vista.
 
 El `MedicationRequest` sale con
 `medicationCodeableConcept.coding = {system: "http://snomed.info/sct", code}`
