@@ -54,8 +54,47 @@ export function parseFsnComercial(fsn: string): FsnComercial | undefined {
   if (!marca || !composicion) {
     return undefined;
   }
-  return { marca, composicion, forma: m[3].trim() };
+  const forma = m[3].trim();
+  // Un segundo corchete en la "forma" delata una combinación escrita como
+  // [COMPONENTE A] [COMPONENTE B]: afuera, no mapea a una DCI única.
+  if (forma.includes('[')) {
+    return undefined;
+  }
+  return { marca, composicion, forma };
 }
+
+/**
+ * Sales y formas químicas habituales en la nomenclatura ANMAT/DNM cuando van
+ * pegadas al principio activo ("METFORMINA CLORHIDRATO 500 MG"). La sal no
+ * cambia la DCI que se prescribe.
+ */
+const SALES = new Set([
+  'clorhidrato',
+  'diclorhidrato',
+  'sulfato',
+  'fosfato',
+  'acetato',
+  'maleato',
+  'besilato',
+  'fumarato',
+  'hemifumarato',
+  'tartrato',
+  'citrato',
+  'calcica',
+  'calcico',
+  'sodica',
+  'sodico',
+  'potasica',
+  'potasico',
+  'magnesica',
+  'magnesico',
+  'anhidra',
+  'anhidro',
+  'monohidrato',
+  'dihidrato',
+  'micronizada',
+  'micronizado',
+]);
 
 export interface MedicamentoDelCatalogo {
   dci: string;
@@ -69,21 +108,39 @@ export interface MedicamentoDelCatalogo {
  * veces trunca la vocal final ("ATORVASTATIN"): se acepta esa variante.
  */
 export function dciDeComposicion(composicion: string, meds: MedicamentoDelCatalogo[]): string | undefined {
-  const sinSales = normalizar(composicion.replace(/\([^)]*\)/g, ' '));
-  if (sinSales.includes('+') || / y /.test(sinSales)) {
+  const limpia = normalizar(composicion.replace(/\([^)]*\)/g, ' '));
+  if (limpia.includes('+') || / y /.test(limpia)) {
     return undefined;
   }
-  const principio = sinSales.split(/\s+[\d,.]/)[0]?.trim();
+  // Regla definicional, independiente del separador que use el DNM: si la
+  // composición trae DOS dosis, es una combinación. (El reporte real mostró
+  // combinaciones "DUO" colándose con separadores distintos de "+".)
+  const dosis = limpia.match(/\d+(?:[.,]\d+)?\s*(?:mg|mcg|ug|g|ui|%)\b/g) ?? [];
+  if (dosis.length > 1) {
+    return undefined;
+  }
+  const principio = limpia.split(/\s+[\d,./]/)[0]?.trim();
   if (!principio) {
     return undefined;
   }
+  const palabras = principio.split(' ');
   for (const m of meds) {
     for (const termino of [m.dci, m.terminoSnomed]) {
       if (!termino) {
         continue;
       }
       const t = normalizar(termino);
-      if (principio === t || t === `${principio}a`) {
+      const nPalabras = t.split(' ').length;
+      if (palabras.length < nPalabras) {
+        continue;
+      }
+      const cabeza = palabras.slice(0, nPalabras).join(' ');
+      const resto = palabras.slice(nPalabras);
+      // La cabeza debe ser la DCI (o su variante ANMAT sin la vocal final) y
+      // lo que sobre, solo sales de la whitelist: "metformina clorhidrato"
+      // es metformina; "metformina glibenclamida" NO.
+      const cabezaOk = cabeza === t || `${cabeza}a` === t;
+      if (cabezaOk && resto.every((w) => SALES.has(w))) {
         return m.dci;
       }
     }

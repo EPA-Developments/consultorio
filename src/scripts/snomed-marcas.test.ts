@@ -22,6 +22,13 @@ describe('Parseo del FSN comercial del DNM', () => {
     expect(parseFsnComercial('producto que contiene metformina (producto medicinal)')).toBeUndefined();
     expect(parseFsnComercial('metformina (sustancia)')).toBeUndefined();
   });
+
+  // Combinación escrita como corchetes separados: el segundo corchete la delata.
+  test('dos corchetes = combinación, no parsea', () => {
+    expect(
+      parseFsnComercial('AMPLIAR DUO [ATORVASTATIN 10 MG] [EZETIMIBA 10 MG] COMPRIMIDO (fármaco de uso clínico comercial)')
+    ).toBeUndefined();
+  });
 });
 
 describe('Composición → DCI del catálogo', () => {
@@ -34,8 +41,15 @@ describe('Composición → DCI del catálogo', () => {
 
   test('composición simple con sal y dosis', () => {
     expect(dciDeComposicion('ROSUVASTATINA (COMO ROSUVASTATINA CALCICA) 10 MG', MEDS)).toBe('rosuvastatina');
-    expect(dciDeComposicion('METFORMINA CLORHIDRATO 500 MG', MEDS)).toBeUndefined(); // la sal pegada al nombre no matchea: mejor perder una marca que mapear mal
     expect(dciDeComposicion('METFORMINA 850 MG', MEDS)).toBe('metformina');
+  });
+
+  // La sal inline es nomenclatura ANMAT habitual y no cambia la DCI. El primer
+  // reporte real lo probó: metformina quedaba con 2 marcas en vez de decenas.
+  test('la sal pegada al nombre matchea por whitelist; otro fármaco pegado NO', () => {
+    expect(dciDeComposicion('METFORMINA CLORHIDRATO 500 MG', MEDS)).toBe('metformina');
+    expect(dciDeComposicion('ROSUVASTATINA CALCICA 20 MG', MEDS)).toBe('rosuvastatina');
+    expect(dciDeComposicion('METFORMINA GLIBENCLAMIDA 500 MG', MEDS)).toBeUndefined();
   });
 
   // La variante ANMAT sin la vocal final, vista en el RF2 real.
@@ -52,6 +66,15 @@ describe('Composición → DCI del catálogo', () => {
   test('las combinaciones quedan afuera', () => {
     expect(dciDeComposicion('ATORVASTATIN (COMO ATORVASTATIN CALCICO) 40 MG + EZETIMIBA 10 MG', MEDS)).toBeUndefined();
     expect(dciDeComposicion('ROSUVASTATINA 10 MG Y EZETIMIBE 10 MG', MEDS)).toBeUndefined();
+  });
+
+  // Regla definicional aprendida del primer reporte real (los "DUO" colados):
+  // dos dosis = combinación, use el separador que use el DNM.
+  test('dos dosis en la composición = combinación, sea cual sea el separador', () => {
+    expect(dciDeComposicion('ATORVASTATINA 10 MG/EZETIMIBE 10 MG', MEDS)).toBeUndefined();
+    expect(dciDeComposicion('EZETIMIBE 10 MG ROSUVASTATINA 20 MG', MEDS)).toBeUndefined();
+    // Una sola dosis con decimales o miles sigue siendo mono.
+    expect(dciDeComposicion('ROSUVASTATINA 2,5 MG', MEDS)).toBe('rosuvastatina');
   });
 
   test('un principio ajeno al catálogo no matchea', () => {
