@@ -1,0 +1,2311 @@
+{
+  "version": "2026-08-11",
+  "fuente": "DNM (Diccionario Nacional de Medicamentos), FSN de fármacos de uso clínico comerciales de la Extensión Argentina de SNOMED CT, licencia MLDS de afiliado.",
+  "nota": "La marca BUSCA, la DCI PRESCRIBE (Ley 25.649). Las combinaciones se excluyen a propósito: no mapean a una DCI única. Regenerar con: npm run snomed-marcas -- --rf2 <dir> --aplicar",
+  "marcas": [
+    {
+      "marca": "AMPLIAR",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "363171000221107"
+    },
+    {
+      "marca": "AMPLIAR",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "363661000221105"
+    },
+    {
+      "marca": "AMPLIAR",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 40 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "113291000221106"
+    },
+    {
+      "marca": "AMPLIAR",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 80 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "415941000221108"
+    },
+    {
+      "marca": "AMPLIAR DUO",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 10 MG — COMPRIMIDO RECUBIERTO - disponible en multiempaque",
+      "conceptId": "534381000221101"
+    },
+    {
+      "marca": "AMPLIAR DUO",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 20 MG — COMPRIMIDO RECUBIERTO - disponible en multiempaque",
+      "conceptId": "534391000221103"
+    },
+    {
+      "marca": "ATARVA",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "111471000221105"
+    },
+    {
+      "marca": "ATARVA",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "111031000221101"
+    },
+    {
+      "marca": "ATEROCLAR",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "131461000221109"
+    },
+    {
+      "marca": "ATEROCLAR",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "131491000221104"
+    },
+    {
+      "marca": "ATEROCLAR",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 40 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "131511000221107"
+    },
+    {
+      "marca": "ATORMAX 10",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "205681000221108"
+    },
+    {
+      "marca": "ATORMAX 20",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "205711000221109"
+    },
+    {
+      "marca": "ATORMAX 40",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 40 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "418481000221103"
+    },
+    {
+      "marca": "ATORVASTAN",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "111861000221103"
+    },
+    {
+      "marca": "ATORVASTAN",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "111901000221107"
+    },
+    {
+      "marca": "ATORVASTATIN RICHET",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "170041000221107"
+    },
+    {
+      "marca": "ATORVASTATIN RICHET",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "140261000221100"
+    },
+    {
+      "marca": "ATORVASTATIN RICHET",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 40 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "140241000221104"
+    },
+    {
+      "marca": "ATORVASTATINA CEVALLOS",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "149321000221109"
+    },
+    {
+      "marca": "ATORVASTATINA CEVALLOS 10 MG",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "149291000221103"
+    },
+    {
+      "marca": "ATORVASTATINA FABRA",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "151841000221107"
+    },
+    {
+      "marca": "ATORVASTATINA FABRA",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "192861000221108"
+    },
+    {
+      "marca": "ATORVASTATINA ISA",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATIN (COMO ATORVASTATIN CALCICO) 10 MG — COMPRIMIDO",
+      "conceptId": "547111000221102"
+    },
+    {
+      "marca": "ATORVASTATINA ISA",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATIN (COMO ATORVASTATIN CALCICO) 20 MG — COMPRIMIDO",
+      "conceptId": "547121000221107"
+    },
+    {
+      "marca": "ATORVASTATINA NORTHIA",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "209991000221103"
+    },
+    {
+      "marca": "ATORVASTATINA NORTHIA",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "210011000221101"
+    },
+    {
+      "marca": "ATORVAX",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATIN (COMO ATORVASTATIN CALCICO) 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "470361000221109"
+    },
+    {
+      "marca": "ATORVAX",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATIN (COMO ATORVASTATIN CALCICO) 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "470371000221100"
+    },
+    {
+      "marca": "FABOXIM",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "192071000221108"
+    },
+    {
+      "marca": "FABOXIM",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "192101000221101"
+    },
+    {
+      "marca": "FINLIPOL",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "139231000221101"
+    },
+    {
+      "marca": "FINLIPOL",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "109041000221106"
+    },
+    {
+      "marca": "FINLIPOL",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 40 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "109061000221105"
+    },
+    {
+      "marca": "HIPOSTEROL",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 10 MG — COMPRIMIDO RECUBIERTO - disponible en multiempaque",
+      "conceptId": "534321000221100"
+    },
+    {
+      "marca": "HIPOSTEROL",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 20 MG — COMPRIMIDO RECUBIERTO - disponible en multiempaque",
+      "conceptId": "534331000221102"
+    },
+    {
+      "marca": "KOSPIDEL",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA (COMO ATORVASTATINA CALCICA TRIHIDRATO) 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "366291000221109"
+    },
+    {
+      "marca": "KOSPIDEL",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA (COMO ATORVASTATINA CALCICA TRIHIDRATO) 40 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "366301000221105"
+    },
+    {
+      "marca": "KOSPIDEL",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA (COMO ATORVASTATINA CÁLCICA) 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "187191000221106"
+    },
+    {
+      "marca": "LIPEND",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATIN (COMO ATORVASTATIN CALCICO) 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "366241000221103"
+    },
+    {
+      "marca": "LIPEND",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATIN (COMO ATORVASTATIN CALCICO) 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "366251000221101"
+    },
+    {
+      "marca": "LIPIBEC",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATIN (COMO ATORVASTATIN CALCICO) 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "363381000221107"
+    },
+    {
+      "marca": "LIPIBEC",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "140281000221107"
+    },
+    {
+      "marca": "LIPIBEC",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 40 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "140311000221109"
+    },
+    {
+      "marca": "LIPIFEN 10",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "193621000221105"
+    },
+    {
+      "marca": "LIPIFEN 20",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "193641000221101"
+    },
+    {
+      "marca": "LIPIFEN 40",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 40 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "185991000221104"
+    },
+    {
+      "marca": "LIPITOR",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "183791000221102"
+    },
+    {
+      "marca": "LIPITOR",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "120611000221102"
+    },
+    {
+      "marca": "LIPITOR",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 40 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "120341000221105"
+    },
+    {
+      "marca": "LIPITOR",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 80 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "194331000221104"
+    },
+    {
+      "marca": "LIPOCAMBI 10",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATIN (COMO ATORVASTATIN CALCICO) 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "363331000221106"
+    },
+    {
+      "marca": "LIPOCAMBI 20",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATIN (COMO ATORVASTATIN CALCICO) 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "363341000221104"
+    },
+    {
+      "marca": "LIPOCAMBI 40",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATIN (COMO ATORVASTATIN CALCICO) 40 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "363351000221102"
+    },
+    {
+      "marca": "LIPODREN",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "201011000221108"
+    },
+    {
+      "marca": "LIPODREN",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "201031000221100"
+    },
+    {
+      "marca": "LIPOKEMIA",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "203081000221103"
+    },
+    {
+      "marca": "LIPOKEMIA",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "203101000221108"
+    },
+    {
+      "marca": "LIPOKEMIA",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 40 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "561671000221103"
+    },
+    {
+      "marca": "LIPONORM",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "164251000221102"
+    },
+    {
+      "marca": "LIPONORM",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "117061000221102"
+    },
+    {
+      "marca": "LIPONORM",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 40 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "212321000221108"
+    },
+    {
+      "marca": "LIPONORM",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 80 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "566381000221102"
+    },
+    {
+      "marca": "LIPOSTOP",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "145001000221102"
+    },
+    {
+      "marca": "LIPOSTOP",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "145021000221109"
+    },
+    {
+      "marca": "LIPOVASTATIN KLONAL",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "176521000221109"
+    },
+    {
+      "marca": "LIPOVASTATIN KLONAL",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "176691000221105"
+    },
+    {
+      "marca": "NEXOSTATIN",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATIN CALCICO 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "366931000221104"
+    },
+    {
+      "marca": "NEXOSTATIN",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATIN CALCICO 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "366941000221106"
+    },
+    {
+      "marca": "NORMALIP",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "195391000221101"
+    },
+    {
+      "marca": "NORMALIP",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "195411000221101"
+    },
+    {
+      "marca": "NORMOLIPOL",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "95791000221105"
+    },
+    {
+      "marca": "NORMOLIPOL",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "95821000221104"
+    },
+    {
+      "marca": "NORMOLIPOL",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 40 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "95981000221109"
+    },
+    {
+      "marca": "PLAN",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "116441000221106"
+    },
+    {
+      "marca": "PLAN",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "116461000221105"
+    },
+    {
+      "marca": "PLAN DUO",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 10 MG — COMPRIMIDO RECUBIERTO - disponible en multiempaque",
+      "conceptId": "534361000221108"
+    },
+    {
+      "marca": "PLAN DUO",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 20 MG — COMPRIMIDO RECUBIERTO - disponible en multiempaque",
+      "conceptId": "534371000221104"
+    },
+    {
+      "marca": "RONATOR",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "454371000221108"
+    },
+    {
+      "marca": "RONATOR",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "454381000221106"
+    },
+    {
+      "marca": "TORIVAS 10",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATIN CALCICO 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "364291000221104"
+    },
+    {
+      "marca": "TORIVAS 20",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "124221000221101"
+    },
+    {
+      "marca": "TORIVAS 40",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 40 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "131441000221105"
+    },
+    {
+      "marca": "TORIVAS 80",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 80 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "438301000221109"
+    },
+    {
+      "marca": "VANATOR",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA (COMO ATORVASTATINA CÁLCICA) 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "143731000221108"
+    },
+    {
+      "marca": "VASTINA",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "118971000221106"
+    },
+    {
+      "marca": "VASTINA",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "118991000221107"
+    },
+    {
+      "marca": "VASTINA",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 40 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "533491000221107"
+    },
+    {
+      "marca": "ZARATOR",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "104921000221104"
+    },
+    {
+      "marca": "ZARATOR",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "174641000221107"
+    },
+    {
+      "marca": "ZARATOR",
+      "dci": "atorvastatina",
+      "presentacion": "ATORVASTATINA 40 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "104231000221107"
+    },
+    {
+      "marca": "HOLOMAGNESIO",
+      "dci": "citrato de magnesio",
+      "presentacion": "CITRATO DE MAGNESIO 530 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "98601000221103"
+    },
+    {
+      "marca": "TOTAL MAGNESIANO",
+      "dci": "citrato de magnesio",
+      "presentacion": "CITRATO DE MAGNESIO 528 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "146081000221100"
+    },
+    {
+      "marca": "CALCITOL D3",
+      "dci": "colecalciferol",
+      "presentacion": "COLECALCIFEROL 2,5 MG / 2 ML — SOLUCION ORAL, FRASCO AMPOLLA de 2 ML",
+      "conceptId": "351771000221101"
+    },
+    {
+      "marca": "CRADA",
+      "dci": "colecalciferol",
+      "presentacion": "COLECALCIFEROL 2,5 MG — CAPSULA BLANDA",
+      "conceptId": "468411000221108"
+    },
+    {
+      "marca": "CRADA",
+      "dci": "colecalciferol",
+      "presentacion": "COLECALCIFEROL 2,5 MG / 2 ML — SOLUCION ORAL, FRASCO AMPOLLA de 2 ML",
+      "conceptId": "351781000221103"
+    },
+    {
+      "marca": "DEBLAX",
+      "dci": "colecalciferol",
+      "presentacion": "COLECALCIFEROL 100000 UI — CAPSULA BLANDA",
+      "conceptId": "228131000221100"
+    },
+    {
+      "marca": "DENURIX D3",
+      "dci": "colecalciferol",
+      "presentacion": "COLECALCIFEROL ,0025 G / 2 ML — SOLUCION ORAL FRASCO AMPOLLA de 2 ML",
+      "conceptId": "532411000221105"
+    },
+    {
+      "marca": "DEVISAL",
+      "dci": "colecalciferol",
+      "presentacion": "COLECALCIFEROL 100000 UI / 2 ML — SOLUCION ORAL, FRASCO por 2 ML",
+      "conceptId": "349271000221105"
+    },
+    {
+      "marca": "GADOFEROL",
+      "dci": "colecalciferol",
+      "presentacion": "COLECALCIFEROL 2,5 MG — SOLUCION ORAL, FRASCO AMPOLLA de 2 ML",
+      "conceptId": "351791000221100"
+    },
+    {
+      "marca": "GADOFEROL CB",
+      "dci": "colecalciferol",
+      "presentacion": "COLECALCIFEROL 1,25 MG — CAPSULA BLANDA",
+      "conceptId": "418341000221101"
+    },
+    {
+      "marca": "GADOFEROL CB",
+      "dci": "colecalciferol",
+      "presentacion": "COLECALCIFEROL 2,5 MG — CAPSULA BLANDA",
+      "conceptId": "418331000221108"
+    },
+    {
+      "marca": "ORAVIL",
+      "dci": "colecalciferol",
+      "presentacion": "COLECALCIFEROL 125 MG / 100 ML — SOLUCION ORAL, FRASCO AMPOLLA de 2 ML",
+      "conceptId": "351751000221108"
+    },
+    {
+      "marca": "ORAVIL CB",
+      "dci": "colecalciferol",
+      "presentacion": "COLECALCIFEROL 100000 UI — CAPSULA BLANDA",
+      "conceptId": "229251000221105"
+    },
+    {
+      "marca": "ORAVIL GOTAS",
+      "dci": "colecalciferol",
+      "presentacion": "COLECALCIFEROL 33,333 UI / ML (1000 UI /gota) — SOLUCION ORAL FRASCO GOTERO de 6 ML",
+      "conceptId": "423731000221106"
+    },
+    {
+      "marca": "OSTEODYN",
+      "dci": "colecalciferol",
+      "presentacion": "COLECALCIFEROL (VITAMINA D3) 100000 UI — CAPSULA",
+      "conceptId": "415951000221105"
+    },
+    {
+      "marca": "OSTEODYN",
+      "dci": "colecalciferol",
+      "presentacion": "COLECALCIFEROL (VITAMINA D3) 100000 UI / 2 ML — SOLUCION ORAL FRASCO AMPOLLA de 2 ML",
+      "conceptId": "415961000221107"
+    },
+    {
+      "marca": "OXIVITAL",
+      "dci": "colecalciferol",
+      "presentacion": "COLECALCIFEROL 100000 UI/2 ml — SOLUCION ORAL FRASCO AMPOLLA de 2 ML",
+      "conceptId": "392951000221109"
+    },
+    {
+      "marca": "RAQUIFEROL D3",
+      "dci": "colecalciferol",
+      "presentacion": "COLECALCIFEROL 2,5 MG — SOLUCION ORAL, FRASCO AMPOLLA de 2 ML",
+      "conceptId": "351801000221104"
+    },
+    {
+      "marca": "RAQUIFEROL D3",
+      "dci": "colecalciferol",
+      "presentacion": "COLECALCIFEROL 25 MCG — SOLUCION ORAL (GOTAS) FRASCO GOTERO de 4 ML",
+      "conceptId": "423831000221101"
+    },
+    {
+      "marca": "RAQUIFEROL D3 CAPS",
+      "dci": "colecalciferol",
+      "presentacion": "COLECALCIFEROL 100000 UI — CAPSULA BLANDA",
+      "conceptId": "446681000221107"
+    },
+    {
+      "marca": "STEROGYL",
+      "dci": "colecalciferol",
+      "presentacion": "COLECALCIFEROL 100000 UI — SOLUCION ORAL, FRASCO por 2 ML",
+      "conceptId": "349561000221104"
+    },
+    {
+      "marca": "STEROGYL 1000",
+      "dci": "colecalciferol",
+      "presentacion": "COLECALCIFEROL 1000 UI/gota — SOLUCION ORAL FRASCO GOTERO de 4 ML",
+      "conceptId": "396081000221104"
+    },
+    {
+      "marca": "STEROGYL 400",
+      "dci": "colecalciferol",
+      "presentacion": "COLECALCIFEROL 400 UI/gota — SOLUCION ORAL FRASCO GOTERO de 10 ML",
+      "conceptId": "396091000221101"
+    },
+    {
+      "marca": "SUBICAL",
+      "dci": "colecalciferol",
+      "presentacion": "COLECALCIFEROL 100000 UI / 2 ML — SOLUCION ORAL, FRASCO por 2 ML",
+      "conceptId": "349571000221108"
+    },
+    {
+      "marca": "SUBICAL CB",
+      "dci": "colecalciferol",
+      "presentacion": "COLECALCIFEROL (VITAMINA D3) 50000 UI — CAPSULA BLANDA",
+      "conceptId": "434141000221102"
+    },
+    {
+      "marca": "SUBICAL CB",
+      "dci": "colecalciferol",
+      "presentacion": "COLECALCIFEROL 100000 UI — CAPSULA BLANDA",
+      "conceptId": "352811000221106"
+    },
+    {
+      "marca": "SUBICAL CB 25000",
+      "dci": "colecalciferol",
+      "presentacion": "COLECALCIFEROL (VITAMINA D3) 25000 UI — CAPSULA BLANDA",
+      "conceptId": "434171000221107"
+    },
+    {
+      "marca": "SUBICAL CB 5600",
+      "dci": "colecalciferol",
+      "presentacion": "COLECALCIFEROL (VITAMINA D3) 5600 UI — CAPSULA BLANDA",
+      "conceptId": "434151000221100"
+    },
+    {
+      "marca": "SUBICAL CB 800",
+      "dci": "colecalciferol",
+      "presentacion": "COLECALCIFEROL (VITAMINA D3) 800 UI — CAPSULA BLANDA",
+      "conceptId": "434161000221103"
+    },
+    {
+      "marca": "TESTRI",
+      "dci": "colecalciferol",
+      "presentacion": "COLECALCIFEROL 2,5 MG — SOLUCION ORAL, FRASCO de 2 ML",
+      "conceptId": "351811000221101"
+    },
+    {
+      "marca": "TESTRI CB",
+      "dci": "colecalciferol",
+      "presentacion": "COLECALCIFEROL 100000 UI — CAPSULA BLANDA",
+      "conceptId": "420191000221102"
+    },
+    {
+      "marca": "TRIP D3",
+      "dci": "colecalciferol",
+      "presentacion": "COLECALCIFEROL 100000 UI — CAPSULA DURA",
+      "conceptId": "228111000221108"
+    },
+    {
+      "marca": "VITERGIN",
+      "dci": "colecalciferol",
+      "presentacion": "COLECALCIFEROL 100000 UI — SOLUCION ORAL, FRASCO por 2 ML",
+      "conceptId": "349701000221108"
+    },
+    {
+      "marca": "ALIN",
+      "dci": "ezetimibe",
+      "presentacion": "EZETIMIBA 10 MG — COMPRIMIDO",
+      "conceptId": "211591000221107"
+    },
+    {
+      "marca": "ALIPAS",
+      "dci": "ezetimibe",
+      "presentacion": "EZETIMIBA 10 MG — COMPRIMIDO",
+      "conceptId": "141621000221104"
+    },
+    {
+      "marca": "AMPLIAR DUO",
+      "dci": "ezetimibe",
+      "presentacion": "EZETIMIBA 10 MG — COMPRIMIDO - disponible en multiempaque",
+      "conceptId": "534351000221106"
+    },
+    {
+      "marca": "ARTOMEY DUO",
+      "dci": "ezetimibe",
+      "presentacion": "EZETIMIBA 10 MG — COMPRIMIDO RECUBIERTO - disponible en multiempaque",
+      "conceptId": "460151000221101"
+    },
+    {
+      "marca": "CERCLEROL",
+      "dci": "ezetimibe",
+      "presentacion": "EZETIMIBA 10 MG — COMPRIMIDO",
+      "conceptId": "157021000221104"
+    },
+    {
+      "marca": "CORACIL",
+      "dci": "ezetimibe",
+      "presentacion": "EZETIMIBA 10 MG — COMPRIMIDO",
+      "conceptId": "127541000221103"
+    },
+    {
+      "marca": "CRAVERIL DUO",
+      "dci": "ezetimibe",
+      "presentacion": "EZETIMIBA 10 MG — COMPRIMIDO - disponible en multiempaque",
+      "conceptId": "534431000221106"
+    },
+    {
+      "marca": "EZETIMIBE CRAVERI",
+      "dci": "ezetimibe",
+      "presentacion": "EZETIMIBA 10 MG — COMPRIMIDO",
+      "conceptId": "147171000221104"
+    },
+    {
+      "marca": "EZETROL",
+      "dci": "ezetimibe",
+      "presentacion": "EZETIMIBA 10 MG — COMPRIMIDO",
+      "conceptId": "157071000221103"
+    },
+    {
+      "marca": "IXACOR",
+      "dci": "ezetimibe",
+      "presentacion": "EZETIMIBA 10 MG — COMPRIMIDO",
+      "conceptId": "126781000221100"
+    },
+    {
+      "marca": "LIPOGLUTAREN DUO",
+      "dci": "ezetimibe",
+      "presentacion": "EZETIMIBA 10 MG — COMPRIMIDO - disponible en multiempaque",
+      "conceptId": "534441000221104"
+    },
+    {
+      "marca": "MINUSLIP DUO",
+      "dci": "ezetimibe",
+      "presentacion": "EZETIMIBA 10 MG — COMPRIMIDO - en presentación multiempaque",
+      "conceptId": "466621000221101"
+    },
+    {
+      "marca": "NALECOL",
+      "dci": "ezetimibe",
+      "presentacion": "EZETIMIBA 10 MG — COMPRIMIDO",
+      "conceptId": "160811000221108"
+    },
+    {
+      "marca": "PLAN DUO",
+      "dci": "ezetimibe",
+      "presentacion": "EZETIMIBA 10 MG — COMPRIMIDO - disponible en multiempaque",
+      "conceptId": "534341000221109"
+    },
+    {
+      "marca": "SINLIP EZ",
+      "dci": "ezetimibe",
+      "presentacion": "EZETIMIBA 10 MG — COMPRIMIDO - disponible en multiempaque",
+      "conceptId": "390591000221107"
+    },
+    {
+      "marca": "SINTEROL",
+      "dci": "ezetimibe",
+      "presentacion": "EZETIMIBA 10 MG — COMPRIMIDO",
+      "conceptId": "140091000221100"
+    },
+    {
+      "marca": "TRILIP",
+      "dci": "ezetimibe",
+      "presentacion": "EZETIMIBA 10 MG — COMPRIMIDO",
+      "conceptId": "131981000221109"
+    },
+    {
+      "marca": "VADEL",
+      "dci": "ezetimibe",
+      "presentacion": "EZETIMIBA 10 MG — COMPRIMIDO",
+      "conceptId": "143161000221101"
+    },
+    {
+      "marca": "ZETIA",
+      "dci": "ezetimibe",
+      "presentacion": "EZETIMIBA 10 MG — COMPRIMIDO",
+      "conceptId": "157051000221105"
+    },
+    {
+      "marca": "SAXENDA",
+      "dci": "liraglutida",
+      "presentacion": "LIRAGLUTIDA 6 MG / ML — SOLUCION INYECTABLE LAPICERA PRELLENADA de 3 ML",
+      "conceptId": "447281000221107"
+    },
+    {
+      "marca": "VICTOZA",
+      "dci": "liraglutida",
+      "presentacion": "LIRAGLUTIDA 6 MG / ML — SOLUCION INYECTABLE LAPICERA PRELLENADA de 3 ML",
+      "conceptId": "447291000221105"
+    },
+    {
+      "marca": "BALIGLUC 500",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "165551000221101"
+    },
+    {
+      "marca": "BALIGLUC AP 1000",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 1000 MG — COMPRIMIDO RECUBIERTO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "165831000221108"
+    },
+    {
+      "marca": "BALIGLUC AP 500",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO RECUBIERTO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "196301000221102"
+    },
+    {
+      "marca": "BALIGLUC AP 850",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 850 MG — COMPRIMIDO RECUBIERTO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "165581000221106"
+    },
+    {
+      "marca": "BIGLUCEM",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO RECUBIERTO ORAL",
+      "conceptId": "870171000221105"
+    },
+    {
+      "marca": "BIGLUCEM AP",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 1000 MG — COMPRIMIDO RECUBIERTO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "470461000221101"
+    },
+    {
+      "marca": "BIGLUCEM AP",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO RECUBIERTO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "470451000221103"
+    },
+    {
+      "marca": "BIGLUCEM AP",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 850 MG — COMPRIMIDO RECUBIERTO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "470441000221100"
+    },
+    {
+      "marca": "D.B.I. AP 500 METFORMINA",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO RECUBIERTO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "156221000221108"
+    },
+    {
+      "marca": "D.B.I. AP FORTE",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 1000 MG — COMPRIMIDO RECUBIERTO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "156301000221106"
+    },
+    {
+      "marca": "D.B.I. METFORMINA",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "119391000221100"
+    },
+    {
+      "marca": "DAZOMET",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 1000 MG — COMPRIMIDO RECUBIERTO DE ACCION PROLONGADA",
+      "conceptId": "181131000221103"
+    },
+    {
+      "marca": "DAZOMET",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO",
+      "conceptId": "230121000221102"
+    },
+    {
+      "marca": "DAZOMET",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO RECUBIERTO DE ACCION PROLONGADA",
+      "conceptId": "181151000221107"
+    },
+    {
+      "marca": "DAZOMET",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 850 MG — COMPRIMIDO",
+      "conceptId": "230141000221106"
+    },
+    {
+      "marca": "DAZOMET",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 850 MG — COMPRIMIDO RECUBIERTO DE ACCION PROLONGADA",
+      "conceptId": "180271000221100"
+    },
+    {
+      "marca": "DAZOMET AP",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 1000 MG — COMPRIMIDO RECUBIERTO DE ACCION PROLONGADA",
+      "conceptId": "230101000221109"
+    },
+    {
+      "marca": "DAZOMET AP",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO RECUBIERTO DE ACCION PROLONGADA",
+      "conceptId": "230061000221106"
+    },
+    {
+      "marca": "DAZOMET AP",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 850 MG — COMPRIMIDO RECUBIERTO DE ACCION PROLONGADA",
+      "conceptId": "230081000221104"
+    },
+    {
+      "marca": "DAZOMET LI",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO",
+      "conceptId": "118951000221104"
+    },
+    {
+      "marca": "DAZOMET LI",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 850 MG — COMPRIMIDO",
+      "conceptId": "119191000221102"
+    },
+    {
+      "marca": "DBI AP METFORMINA",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 850 MG — COMPRIMIDO RECUBIERTO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "134201000221105"
+    },
+    {
+      "marca": "DIAB DOS",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 1000 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "148541000221100"
+    },
+    {
+      "marca": "DIAB DOS",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "148491000221107"
+    },
+    {
+      "marca": "DIAB DOS",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 850 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "148591000221106"
+    },
+    {
+      "marca": "DIABESIL",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "144771000221108"
+    },
+    {
+      "marca": "DIABESIL AP",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 1000 MG — COMPRIMIDO RECUBIERTO DE LIBERACION MODIFICADA",
+      "conceptId": "179111000221103"
+    },
+    {
+      "marca": "DIABESIL AP",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO RECUBIERTO DE LIBERACION MODIFICADA",
+      "conceptId": "221561000221105"
+    },
+    {
+      "marca": "DIABESIL AP",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 850 MG — COMPRIMIDO RECUBIERTO DE LIBERACION MODIFICADA",
+      "conceptId": "341631000221108"
+    },
+    {
+      "marca": "DUBURINA 500 MG",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "167631000221100"
+    },
+    {
+      "marca": "DUBURINA AP 850",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 850 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "116731000221107"
+    },
+    {
+      "marca": "GLUCAMINOL FORTE",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 850 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "138271000221106"
+    },
+    {
+      "marca": "GLUCOGOOD",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 1000 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "145571000221104"
+    },
+    {
+      "marca": "GLUCOGOOD",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 850 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "145591000221103"
+    },
+    {
+      "marca": "GLUCOPHAGE",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 1000 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "135031000221106"
+    },
+    {
+      "marca": "GLUCOPHAGE",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "134951000221102"
+    },
+    {
+      "marca": "GLUCOPHAGE",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 850 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "134991000221105"
+    },
+    {
+      "marca": "GLUCOPHAGE XR",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 1000 MG — COMPRIMIDO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "164181000221102"
+    },
+    {
+      "marca": "GLUCOPHAGE XR",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "164511000221101"
+    },
+    {
+      "marca": "GLUCOPHAGE XR",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 750 MG — COMPRIMIDO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "164141000221105"
+    },
+    {
+      "marca": "GLUMET",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 1000 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "342141000221103"
+    },
+    {
+      "marca": "GLUMET",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "561501000221105"
+    },
+    {
+      "marca": "GLUMET",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 850 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "342151000221101"
+    },
+    {
+      "marca": "GLUMET AP",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 850 MG — COMPRIMIDO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "562631000221109"
+    },
+    {
+      "marca": "IMECOT",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "436531000221106"
+    },
+    {
+      "marca": "IMECOT AP",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO RECUBIERTO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "436551000221102"
+    },
+    {
+      "marca": "IMECOT AP",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 850 MG — COMPRIMIDO RECUBIERTO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "436541000221104"
+    },
+    {
+      "marca": "IMECOT AP FORTE",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 1000 MG — COMPRIMIDO RECUBIERTO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "436561000221100"
+    },
+    {
+      "marca": "ISLOTIN",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "179151000221102"
+    },
+    {
+      "marca": "ISLOTIN 1000",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 1000 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "179181000221107"
+    },
+    {
+      "marca": "ISLOTIN XR",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO RECUBIERTO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "175871000221102"
+    },
+    {
+      "marca": "ISLOTIN XR 1000",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 1000 MG — COMPRIMIDO RECUBIERTO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "198541000221105"
+    },
+    {
+      "marca": "ISLOTIN XR 750",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 750 MG — COMPRIMIDO RECUBIERTO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "146021000221104"
+    },
+    {
+      "marca": "MECTIN XR",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 1000 MG — COMPRIMIDO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "211251000221101"
+    },
+    {
+      "marca": "MECTIN XR",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "95901000221103"
+    },
+    {
+      "marca": "MECTIN XR",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 850 MG — COMPRIMIDO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "211221000221107"
+    },
+    {
+      "marca": "MEDOBIS",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 1000 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "161121000221104"
+    },
+    {
+      "marca": "MEDOBIS",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "161091000221103"
+    },
+    {
+      "marca": "MEDOBIS",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 850 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "161141000221108"
+    },
+    {
+      "marca": "MEDOBIS AP",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 1000 MG — COMPRIMIDO RECUBIERTO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "162981000221107"
+    },
+    {
+      "marca": "MEDOBIS AP",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 850 MG — COMPRIMIDO RECUBIERTO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "162951000221102"
+    },
+    {
+      "marca": "MELGIB",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 850 MG — COMPRIMIDO RECUBIERTO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "148941000221105"
+    },
+    {
+      "marca": "METFORMIN TEMIS",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO",
+      "conceptId": "104041000221107"
+    },
+    {
+      "marca": "METFORMIN TEMIS 1 G",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 1000 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "176571000221105"
+    },
+    {
+      "marca": "METFORMIN TEMIS 850",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 850 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "140611000221100"
+    },
+    {
+      "marca": "METFORMINA IRAOLA",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "204321000221102"
+    },
+    {
+      "marca": "METFORMINA IRAOLA",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 850 MG — COMPRIMIDO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "204371000221101"
+    },
+    {
+      "marca": "METFORMINA LIF",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO",
+      "conceptId": "212371000221109"
+    },
+    {
+      "marca": "METFORMINA ROSPAW",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "471171000221106"
+    },
+    {
+      "marca": "METFORMINA ROSPAW AP",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 850 MG — COMPRIMIDO RECUBIERTO DE LIBERACION MODIFICADA",
+      "conceptId": "471181000221109"
+    },
+    {
+      "marca": "METFORMINA SANDOZ",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "342231000221102"
+    },
+    {
+      "marca": "METFORMINA SANDOZ",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 850 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "342241000221109"
+    },
+    {
+      "marca": "METFORMINA TAURO",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "139661000221105"
+    },
+    {
+      "marca": "METFORMINA TAURO AP",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 850 MG — COMPRIMIDO RECUBIERTO DE LIBERACION MODIFICADA",
+      "conceptId": "148851000221101"
+    },
+    {
+      "marca": "METFORMINA TECHSPHERE",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "164761000221108"
+    },
+    {
+      "marca": "METFORMINA TECHSPHERE RETARD",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 850 MG — COMPRIMIDO DE LIBERACION CONTROLADA",
+      "conceptId": "341641000221101"
+    },
+    {
+      "marca": "METFORMINA VANNIER 500 mg",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "147101000221107"
+    },
+    {
+      "marca": "METGLUCON 1000 AP",
+      "dci": "metformina",
+      "presentacion": "METFORMINA 1000 MG — COMPRIMIDO RECUBIERTO DE ACCION PROLONGADA",
+      "conceptId": "197781000221105"
+    },
+    {
+      "marca": "METGLUCON 500",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "135401000221105"
+    },
+    {
+      "marca": "METGLUCON 500 AP",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO RECUBIERTO DE ACCION PROLONGADA",
+      "conceptId": "193741000221109"
+    },
+    {
+      "marca": "METGLUCON 850 AP",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 850 MG — COMPRIMIDO RECUBIERTO DE ACCION PROLONGADA",
+      "conceptId": "197271000221102"
+    },
+    {
+      "marca": "MTF AP",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 850 MG — COMPRIMIDO RECUBIERTO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "563161000221101"
+    },
+    {
+      "marca": "N14 METFORMINA",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 1000 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "563191000221106"
+    },
+    {
+      "marca": "N14 METFORMINA",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "563181000221108"
+    },
+    {
+      "marca": "N14 METFORMINA",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 850 MG — COMPRIMIDO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "563171000221105"
+    },
+    {
+      "marca": "NOGLUC 500",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "234161000221104"
+    },
+    {
+      "marca": "NOGLUC AP 1000",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 1000 MG — COMPRIMIDO RECUBIERTO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "234221000221100"
+    },
+    {
+      "marca": "NOGLUC AP 850",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 850 MG — COMPRIMIDO RECUBIERTO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "234191000221109"
+    },
+    {
+      "marca": "PROGEN MET AP CONTROL",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 850 MG — COMPRIMIDO RETARD",
+      "conceptId": "553291000221109"
+    },
+    {
+      "marca": "PROGEN MET CONTROL",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "553321000221103"
+    },
+    {
+      "marca": "QUEXEL SR",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 1000 MG — COMPRIMIDO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "185331000221104"
+    },
+    {
+      "marca": "QUEXEL SR",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "185281000221105"
+    },
+    {
+      "marca": "QUEXEL SR",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 850 MG — COMPRIMIDO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "185311000221107"
+    },
+    {
+      "marca": "REDUGLUC",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "133521000221103"
+    },
+    {
+      "marca": "REDUGLUC 1000",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 1000 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "342301000221102"
+    },
+    {
+      "marca": "REDUGLUC AP",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 850 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "186911000221104"
+    },
+    {
+      "marca": "REDUGLUC AP FORTE",
+      "dci": "metformina",
+      "presentacion": "METFORMINA 1000 MG — COMPRIMIDO RECUBIERTO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "436951000221106"
+    },
+    {
+      "marca": "XARDIAB AP",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 1000 MG — COMPRIMIDO RECUBIERTO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "564181000221105"
+    },
+    {
+      "marca": "XARDIAB AP",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 500 MG — COMPRIMIDO RECUBIERTO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "564171000221107"
+    },
+    {
+      "marca": "XARDIAB AP",
+      "dci": "metformina",
+      "presentacion": "METFORMINA CLORHIDRATO 850 MG — COMPRIMIDO RECUBIERTO DE LIBERACIÓN PROLONGADA",
+      "conceptId": "564161000221103"
+    },
+    {
+      "marca": "APRENTICE",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "434121000221106"
+    },
+    {
+      "marca": "APRENTICE",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 40 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "367721000221101"
+    },
+    {
+      "marca": "ARTOMEY",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "128031000221104"
+    },
+    {
+      "marca": "ARTOMEY",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "128441000221103"
+    },
+    {
+      "marca": "ARTOMEY",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 40 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "215641000221103"
+    },
+    {
+      "marca": "ARTOMEY",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 5 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "98371000221103"
+    },
+    {
+      "marca": "ARTOMEY DUO",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 10 MG — COMPRIMIDO RECUBIERTO - disponible en multiempaque",
+      "conceptId": "460131000221105"
+    },
+    {
+      "marca": "ARTOMEY DUO",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 20 MG — COMPRIMIDO RECUBIERTO - disponible en multiempaque",
+      "conceptId": "460121000221107"
+    },
+    {
+      "marca": "ARTOMEY DUO",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 5 MG — COMPRIMIDO RECUBIERTO - disponible en multiempaque",
+      "conceptId": "460141000221103"
+    },
+    {
+      "marca": "ASTENDE",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "139111000221101"
+    },
+    {
+      "marca": "ASTENDE",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "139911000221104"
+    },
+    {
+      "marca": "ASTENDE",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 40 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "434321000221108"
+    },
+    {
+      "marca": "ASTENDE",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 5 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "142271000221105"
+    },
+    {
+      "marca": "ATERONOVA 10 MG",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "100071000221107"
+    },
+    {
+      "marca": "ATERONOVA 20 MG",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "100561000221105"
+    },
+    {
+      "marca": "ATERONOVA 5 MG",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 5 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "181171000221100"
+    },
+    {
+      "marca": "BILIP",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "145881000221103"
+    },
+    {
+      "marca": "BILIP",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "145901000221101"
+    },
+    {
+      "marca": "BILIP",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 40 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "462001000221103"
+    },
+    {
+      "marca": "COLESTRAX",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "218281000221103"
+    },
+    {
+      "marca": "CRESTOR",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "123951000221103"
+    },
+    {
+      "marca": "CRESTOR",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "123971000221105"
+    },
+    {
+      "marca": "CRESTOR",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 40 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "157801000221104"
+    },
+    {
+      "marca": "CRESTOR",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 5 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "123931000221107"
+    },
+    {
+      "marca": "HIPOLIPOL",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "171861000221109"
+    },
+    {
+      "marca": "HIPOLIPOL",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "171891000221104"
+    },
+    {
+      "marca": "HIPOLIPOL",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 40 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "351471000221105"
+    },
+    {
+      "marca": "HIPOLIPOL",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 5 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "171831000221103"
+    },
+    {
+      "marca": "LIPEX",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "184251000221104"
+    },
+    {
+      "marca": "LIPEX",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "184281000221109"
+    },
+    {
+      "marca": "LIPEX",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 40 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "184311000221106"
+    },
+    {
+      "marca": "LIPEX",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 5 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "184221000221105"
+    },
+    {
+      "marca": "LIPOGLUTAREN 10",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA CALCICA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "190641000221109"
+    },
+    {
+      "marca": "LIPOGLUTAREN 20",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA CALCICA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "192511000221108"
+    },
+    {
+      "marca": "LIPOGLUTAREN 5",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA CALCICA 5 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "188361000221104"
+    },
+    {
+      "marca": "LIPOGLUTAREN DUO",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA CALCICA 10 MG — COMPRIMIDO RECUBIERTO - disponible en multiempaque",
+      "conceptId": "534411000221103"
+    },
+    {
+      "marca": "LIPOGLUTAREN DUO",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA CALCICA 20 MG — COMPRIMIDO RECUBIERTO - disponible en multiempaque",
+      "conceptId": "534421000221108"
+    },
+    {
+      "marca": "MESOTEROL",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA CALCICA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "154111000221104"
+    },
+    {
+      "marca": "MESOTEROL",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA CALCICA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "177131000221103"
+    },
+    {
+      "marca": "MESOTEROL",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA CALCICA 5 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "148261000221103"
+    },
+    {
+      "marca": "NODIS",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "143481000221104"
+    },
+    {
+      "marca": "NODIS",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "143531000221101"
+    },
+    {
+      "marca": "NODIS",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 40 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "143511000221109"
+    },
+    {
+      "marca": "NODIS",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 5 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "96571000221106"
+    },
+    {
+      "marca": "NONLIPID",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "182951000221104"
+    },
+    {
+      "marca": "NONLIPID",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "367691000221108"
+    },
+    {
+      "marca": "PARASUL 10",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA (COMO ROSUVASTATINA CALCICA) 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "438061000221108"
+    },
+    {
+      "marca": "PARASUL 20",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA (COMO ROSUVASTATINA CALCICA) 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "438071000221104"
+    },
+    {
+      "marca": "PARASUL 5",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA (COMO ROSUVASTATINA CALCICA) 5 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "438081000221101"
+    },
+    {
+      "marca": "RABLOC",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA (COMO ROSUVASTATINA CALCICA) 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "172291000221107"
+    },
+    {
+      "marca": "RABLOC",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA (COMO ROSUVASTATINA CALCICA) 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "172311000221106"
+    },
+    {
+      "marca": "REOVEX 10",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA ( COMO ROSUVASTATINA CALCICA) 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "183351000221109"
+    },
+    {
+      "marca": "REOVEX 20",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA ( COMO ROSUVASTATINA CALCICA) 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "182881000221100"
+    },
+    {
+      "marca": "REOVEX 40",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 40 MG — COMPRIMIDO RECUBIERTO RANURADO",
+      "conceptId": "367901000221106"
+    },
+    {
+      "marca": "REOVEX 5",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA ( COMO ROSUVASTATINA CALCICA) 5 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "201481000221107"
+    },
+    {
+      "marca": "ROSTAN",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "229281000221100"
+    },
+    {
+      "marca": "ROSTAN",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "229321000221108"
+    },
+    {
+      "marca": "ROSTAN",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 5 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "229301000221101"
+    },
+    {
+      "marca": "ROSUBER 10",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA (COMO ROSUVASTATINA CALCICA) 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "365311000221104"
+    },
+    {
+      "marca": "ROSUBER 20",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA (COMO ROSUVASTATINA CALCICA) 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "365491000221104"
+    },
+    {
+      "marca": "ROSUBER 40",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA (COMO ROSUVASTATINA CALCICA) 40 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "365501000221109"
+    },
+    {
+      "marca": "ROSUBER 5",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA (COMO ROSUVASTATINA CALCICA) 5 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "365261000221108"
+    },
+    {
+      "marca": "ROSUCOL",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA (COMO ROSUVASTATINA CALCICA) 40 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "366881000221107"
+    },
+    {
+      "marca": "ROSUCOL",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "203411000221102"
+    },
+    {
+      "marca": "ROSUCOL",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "202081000221106"
+    },
+    {
+      "marca": "ROSUCOL",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 5 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "422501000221103"
+    },
+    {
+      "marca": "ROSUFEC 10",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "368311000221109"
+    },
+    {
+      "marca": "ROSUFEC 20",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "368301000221106"
+    },
+    {
+      "marca": "ROSUFEC 40",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 40 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "461771000221103"
+    },
+    {
+      "marca": "ROSUFEN",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "145391000221109"
+    },
+    {
+      "marca": "ROSUFEN",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "145431000221101"
+    },
+    {
+      "marca": "ROSUFEN",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 40 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "145411000221109"
+    },
+    {
+      "marca": "ROSUFEN",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 5 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "229041000221101"
+    },
+    {
+      "marca": "ROSULIP",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA (COMO ROSUVASTATINA CALCICA) 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "172651000221101"
+    },
+    {
+      "marca": "ROSULIP",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA (COMO ROSUVASTATINA CALCICA) 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "186321000221108"
+    },
+    {
+      "marca": "ROSUSTATIN 10",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "165011000221108"
+    },
+    {
+      "marca": "ROSUSTATIN 20",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "165031000221100"
+    },
+    {
+      "marca": "ROSUSTATIN 5",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 5 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "164991000221101"
+    },
+    {
+      "marca": "ROSUVAST 10",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA CALCICA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "158861000221102"
+    },
+    {
+      "marca": "ROSUVAST 20",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA CALCICA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "158901000221106"
+    },
+    {
+      "marca": "ROSUVAST 40",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA CALCICA 40 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "159161000221102"
+    },
+    {
+      "marca": "ROSUVAST 5",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA CALCICA 5 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "158841000221101"
+    },
+    {
+      "marca": "ROSUVASTATINA PFIZER",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "368651000221104"
+    },
+    {
+      "marca": "ROSUVASTATINA PFIZER",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "368631000221108"
+    },
+    {
+      "marca": "ROSUVASTATINA PFIZER",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 5 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "368641000221101"
+    },
+    {
+      "marca": "ROSUVASTATINA RICHET",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "144981000221108"
+    },
+    {
+      "marca": "ROSUVASTATINA RICHET",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "145351000221101"
+    },
+    {
+      "marca": "ROSUVASTATINA RICHET",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 40 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "145331000221105"
+    },
+    {
+      "marca": "ROSUVASTATINA ROSUX",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 40 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "533231000221109"
+    },
+    {
+      "marca": "ROSUVASTATINA VANNIER",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "471561000221108"
+    },
+    {
+      "marca": "ROSUVASTATINA VANNIER",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "471571000221104"
+    },
+    {
+      "marca": "ROSUVASTATINA VANNIER",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 40 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "566661000221104"
+    },
+    {
+      "marca": "ROSUX",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "221351000221103"
+    },
+    {
+      "marca": "ROSUX",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "221371000221105"
+    },
+    {
+      "marca": "ROSUX",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 5 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "221311000221104"
+    },
+    {
+      "marca": "ROVARTAL 10",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "93601000221109"
+    },
+    {
+      "marca": "ROVARTAL 20",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "93631000221104"
+    },
+    {
+      "marca": "ROVARTAL 40",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA ( COMO ROSUVASTATINA CALCICA) 40 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "93571000221100"
+    },
+    {
+      "marca": "ROVARTAL 5",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 5 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "94581000221104"
+    },
+    {
+      "marca": "ROVASTANE",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 10 MG (ROSUVASTATINA CALCICA 10,4 MG) — COMPRIMIDO RECUBIERTO",
+      "conceptId": "217491000221100"
+    },
+    {
+      "marca": "ROVASTANE",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 20 MG (ROSUVASTATINA CALCICA 20,8 MG) — COMPRIMIDO RECUBIERTO",
+      "conceptId": "218311000221101"
+    },
+    {
+      "marca": "ROVESTOR",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "437111000221105"
+    },
+    {
+      "marca": "ROVESTOR",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "437121000221100"
+    },
+    {
+      "marca": "ROXOLAN 10",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA (COMO ROSUVASTATINA CALCICA) 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "188421000221104"
+    },
+    {
+      "marca": "ROXOLAN 20",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA (COMO ROSUVASTATINA CALCICA) 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "188441000221108"
+    },
+    {
+      "marca": "ROXOLAN 40",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA (COMO ROSUVASTATINA CALCICA) 40 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "188461000221107"
+    },
+    {
+      "marca": "ROXOLAN 5",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA (COMO ROSUVASTATINA CALCICA) 5 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "188401000221106"
+    },
+    {
+      "marca": "SINLIP 10 MG",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA (COMO ROSUVASTATINA CALCICA) 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "132001000221109"
+    },
+    {
+      "marca": "SINLIP 20 MG",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA (COMO ROSUVASTATINA CALCICA) 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "132051000221108"
+    },
+    {
+      "marca": "SINLIP 40 MG",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA (COMO ROSUVASTATINA CALCICA) 40 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "132031000221104"
+    },
+    {
+      "marca": "SINLIP 5 MG",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA (COMO ROSUVASTATINA CALCICA) 5 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "137071000221104"
+    },
+    {
+      "marca": "SINLIP EZ",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA (COMO ROSUVASTATINA CALCICA) 10 MG — COMPRIMIDO RECUBIERTO - disponible en multiempaque",
+      "conceptId": "390581000221109"
+    },
+    {
+      "marca": "TETRASTATIN",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "366751000221105"
+    },
+    {
+      "marca": "TIALIPOL 10",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "436101000221105"
+    },
+    {
+      "marca": "TIALIPOL 20",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "436111000221108"
+    },
+    {
+      "marca": "TURBULINA 10",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 10 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "95081000221105"
+    },
+    {
+      "marca": "TURBULINA 20",
+      "dci": "rosuvastatina",
+      "presentacion": "ROSUVASTATINA 20 MG — COMPRIMIDO RECUBIERTO",
+      "conceptId": "224031000221107"
+    },
+    {
+      "marca": "DUTIDE 14",
+      "dci": "semaglutida",
+      "presentacion": "SEMAGLUTIDA 14 MG — COMPRIMIDO",
+      "conceptId": "547621000221103"
+    },
+    {
+      "marca": "DUTIDE 3",
+      "dci": "semaglutida",
+      "presentacion": "SEMAGLUTIDA 3 MG — COMPRIMIDO",
+      "conceptId": "547631000221100"
+    },
+    {
+      "marca": "DUTIDE 7",
+      "dci": "semaglutida",
+      "presentacion": "SEMAGLUTIDA 7 MG — COMPRIMIDO",
+      "conceptId": "547641000221107"
+    },
+    {
+      "marca": "DUTIDE INYECTABLE",
+      "dci": "semaglutida",
+      "presentacion": "SEMAGLUTIDA ,25 MG / DOSIS — SOLUCION INYECTABLE JERINGA PRELLENADA de 0.2 ML",
+      "conceptId": "566941000221109"
+    },
+    {
+      "marca": "DUTIDE INYECTABLE",
+      "dci": "semaglutida",
+      "presentacion": "SEMAGLUTIDA ,5 MG / DOSIS — SOLUCION INYECTABLE JERINGA PRELLENADA de 0.4 ML",
+      "conceptId": "566951000221106"
+    },
+    {
+      "marca": "DUTIDE INYECTABLE",
+      "dci": "semaglutida",
+      "presentacion": "SEMAGLUTIDA 1 MG / DOSIS — SOLUCION INYECTABLE JERINGA PRELLENADA de 0.8 ML",
+      "conceptId": "566961000221108"
+    },
+    {
+      "marca": "OBETIDE",
+      "dci": "semaglutida",
+      "presentacion": "SEMAGLUTIDA 0,25 MG / DOSIS — SOLUCION INYECTABLE JERINGA PRELLENADA de 0.2 ML",
+      "conceptId": "579621000221108"
+    },
+    {
+      "marca": "OBETIDE",
+      "dci": "semaglutida",
+      "presentacion": "SEMAGLUTIDA 0,5 MG / DOSIS — SOLUCION INYECTABLE JERINGA PRELLENADA de 0.4 ML",
+      "conceptId": "579561000221101"
+    },
+    {
+      "marca": "OBETIDE",
+      "dci": "semaglutida",
+      "presentacion": "SEMAGLUTIDA 1 MG / DOSIS — SOLUCION INYECTABLE JERINGA PRELLENADA de 0.8 ML",
+      "conceptId": "579531000221107"
+    },
+    {
+      "marca": "OBETIDE",
+      "dci": "semaglutida",
+      "presentacion": "SEMAGLUTIDA 1,7 MG / DOSIS — SOLUCION INYECTABLE JERINGA PRELLENADA de 0.53 ML",
+      "conceptId": "579571000221105"
+    },
+    {
+      "marca": "OBETIDE",
+      "dci": "semaglutida",
+      "presentacion": "SEMAGLUTIDA 2,4 MG / DOSIS — SOLUCION INYECTABLE JERINGA PRELLENADA de 0.75 ML",
+      "conceptId": "579581000221108"
+    },
+    {
+      "marca": "OZEMPIC",
+      "dci": "semaglutida",
+      "presentacion": "SEMAGLUTIDA 1,34 MG / 1 ML (0,25 o 0,5 mg/dosis) — SOLUCION INYECTABLE LAPICERA PRELLENADA de 1,5 ML",
+      "conceptId": "386111000221108"
+    },
+    {
+      "marca": "OZEMPIC",
+      "dci": "semaglutida",
+      "presentacion": "SEMAGLUTIDA 1,34 MG / 1 ML (1 mg/dosis) — SOLUCION INYECTABLE LAPICERA PRELLENADA de 3 ML",
+      "conceptId": "386101000221105"
+    },
+    {
+      "marca": "WEGOVY",
+      "dci": "semaglutida",
+      "presentacion": "SEMAGLUTIDA 0,25 MG / DOSIS — SOLUCION INYECTABLE LAPICERA PRELLENADA de 1.5 ML",
+      "conceptId": "579551000221103"
+    },
+    {
+      "marca": "WEGOVY",
+      "dci": "semaglutida",
+      "presentacion": "SEMAGLUTIDA 0,5 MG / DOSIS — SOLUCION INYECTABLE LAPICERA PRELLENADA de 1.5 ML",
+      "conceptId": "579591000221106"
+    },
+    {
+      "marca": "WEGOVY",
+      "dci": "semaglutida",
+      "presentacion": "SEMAGLUTIDA 1 MG / DOSIS — SOLUCION INYECTABLE LAPICERA PRELLENADA de 3 ML",
+      "conceptId": "579541000221100"
+    },
+    {
+      "marca": "WEGOVY",
+      "dci": "semaglutida",
+      "presentacion": "SEMAGLUTIDA 1,7 MG / DOSIS — SOLUCION INYECTABLE LAPICERA PRELLENADA de 3 ML",
+      "conceptId": "579601000221101"
+    },
+    {
+      "marca": "WEGOVY",
+      "dci": "semaglutida",
+      "presentacion": "SEMAGLUTIDA 2,4 MG / DOSIS — SOLUCION INYECTABLE LAPICERA PRELLENADA de 3 ML",
+      "conceptId": "579611000221103"
+    },
+    {
+      "marca": "MOUNJARO KWIKPEN",
+      "dci": "tirzepatida",
+      "presentacion": "TIRZEPATIDA 10 MG / 0,6 ML — SOLUCION INYECTABLE INYECTOR PRELLENADO MULTIDOSIS DESCARTABLE de 2,4 ML",
+      "conceptId": "871401000221101"
+    },
+    {
+      "marca": "MOUNJARO KWIKPEN",
+      "dci": "tirzepatida",
+      "presentacion": "TIRZEPATIDA 2,5 MG / 0.6 ML — SOLUCION INYECTABLE INYECTOR PRELLENADO MULTIDOSIS DESCARTABLE de 2.4 ML",
+      "conceptId": "579511000221104"
+    },
+    {
+      "marca": "MOUNJARO KWIKPEN",
+      "dci": "tirzepatida",
+      "presentacion": "TIRZEPATIDA 5 MG / 0.6 ML — SOLUCION INYECTABLE INYECTOR PRELLENADO MULTIDOSIS DESCARTABLE de 2.4 ML",
+      "conceptId": "579521000221109"
+    },
+    {
+      "marca": "MOUNJARO KWIKPEN",
+      "dci": "tirzepatida",
+      "presentacion": "TIRZEPATIDA 7,5 MG / 0.6 ML — SOLUCION INYECTABLE INYECTOR PRELLENADO MULTIDOSIS DESCARTABLE de 2,4 ML",
+      "conceptId": "871391000221103"
+    }
+  ]
+}
