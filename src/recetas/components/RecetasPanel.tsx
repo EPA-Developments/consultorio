@@ -18,6 +18,7 @@ import {
   TextInput,
   Title,
 } from '@mantine/core';
+import type { OptionsFilter } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import type { MedicationRequest, Patient, Practitioner } from '@medplum/fhirtypes';
@@ -29,7 +30,9 @@ import { ErrorCarga } from '../../components/ErrorCarga';
 import type { EmissionStatus } from '../../laborders/lab-order-emission';
 import { printHtmlDocument } from '../../laborders/lab-order-print';
 import { estadoCatalogo, medicamentosDelCatalogo, presentacionesDe, snomedIdDe } from '../catalogo';
+import { useVademecum } from '../hooks/useVademecum';
 import { opcionesDeMarca } from '../marcas';
+import { itemDesdeVademecum } from '../vademecum';
 import { groupByReceta } from '../receta';
 import type { ItemReceta } from '../receta';
 import { createReceta } from '../receta-create';
@@ -170,22 +173,6 @@ export function RecetasPanel(props: { patient: Patient; cobertura?: string }): J
     printHtmlDocument(renderRecetaHtml(data));
   }
 
-  // El buscador entiende genéricos y marcas: elegir una marca fija la DCI en
-  // el medicamento (lo que se prescribe, Ley 25.649) y deja la marca como
-  // sugerencia sustituible. La marca busca, la DCI prescribe.
-  const marcas = new Map(opcionesDeMarca().map((o) => [o.etiqueta, o]));
-  const opciones = [
-    { group: 'Genéricos (DCI)', items: medicamentosDelCatalogo().map((m) => m.dci) },
-    { group: 'Marca comercial → genérico', items: [...marcas.keys()] },
-  ];
-  const elegirMedicamento = (key: number, valor: string): void => {
-    const marca = marcas.get(valor);
-    if (marca) {
-      setItem(key, { dci: marca.dci, marcaSugerida: marca.marca });
-    } else {
-      setItem(key, { dci: valor });
-    }
-  };
 
   return (
     <Stack gap="md">
@@ -227,15 +214,7 @@ export function RecetasPanel(props: { patient: Patient; cobertura?: string }): J
                 )}
               </Group>
               <Group grow align="flex-start">
-                <Autocomplete
-                  label="Medicamento (DCI o marca)"
-                  placeholder="semaglutida… o Crestor"
-                  data={opciones}
-                  limit={12}
-                  value={item.dci}
-                  onChange={(v) => elegirMedicamento(item.key, v)}
-                  required
-                />
+                <MedicamentoInput item={item} onCambio={(cambio) => setItem(item.key, cambio)} />
                 <Autocomplete
                   label="Presentación"
                   placeholder="comprimidos 500 mg"
@@ -300,6 +279,84 @@ export function RecetasPanel(props: { patient: Patient; cobertura?: string }): J
 
       <RecetasEmitidas existentes={existentes} error={errorLectura} onPrint={imprimir} />
     </Stack>
+  );
+}
+
+// ── Buscador de medicamento: catálogo local + vademécum del servidor ────────
+
+// El buscador entiende genéricos, marcas del catálogo y el vademécum DNM
+// completo servido por $expand: elegir una marca fija la DCI como medicamento
+// (lo que se prescribe, Ley 25.649) y deja la marca como sugerencia
+// sustituible. La marca busca, la DCI prescribe. Si el servidor no responde,
+// el catálogo local y el texto libre siguen enteros (lección REFEPS).
+
+const MARCAS_LOCALES = new Map(opcionesDeMarca().map((o) => [o.etiqueta, o]));
+const GENERICOS_LOCALES = medicamentosDelCatalogo().map((m) => m.dci);
+
+function normalizarBusqueda(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '');
+}
+
+// Los resultados del servidor ya vienen filtrados por $expand; el filtro de
+// Mantine solo recorta los grupos locales (si no, escondería resultados que
+// el servidor sí matcheó, por acentos o espacios).
+const filtroMedicamento: OptionsFilter = ({ options, search }) => {
+  const q = normalizarBusqueda(search.trim());
+  return options
+    .map((grupo) => {
+      if (!('group' in grupo)) {
+        return grupo;
+      }
+      if (grupo.group.includes('servidor')) {
+        return grupo;
+      }
+      return { ...grupo, items: grupo.items.filter((i) => normalizarBusqueda(String(i.value)).includes(q)) };
+    })
+    .filter((grupo) => !('group' in grupo) || grupo.items.length > 0);
+};
+
+function MedicamentoInput(props: { item: ItemReceta; onCambio: (cambio: Partial<ItemReceta>) => void }): JSX.Element {
+  const vademecum = useVademecum(props.item.dci);
+  const delServidor = new Map(vademecum.opciones.map((o) => [o.display, o]));
+
+  const data = [
+    { group: 'Genéricos (DCI)', items: GENERICOS_LOCALES },
+    { group: 'Marca comercial → genérico', items: [...MARCAS_LOCALES.keys()] },
+    ...(delServidor.size > 0
+      ? [{ group: 'Vademécum ANMAT (servidor)', items: [...delServidor.keys()].filter((d) => !MARCAS_LOCALES.has(d)) }]
+      : []),
+  ];
+
+  return (
+    <Autocomplete
+      label="Medicamento (DCI o marca)"
+      placeholder="semaglutida… o Crestor"
+      data={data}
+      filter={filtroMedicamento}
+      limit={24}
+      value={props.item.dci}
+      rightSection={vademecum.buscando ? <Loader size="xs" /> : undefined}
+      description={
+        vademecum.caido
+          ? 'El vademécum del servidor no respondió: seguís con el catálogo local y el texto libre.'
+          : undefined
+      }
+      onChange={(v) => {
+        const marcaLocal = MARCAS_LOCALES.get(v);
+        const servidor = delServidor.get(v);
+        if (marcaLocal) {
+          props.onCambio({ dci: marcaLocal.dci, marcaSugerida: marcaLocal.marca });
+        } else if (servidor) {
+          props.onCambio(itemDesdeVademecum(servidor));
+        } else {
+          props.onCambio({ dci: v });
+        }
+      }}
+      required
+    />
   );
 }
 

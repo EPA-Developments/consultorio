@@ -177,6 +177,14 @@ todos salen del RF2 que descargaste con tu licencia.
 
 ### Fase 2 — Vademécum completo para Favaloro | Medplum Argentina (vía C)
 
+> **Estado: COMPLETA** (2026-08-12). Importados **17.311 conceptos** de la
+> release 20260520 al servidor (11.718 marcas comercializadas + 5.593
+> genéricos droga+dosis), ValueSet `vademecum-dnm` operativo, y el buscador
+> del formulario de recetas consulta `$expand` en vivo con fallback al
+> catálogo local (lección REFEPS: el vademécum nunca bloquea la
+> prescripción). Nota operativa: `$import` exige un client **project admin**
+> del proyecto del Dashboard. Re-import semestral con cada release.
+
 Hallazgo de la release note de Mayo 2026 que simplifica esta fase: la extensión
 trae los **refsets del Diccionario Nacional de Medicamentos (DNM)** —
 presentaciones y medicamentos comerciales ANMAT, genéricos (clases MP/MPF/CD),
