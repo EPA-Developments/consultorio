@@ -8,9 +8,10 @@
 // El pie legal reutiliza EMISSION_STATUS: el documento NUNCA declara una
 // validez que no tiene. La firma digital del profesional (firmar.gob.ar) se
 // aplica sobre el PDF generado; este documento deja el espacio y la identidad.
-import { formatHumanName, getDisplayString } from '@medplum/core';
+import { formatAddress, formatHumanName, getDisplayString } from '@medplum/core';
 import type { MedicationRequest, Patient, Practitioner } from '@medplum/fhirtypes';
 import { DNI_SYSTEM, getIdentifierValue } from '../ckm/argentina';
+import { code39Svg } from './barcode';
 import { EMISSION_STATUS } from '../laborders/lab-order-emission';
 import type { EmissionStatus } from '../laborders/lab-order-emission';
 import { specialtyOf } from '../laborders/lab-order-print';
@@ -32,10 +33,14 @@ export interface RecetaPrintData {
   patientName: string;
   patientDni?: string;
   patientBirthDate?: string;
+  /** Sexo del paciente, ya en castellano (conjunto mínimo Res. 1482/2024). */
+  patientSexo?: string;
   coverage?: string;
   practitionerName?: string;
   practitionerMatricula?: string;
   practitionerSpecialty?: string;
+  /** Domicilio del profesional (conjunto mínimo Res. 1482/2024). */
+  practitionerAddress?: string;
   diagnostico?: string;
   recetaId: string;
   authoredOn: string;
@@ -68,6 +73,7 @@ export function buildRecetaPrintData(params: {
     patientName: patient.name?.[0] ? formatHumanName(patient.name[0]) : getDisplayString(patient),
     patientDni: getIdentifierValue(patient, DNI_SYSTEM),
     patientBirthDate: patient.birthDate,
+    patientSexo: sexoEs(patient.gender),
     coverage: params.coverage,
     practitionerName: practitioner?.name?.[0]
       ? formatHumanName(practitioner.name[0])
@@ -76,6 +82,7 @@ export function buildRecetaPrintData(params: {
         : undefined,
     practitionerMatricula: matriculaOf(practitioner),
     practitionerSpecialty: specialtyOf(practitioner),
+    practitionerAddress: practitioner?.address?.[0] ? formatAddress(practitioner.address[0]) : undefined,
     diagnostico: first?.reasonCode?.[0]?.text,
     recetaId: params.recetaId,
     authoredOn: first?.authoredOn ?? '',
@@ -88,6 +95,19 @@ export function buildRecetaPrintData(params: {
     emissionStatus: params.emissionStatus ?? 'draft',
     registryLegend: params.registryLegend,
   };
+}
+
+function sexoEs(gender: Patient['gender']): string | undefined {
+  switch (gender) {
+    case 'male':
+      return 'Masculino';
+    case 'female':
+      return 'Femenino';
+    case 'other':
+      return 'Otro';
+    default:
+      return undefined;
+  }
 }
 
 /**
@@ -153,6 +173,15 @@ function fmtDate(iso: string | undefined): string {
   return Number.isNaN(d.getTime()) ? esc(iso) : d.toLocaleDateString('es-AR');
 }
 
+/**
+ * Código de barras + el valor en texto legible al pie: si un lector no toma
+ * las barras, el humano lee el número igual.
+ */
+function barraConTexto(valor: string): string {
+  const svg = code39Svg(valor, 30);
+  return svg ? `<div class="barra">${svg}<div class="barra-texto">${esc(valor)}</div></div>` : '';
+}
+
 /** Renderiza la receta como documento HTML autocontenido. Puro. */
 export function renderRecetaHtml(data: RecetaPrintData): string {
   const items = data.items
@@ -182,6 +211,7 @@ export function renderRecetaHtml(data: RecetaPrintData): string {
     ['Paciente', data.patientName],
     ['DNI', data.patientDni],
     ['Nacimiento', fmtDate(data.patientBirthDate)],
+    ['Sexo', data.patientSexo],
     ['Cobertura', data.coverage],
   ]
     .filter(([, v]) => v)
@@ -225,6 +255,9 @@ export function renderRecetaHtml(data: RecetaPrintData): string {
   .dx .k { font-weight: 600; }
   .dx .blank { display: inline-block; min-width: 280px; border-bottom: 1px solid #bbb; }
   .generico { margin-top: 12px; font-size: 11px; color: #777; }
+  .barra { margin-top: 6px; text-align: center; }
+  .barra svg { height: 30px; max-width: 220px; }
+  .barra-texto { font-size: 10px; letter-spacing: .12em; color: #333; }
   .sign { margin-top: 48px; display: flex; justify-content: flex-end; }
   .sign .box { text-align: center; min-width: 260px; border-top: 1px solid #333; padding-top: 6px; }
   .sign .name { font-weight: 600; }
@@ -246,6 +279,7 @@ export function renderRecetaHtml(data: RecetaPrintData): string {
         <div class="ord">${esc(data.recetaId)}</div>
         <div>${fmtDate(data.authoredOn)}</div>
       </div>
+      ${barraConTexto(data.recetaId)}
     </div>
   </div>
 
@@ -263,6 +297,8 @@ export function renderRecetaHtml(data: RecetaPrintData): string {
       <div class="name">${esc(data.practitionerName) || '&nbsp;'}</div>
       <div class="mat">${data.practitionerMatricula ? 'Matrícula ' + esc(data.practitionerMatricula) : 'Firma y sello del profesional'}</div>
       ${data.practitionerSpecialty ? `<div class="mat">${esc(data.practitionerSpecialty)}</div>` : ''}
+      ${data.practitionerAddress ? `<div class="mat">${esc(data.practitionerAddress)}</div>` : ''}
+      ${data.practitionerMatricula ? barraConTexto(data.practitionerMatricula) : ''}
     </div>
   </div>
 

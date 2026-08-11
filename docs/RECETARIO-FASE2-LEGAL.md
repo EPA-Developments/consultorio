@@ -197,3 +197,52 @@ Para dimensionar el esfuerzo de cumplimiento, esto es lo que la plataforma **ya 
 Lo que **falta construir** depende de su respuesta sobre la firma (§ 4.3.8): firma del
 profesional sobre la orden, sellado de inmutabilidad, CUIR, verificación por QR y política de
 retención de 3 años.
+
+---
+
+## Anexo 2 — Roadmap de inscripción (agosto 2026, sobre el instructivo oficial)
+
+> Actualización posterior al informe: se leyó el **instructivo oficial de inscripción
+> (Res. 1482/2024, 08.24)** y se mapeó requisito por requisito. Desde julio, además, la
+> plataforma sumó: **recetas de medicamentos** (módulo Prescripciones), **sello SHA-256 +
+> Provenance cableados en la emisión real** de recetas, **REFEPS en cada emisión**,
+> codificación **SNOMED CT Edición Argentina** (10 DCI + 384 presentaciones comerciales del
+> DNM), y el PDF con el **conjunto mínimo completo** (códigos de barras, sexo, domicilio,
+> cantidad en letras, cobertura). Una sola inscripción cubre recetas y órdenes de estudios
+> (Ley 27.553).
+
+### Trámites, en orden (los hace BioWellness)
+
+1. **Firma Digital Remota** — turno 18/08 (Autoridad de Registro; luego se firma en
+   `firmador.gob.ar`).
+2. **Inscripción en el Registro Nacional de Bases de Datos Personales (AAIP, Ley 25.326)**
+   — es adjunto obligatorio del TAD; online y gratuito.
+3. **TAD ReNaPDiS** (`tramitesadistancia.gob.ar`, con AFIP o Mi Argentina): trámite
+   "Inscripción de Recetarios Electrónicos". Solicitante y referente técnico: personas
+   físicas. **Decisión previa**: RECETARIO vs RECETARIO + REPOSITORIO — consultar a
+   `soporte@sisa.msal.gov.ar` si un recetario FHIR que entrega el PDF firmado al paciente
+   inscribe como RECETARIO solo (la DJ de acceso de farmacias habla de recetas "resguardadas
+   en su repositorio").
+4. **Adjuntos**: personería, constancia AAIP, capturas de `/prescripciones`, y una **receta
+   de muestra** emitida por la plataforma (el conjunto mínimo ya está cubierto).
+
+### Requisitos técnicos de aprobación — estado
+
+| Requisito del TAD | Estado |
+| --- | --- |
+| Usa REFEPS (servicios SISA) | ✅ En cada emisión, no solo al alta |
+| Estándar HL7 FHIR | ✅ Nativo |
+| Prescripción por nombre genérico (Ley 25.649 art. 2) | ✅ La DCI prescribe, la marca sugiere |
+| Conjunto mínimo de datos de la receta | ✅ Completo (barras, sexo, domicilio, cantidad en letras, leyenda registral con gancho) |
+| Decreto 98/23 art. 4 (integridad/trazabilidad) | ✅ Sello + Provenance en el flujo real de recetas (órdenes de laboratorio: pendiente de cablear el mismo sello) |
+| Leyenda RL-xxxx | ⏳ Se carga en `registryLegend` al recibir la aprobación |
+| CUIR | ⏳ Lo asigna el sistema nacional post-inscripción; el circuito ya lo espera (`legally-emitted` se activa solo con CUIR) |
+
+### Después de la aprobación
+
+1. Cargar el número **RL** en la leyenda de impresión (`registryLegend`).
+2. Integrar la asignación de **CUIR** cuando el sistema nacional la habilite → el estado
+   sube solo a "legalmente emitida".
+3. Cablear el sello/Provenance también en la emisión de órdenes de laboratorio (la
+   maquinaria es compartida; falta el equivalente de `receta-emision` en el flujo de
+   `createLabOrder`).

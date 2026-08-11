@@ -47,6 +47,27 @@ documento (el articulado del art. 4 propiamente dicho) sigue sin verificar.
 Dato adicional del instructivo: el marco citado incluye la **Ley 27.553** y los **Decretos
 98/2023 y 63/2024** (este último no había aparecido en el relevamiento previo).
 
+### 1.2b ✅ Actualización agosto 2026 — varios ❌ de §3 ya no lo son
+
+Este checklist se escribió en julio auditando el circuito de **órdenes de laboratorio**.
+Desde entonces la plataforma sumó el módulo de **recetas de medicamentos** y varios de los
+faltantes marcados abajo se resolvieron (los estados de §3 se conservan como registro del
+relevamiento original):
+
+- **§3.1 / código de barras**: la receta imprime **Code 39** del número de receta y de la
+  matrícula, con texto legible (`barcode.ts`). El CUIR sigue pendiente del Estado, como
+  corresponde.
+- **§3.2**: la validación **REFEPS en cada emisión** está cableada (gate compartido
+  recetas + órdenes), y el **diagnóstico tiene UI obligatoria** en recetas.
+- **§3.4**: para **recetas**, el sello SHA-256 se persiste como identifier y el
+  `Provenance` de firma viaja en la misma transacción de emisión; la impresión verifica y
+  declara solo lo que puede probar (`receta-emision.ts`). Para órdenes de laboratorio el
+  cableado equivalente sigue pendiente.
+- **§3.7**: ya **aplica** (hay recetas de medicamentos) y está resuelto con SNOMED CT
+  Edición Argentina: 10 DCI codificados + 384 presentaciones comerciales del DNM
+  (marca busca, DCI prescribe).
+- El roadmap de inscripción completo está en `RECETARIO-FASE2-LEGAL.md`, Anexo 2.
+
 ### 1.3 Sobre la auditoría del código (esta parte sí es confiable)
 
 La auditoría del repositorio sí pudo hacerse a fondo. Se aplicó una regla estricta: **solo se

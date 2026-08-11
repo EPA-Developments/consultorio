@@ -1,4 +1,4 @@
-import type { MedicationRequest, Patient } from '@medplum/fhirtypes';
+import type { MedicationRequest, Patient, Practitioner } from '@medplum/fhirtypes';
 import { buildRecetaPrintData, cantidadEnLetras, renderRecetaHtml } from './receta-print';
 
 describe('Cantidad en letras', () => {
@@ -26,7 +26,15 @@ describe('Impresión de la receta', () => {
     id: 'p1',
     name: [{ given: ['Ana'], family: 'Prueba' }],
     birthDate: '1980-05-01',
+    gender: 'female',
     identifier: [{ system: 'https://www.argentina.gob.ar/dni', value: '12345678' }],
+  };
+  const MEDICO: Practitioner = {
+    resourceType: 'Practitioner',
+    id: 'dr1',
+    name: [{ prefix: ['Dr'], given: ['Alejandro'], family: "D'Alessandro" }],
+    identifier: [{ system: 'http://refeps.msal.gob.ar', value: 'MN-92179' }],
+    address: [{ line: ['Husares 2248 6 E'], city: 'CABA' }],
   };
   const REQUEST: MedicationRequest = {
     resourceType: 'MedicationRequest',
@@ -44,6 +52,7 @@ describe('Impresión de la receta', () => {
     recetaId: 'REC-TEST',
     requests: [REQUEST],
     patient: PACIENTE,
+    practitioner: MEDICO,
     coverage: 'Swiss Medical · SMG20 · N° 800006',
   });
   const html = renderRecetaHtml(data);
@@ -63,5 +72,25 @@ describe('Impresión de la receta', () => {
     expect(html).toContain('metformina — comprimidos 500 mg');
     expect(html).toContain('cada 12 h');
     expect(html).toContain('DM2');
+  });
+
+  // Conjunto mínimo de la Res. 1482/2024 (adjunto obligatorio del TAD):
+  // sexo del paciente, domicilio del profesional y códigos de barras.
+  test('el conjunto mínimo del registro está en el documento', () => {
+    expect(html).toContain('Sexo');
+    expect(html).toContain('Femenino');
+    expect(html).toContain('Husares 2248 6 E');
+    // Dos códigos de barras (receta y matrícula), cada uno con su texto legible.
+    expect(html.match(/<svg/g)?.length).toBe(2);
+    expect(html).toContain('REC-TEST');
+    expect(html).toContain('MN-92179');
+  });
+
+  test('sin matrícula ni domicilio, el documento no inventa barras', () => {
+    const sinDatos = renderRecetaHtml(
+      buildRecetaPrintData({ recetaId: 'REC-X', requests: [REQUEST], patient: PACIENTE })
+    );
+    // Solo la barra del número de receta.
+    expect(sinDatos.match(/<svg/g)?.length).toBe(1);
   });
 });
