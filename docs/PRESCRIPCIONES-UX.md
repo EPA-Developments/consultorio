@@ -1,8 +1,8 @@
 # Módulo Prescripciones: requerimientos y referencias de UX
 
-> **Estado: recolección de requerimientos — NO diseñar ni codificar todavía.**
-> Falta la segunda referencia (rcta.me). Este documento guarda lo relevado
-> hasta ahora para que el diseño se haga con todo el material a la vista.
+> **Estado: v1 implementada** (sección de primer nivel + selector de paciente
+> + contexto + emisión por el gate compartido). Las dos referencias están
+> relevadas; el backlog de la sección 6 ordena lo que sigue.
 
 ## 1. El pedido
 
@@ -74,6 +74,67 @@ preguntas abiertas).
 3. **Posología**.
 4. **Diagnóstico** → finalizar.
 
+## 2b. Referencia B: RCTA (`app.rcta.me`)
+
+Relevado de capturas + el PDF real de una receta emitida (2026-08-11).
+
+### Estructura
+
+- Sidebar con identidad del profesional siempre visible (foto, "Dr. …
+  MEDICO, MN: 92179"): Mis Pacientes · Medicamentos · Prácticas ·
+  Certificados y otros · Solicitudes de Medicamentos · Configuración.
+- **Pacientes**: tabla con Nombre, Identificación (DNI), Institución
+  ("Propio"), Sexo, Edad, Email, Cobertura ("Sin cobertura").
+- **Crear receta**: página única (no wizard), tarjetas:
+  - **Elegir Paciente** arriba de todo; al elegirlo se auto-cargan cobertura
+    (Plan, N° de afiliado, checkbox "Sin cobertura") y datos contextuales.
+  - **Perfiles de Recetas** (Principal…): identidades/plantillas del emisor.
+  - **Otras configuraciones**: toggles "Tratamiento prolongado" y "Ocultar
+    datos del paciente" (protege los datos de la persona en la receta).
+  - **Fecha de la receta** + "Añadir Fecha": permite emitir la serie de
+    recetas posdatadas de un tratamiento prolongado en un solo acto.
+  - **Diagnóstico sugerido\*** codificado **CIE-10** (ej. "Z769 - PERSONA EN
+    CONTACTO CON LOS SERVICIOS DE SALUD…").
+  - **Medicamentos** con `+` que abre el buscador: por genérico **o marca**;
+    el ítem agregado ("CRESTOR (rosuvastatina) 10 mg comp.x 28") lleva
+    toggles **Recetar sólo genérico**, **Recomendación médica**, **Por
+    duplicado**, campos Diagnóstico y Observación por ítem, y stepper de
+    cantidad.
+  - **Indicaciones** (texto para el paciente) y **Texto adicional** (libre).
+
+### Anatomía del PDF emitido (la salida que importa)
+
+Del PDF real (`prescriptions.rcta.me/....pdf`, verificación en
+`verumrp.com.ar/<hash>`):
+
+- Emisor: nombre, "MEDICO - CARDIOLOGIA", **Matrícula Nac.**, domicilio.
+- **Creada** / **Válida desde** (fechas separadas — soporta posdatadas).
+- Paciente: nombre completo, sexo, **DNI y CUIL**, fecha de nacimiento,
+  cobertura (`SWISS MEDICAL | PLAN: SMG20 | N° Credencial: …`) + código de
+  barras del N° de credencial.
+- **Rp./** con la **DCI en mayúsculas como protagonista**
+  ("ROSUVASTATINA - 10 mg comp.x 28"), **cantidad en números y letras**
+  ("Cantidad: 1 (uno)"), la marca (CRESTOR) subordinada, y el
+  **diagnóstico CIE-10** por ítem.
+- Leyenda de firma: "Este documento ha sido firmado -electrónica o
+  digitalmente según corresponda- por …" + bloque FIRMA Y SELLO + link de
+  verificación.
+- Leyenda registral: "Esta receta fue creada por un emisor inscripto y
+  validado en el **Registro de Recetarios Electrónicos** del Ministerio de
+  Salud de la Nación **RL-2024-100292307**" — el número que BioWellness
+  obtendrá con su inscripción (instructivo ya en carpeta).
+- Referencia al "Buscador Nacional de Medicamentos".
+
+### Lectura comparada (qué tomamos de cada una)
+
+- De **Recetario**: la búsqueda unificada marca↔genérico en dos columnas y
+  el timeline del paciente como contexto.
+- De **RCTA**: la página única (mejor que el wizard para un médico que emite
+  decenas por día), "Elegir paciente" como primer gesto, la cobertura
+  auto-cargada, y sobre todo **la salida**: DCI protagonista + cantidad en
+  letras + leyendas legales — que valida nuestro modelo (ellos también
+  subordinan la marca a la DCI).
+
 ## 3. Cómo encaja el avance de terminología (la pregunta clave)
 
 Lo que Recetario resuelve con su vademécum comercial es **exactamente lo que
@@ -112,17 +173,48 @@ A resolver en el diseño (no antes):
 - **Orden vs Receta** como dos salidas hermanas del mismo flujo (nosotros ya
   las tenemos unificadas por el gate de emisión — acá es solo UX).
 
-## 5. Preguntas abiertas (para cuando se diseñe)
+## 5. Lo implementado en la v1
 
-1. **Referencia B pendiente**: rcta.me — el usuario va a mandar capturas.
-   No cerrar ningún diseño hasta tenerlas.
-2. **Convivencia con Recetario**: la práctica tiene 6.109 pacientes y años de
-   historial ahí. ¿El módulo nuevo convive, reemplaza gradualmente, o
-   importa? Si Recetario exporta, es una fuente candidata para sembrado
-   histórico (mismo criterio de procedencia que se definió para las
-   sesiones).
-3. **Alcance del selector de pacientes**: ¿reusa la búsqueda de Historias
-   clínicas o tiene buscador propio con alta rápida (como el paso 1 de
-   Recetario)?
-4. **Firma**: el flujo desemboca en el PDF con Firma Digital Remota
-   (trámite del 18/08) — el diseño del paso final debe dejarle lugar.
+- **Sección "Prescripciones"** en la navegación (título propio, link
+  "Recetas", ruta `/prescripciones`): se entra a un espacio nuevo, no a una
+  pestaña del chart.
+- **Selector de paciente** al estilo de las referencias: un buscador que
+  entiende nombre **o DNI** (si se tipean números busca por identificador),
+  con lista clickeable de resultados. El alta de pacientes queda en
+  Historias clínicas a propósito (una recetadora no es una mesa de entradas).
+- **Contexto del paciente** al elegirlo: nombre, DNI, CUIL, edad, sexo y
+  **cobertura** leída de FHIR `Coverage` (badge "Sin cobertura registrada"
+  si no hay; error visible si la lectura falla, nunca disfrazado de vacío).
+- **Emisión**: el mismo `RecetasPanel` del chart — gate local + REFEPS,
+  SNOMED del catálogo, historial de recetas del paciente e impresión. Un
+  solo camino de escritura con dos puertas.
+- **Impresión**: cantidad en números y letras ("2 (dos)", como el PDF de
+  RCTA) y la cobertura conocida viaja al documento.
+
+## 6. Backlog (el orden importa)
+
+1. **Buscador por marca comercial** (el `+` de Medicamentos): extraer del
+   RF2 ya descargado los refsets del DNM (comerciales ANMAT ↔ genérico) para
+   los DCI del catálogo → autocomplete de dos columnas Principio Activo |
+   Marca. Es Fase 2 del plan SNOMED aplicada a esta pantalla.
+2. **Diagnóstico CIE-10**: pasar el campo diagnóstico de texto libre a
+   autocomplete codificado (RCTA lo trae obligatorio codificado).
+3. **Cobertura editable**: alta/edición de `Coverage` desde el contexto del
+   paciente (hoy solo se lee; la fuente natural es el portal de recepción).
+4. **Tratamiento prolongado** + fechas múltiples (serie de recetas
+   posdatadas en un acto) y **ocultar datos del paciente**.
+5. **Leyenda registral**: cuando salga la inscripción en el Registro de
+   Recetarios Electrónicos, el número RL va a `registryLegend` (el hook ya
+   existe en `receta-print`).
+6. **Firma Digital Remota** sobre el PDF (trámite del 18/08).
+
+## 7. Preguntas abiertas
+
+1. **Convivencia con Recetario/RCTA**: la práctica tiene 6.109 pacientes y
+   años de historial en Recetario. ¿El módulo convive, reemplaza
+   gradualmente, o importa? Si Recetario exporta, es una fuente candidata
+   para sembrado histórico (mismo criterio de procedencia que se definió
+   para las sesiones).
+2. **Verificación pública** de la receta (RCTA usa `verumrp.com.ar/<hash>`):
+   ¿publicamos un verificador propio? Toca infraestructura y privacidad —
+   decisión aparte.
