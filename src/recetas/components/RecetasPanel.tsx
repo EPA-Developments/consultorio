@@ -29,6 +29,7 @@ import { ErrorCarga } from '../../components/ErrorCarga';
 import type { EmissionStatus } from '../../laborders/lab-order-emission';
 import { printHtmlDocument } from '../../laborders/lab-order-print';
 import { estadoCatalogo, medicamentosDelCatalogo, presentacionesDe, snomedIdDe } from '../catalogo';
+import { opcionesDeMarca } from '../marcas';
 import { groupByReceta } from '../receta';
 import type { ItemReceta } from '../receta';
 import { createReceta } from '../receta-create';
@@ -169,7 +170,22 @@ export function RecetasPanel(props: { patient: Patient; cobertura?: string }): J
     printHtmlDocument(renderRecetaHtml(data));
   }
 
-  const opciones = medicamentosDelCatalogo().map((m) => m.dci);
+  // El buscador entiende genéricos y marcas: elegir una marca fija la DCI en
+  // el medicamento (lo que se prescribe, Ley 25.649) y deja la marca como
+  // sugerencia sustituible. La marca busca, la DCI prescribe.
+  const marcas = new Map(opcionesDeMarca().map((o) => [o.etiqueta, o]));
+  const opciones = [
+    { group: 'Genéricos (DCI)', items: medicamentosDelCatalogo().map((m) => m.dci) },
+    { group: 'Marca comercial → genérico', items: [...marcas.keys()] },
+  ];
+  const elegirMedicamento = (key: number, valor: string): void => {
+    const marca = marcas.get(valor);
+    if (marca) {
+      setItem(key, { dci: marca.dci, marcaSugerida: marca.marca });
+    } else {
+      setItem(key, { dci: valor });
+    }
+  };
 
   return (
     <Stack gap="md">
@@ -212,11 +228,12 @@ export function RecetasPanel(props: { patient: Patient; cobertura?: string }): J
               </Group>
               <Group grow align="flex-start">
                 <Autocomplete
-                  label="DCI (nombre genérico)"
-                  placeholder="semaglutida"
+                  label="Medicamento (DCI o marca)"
+                  placeholder="semaglutida… o Crestor"
                   data={opciones}
+                  limit={12}
                   value={item.dci}
-                  onChange={(v) => setItem(item.key, { dci: v })}
+                  onChange={(v) => elegirMedicamento(item.key, v)}
                   required
                 />
                 <Autocomplete

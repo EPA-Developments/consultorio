@@ -201,14 +201,15 @@ A resolver en el diseño (no antes):
 
 ## 6. Backlog (el orden importa)
 
-1. **Buscador por marca comercial** (el `+` de Medicamentos): extraer del
-   RF2 ya descargado los fármacos de uso clínico comerciales del DNM
-   (marca ↔ genérico) para los DCI del catálogo → autocomplete de dos
-   columnas Principio Activo | Marca. Es Fase 2 del plan SNOMED aplicada a
-   esta pantalla. **Herramienta lista**: `npm run snomed-marcas -- --rf2
-   <dir>` (reporte) y `--aplicar` (escribe `data/recetas/marcas.json`); las
-   combinaciones se excluyen a propósito. Falta: correrla en el servidor,
-   revisar el resultado y cablear el autocomplete.
+1. ~~Buscador por marca comercial~~ **HECHO**: `data/recetas/marcas.json`
+   (384 presentaciones, 160+ marcas, extraídas del DNM con
+   `npm run snomed-marcas`) alimenta el campo "Medicamento (DCI o marca)":
+   elegir una marca fija la DCI como medicamento y deja la marca como
+   sugerencia sustituible. Los kits **multiempaque** (ARTOMEY DUO, AMPLIAR
+   DUO…) aparecen una vez por componente — buscar el kit muestra sus DCIs y
+   se prescriben todos, que es lo que manda la Ley 25.649. Las combinaciones
+   en un solo comprimido siguen excluidas (dos dosis = afuera). Se regenera
+   con cada release semestral, igual que los snomedId.
 2. **Diagnóstico CIE-10**: pasar el campo diagnóstico de texto libre a
    autocomplete codificado (RCTA lo trae obligatorio codificado).
 3. **Cobertura editable**: alta/edición de `Coverage` desde el contexto del
