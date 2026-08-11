@@ -4,6 +4,7 @@ import { AppShell, ErrorBoundary, Loading, useMedplum, useMedplumProfile } from 
 import {
   IconClipboardHeart,
   IconClipboardList,
+  IconFlask,
   IconHeartRateMonitor,
   IconHome,
   IconPill,
@@ -20,6 +21,7 @@ import { EncounterPage } from './pages/EncounterPage';
 import { SDOHForm } from './pages/SDOHForm';
 import { SimulatorPage } from './pages/SimulatorPage';
 import { LandingPage } from './pages/LandingPage';
+import { LaboratorioPage } from './pages/LaboratorioPage';
 import { PatientPage } from './pages/PatientPage';
 import { PrescripcionesPage } from './pages/PrescripcionesPage';
 import { ResourcePage } from './pages/ResourcePage';
@@ -66,6 +68,10 @@ export function App(): JSX.Element | null {
           title: 'Prescripciones',
           links: [{ icon: <IconPill />, label: 'Recetas', href: '/prescripciones' }],
         },
+        {
+          title: 'Laboratorio',
+          links: [{ icon: <IconFlask />, label: 'Órdenes de laboratorio', href: '/laboratorio' }],
+        },
       ]}
     >
       <ErrorBoundary>
@@ -76,6 +82,8 @@ export function App(): JSX.Element | null {
             <Route path="/ckm" element={<CKMDashboard />} />
             <Route path="/prescripciones" element={<PrescripcionesPage />} />
             <Route path="/prescripciones/:patientId" element={<PrescripcionesPage />} />
+            <Route path="/laboratorio" element={<LaboratorioPage />} />
+            <Route path="/laboratorio/:patientId" element={<LaboratorioPage />} />
             <Route path="/ckm/biomarkers/:patientId" element={<BiomarkerPanelPage />} />
             <Route path="/ckm/sdoh/:patientId" element={<SDOHForm />} />
             <Route path="/ckm/simulator/:patientId" element={<SimulatorPage />} />

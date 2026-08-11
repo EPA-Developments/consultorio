@@ -31,7 +31,7 @@ import {
   IconPrinter,
   IconStethoscope,
 } from '@tabler/icons-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { JSX } from 'react';
 import { ErrorCarga } from '../../components/ErrorCarga';
 import { checkPractitionerForEmission, matriculaOf } from '../practitioner-validation';
@@ -43,6 +43,7 @@ import {
   groupByRequisition,
   LABORATORY_CATEGORY,
   ORDERABILITY_INFO,
+  panelDelPreset,
   resolveDerivedSources,
 } from '../lab-order';
 import type { LabOrderItem } from '../lab-order';
@@ -50,7 +51,11 @@ import { createLabOrder, EXT_REFEPS_VERIFICACION } from '../lab-order-create';
 import { buildPrintData, printHtmlDocument, renderLabOrderHtml } from '../lab-order-print';
 import { useLabOrderCatalog } from '../hooks/useLabOrderCatalog';
 
-export function LabOrderPanel(props: { patient: Patient }): JSX.Element {
+export function LabOrderPanel(props: {
+  patient: Patient;
+  /** Preset a preseleccionar al cargar (?preset= de /laboratorio): panelCode, nombre de panel o 'completo'. */
+  presetInicial?: string;
+}): JSX.Element {
   const medplum = useMedplum();
   const { items, byPanel, loading, error: catalogoError } = useLabOrderCatalog();
 
@@ -123,6 +128,22 @@ export function LabOrderPanel(props: { patient: Patient }): JSX.Element {
   }, [items]);
 
   const clear = useCallback(() => setSelected(new Set()), []);
+
+  // Preselección por URL (?preset=): se aplica UNA vez cuando el catálogo
+  // está listo, y nunca pisa una selección que el médico ya empezó a mano.
+  const presetAplicado = useRef(false);
+  useEffect(() => {
+    if (!props.presetInicial || presetAplicado.current || loading || byPanel.length === 0) {
+      return;
+    }
+    presetAplicado.current = true;
+    const elegido = panelDelPreset(props.presetInicial, byPanel);
+    if (elegido === 'completo') {
+      selectAll();
+    } else if (elegido) {
+      selectPanel(elegido.items);
+    }
+  }, [props.presetInicial, loading, byPanel, selectAll, selectPanel]);
 
   async function generateOrder(): Promise<void> {
     if (orderableIds.length === 0) {
