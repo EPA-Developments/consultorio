@@ -1,8 +1,9 @@
-import type { Bot, Bundle, MedicationRequest, Patient, Practitioner } from '@medplum/fhirtypes';
+import type { Bot, Bundle, MedicationRequest, Patient, Practitioner, Provenance } from '@medplum/fhirtypes';
 import { EXT_REFEPS_VERIFICACION } from '../laborders/emission-gate';
 import { EmissionBlockedError } from '../laborders/practitioner-validation';
 import type { RefepsVerification } from '../laborders/refeps';
 import { createReceta } from './receta-create';
+import { getSelloReceta, verificarSelloReceta } from './receta-emision';
 import type { ItemReceta } from './receta';
 
 const PACIENTE: Patient = { resourceType: 'Patient', id: 'p1' };
@@ -111,15 +112,31 @@ describe('Emisión de receta: el mismo gate que las órdenes', () => {
     expect(ctx.batches).toStrictEqual([]);
   });
 
-  test('todo va en UNA transacción de MedicationRequest', async () => {
+  test('todo va en UNA transacción: los MedicationRequest + el Provenance de firma', async () => {
     const ctx = fakeMedplum({ profile: MEDICO, veredicto: verification('verificado', 'ok') });
-    await createReceta(ctx.medplum, {
+    const { requests } = await createReceta(ctx.medplum, {
       patient: PACIENTE,
       items: [ITEM, { dci: 'rosuvastatina', cantidad: 1, posologia: '10 mg/día, 90 días' }],
       diagnostico: 'DM2 + dislipemia',
     });
     expect(ctx.batches).toHaveLength(1);
     expect(ctx.batches[0].type).toBe('transaction');
-    expect(ctx.batches[0].entry?.every((e) => e.request?.url === 'MedicationRequest')).toBe(true);
+    const entries = ctx.batches[0].entry ?? [];
+    const meds = entries.filter((e) => e.request?.url === 'MedicationRequest');
+    const provs = entries.filter((e) => e.request?.url === 'Provenance');
+    expect(meds).toHaveLength(2);
+    expect(provs).toHaveLength(1);
+    expect(entries).toHaveLength(3);
+    // El Provenance apunta a los urn:uuid de las entradas de la transacción,
+    // para que el servidor los reescriba a las referencias reales.
+    const urns = meds.map((e) => e.fullUrl);
+    expect(urns.every((u) => u?.startsWith('urn:uuid:'))).toBe(true);
+    const provenance = provs[0].resource as Provenance;
+    expect(provenance.target?.map((t) => t.reference)).toStrictEqual(urns);
+    // Y cada receta sale sellada: el sello viaja como identifier.
+    for (const r of requests) {
+      expect(getSelloReceta(r)).toBeTruthy();
+    }
+    expect(await verificarSelloReceta(requests)).toBe(true);
   });
 });
