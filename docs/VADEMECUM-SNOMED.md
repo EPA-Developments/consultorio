@@ -191,6 +191,27 @@ el mapeo marca comercial → DCI para los medicamentos del catálogo
 (`--aplicar` escribe `data/recetas/marcas.json`). Alimenta el buscador por
 marca del módulo Prescripciones: la marca busca, la DCI prescribe.
 
+Segundo entregable: `npm run snomed-vademecum -- --rf2 <dir>` (reporte) /
+`--aplicar` con credenciales de client (mismas variables que
+`deploy-bots-server`). Es el conversor RF2 → `CodeSystem/$import`: importa al
+servidor los miembros de los refsets **"en estado comercializado"** del DNM —
+marcas (`574461000221103`) y genéricos droga+dosis+forma (`574471000221107` /
+`574481000221105`) — y deja el ValueSet
+`https://bio.medplum.com.ar/fhir/ValueSet/vademecum-dnm` listo para
+`$expand?filter=` desde el buscador. El recorte es a propósito: son refsets
+del módulo argentino (actividad verificable contra el archivo de conceptos de
+la extensión, sin el punto ciego de los conceptos internacionales) y
+representan el vademécum VIVO según ANMAT — la exploración de la release
+20260520 midió ~15.000 marcas y ~15.000 fármacos de uso clínico en el DNM
+completo. Re-import semestral con cada release.
+
+Hallazgos de la misma exploración, anotados para después: el paquete trae
+refsets de **prácticas de laboratorio de Argentina** (`537301000221103`) y
+**prácticas prescribibles de diagnóstico por imágenes** (`536561000221108`) —
+candidatos directos para codificar las órdenes de la sección Laboratorio —,
+el mapa SNOMED→**NOMIVAC** de vacunas, y refsets de especialidades y
+profesiones matriculadas.
+
 Conversor RF2 → `CodeSystem/$import` (script versionado, patrón
 `upload-biomarker-defs`), cargado en un proyecto compartido del servidor para
 servir a todos los tenants. `ValueSet` de la jerarquía de medicamentos +
