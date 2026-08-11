@@ -44,6 +44,7 @@
     },
     {
       "dci": "rosuvastatina",
+      "snomedId": "768151007",
       "presentaciones": ["comprimidos 5 mg", "comprimidos 10 mg", "comprimidos 20 mg"]
     },
     {
