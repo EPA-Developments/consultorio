@@ -182,8 +182,18 @@ todos salen del RF2 que descargaste con tu licencia.
 > genéricos droga+dosis), ValueSet `vademecum-dnm` operativo, y el buscador
 > del formulario de recetas consulta `$expand` en vivo con fallback al
 > catálogo local (lección REFEPS: el vademécum nunca bloquea la
-> prescripción). Nota operativa: `$import` exige un client **project admin**
-> del proyecto del Dashboard. Re-import semestral con cada release.
+> prescripción). Nota operativa: `$import` exige un client **project admin
+> del MISMO proyecto que usa el Dashboard** (los recursos nacen en el
+> proyecto del client; importar con un client de otro proyecto los deja
+> invisibles para los médicos). Re-import semestral con cada release.
+>
+> Ampliación: el mismo conversor importa también los **diagnósticos del
+> refset SUMAR** (`371191000221103`) a un índice de búsqueda propio
+> (`diagnosticos-snomed-ar`, separado para no mezclarse con el buscador de
+> medicamentos). El campo diagnóstico del formulario los autocompleta; el
+> coding que viaja en la receta es `http://snomed.info/sct`, y cualquier
+> edición manual del texto borra el código — un código que no coincide con
+> el texto es peor que ninguno.
 
 Hallazgo de la release note de Mayo 2026 que simplifica esta fase: la extensión
 trae los **refsets del Diccionario Nacional de Medicamentos (DNM)** —

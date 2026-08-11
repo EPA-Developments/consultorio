@@ -52,6 +52,12 @@ export interface RecetaParams {
   items: ItemReceta[];
   /** Diagnóstico que motiva la prescripción. Obligatorio. */
   diagnostico: string;
+  /**
+   * conceptId SNOMED del diagnóstico, si se eligió del índice (refset SUMAR
+   * de la Edición Argentina). El texto libre sigue valiendo sin código:
+   * nunca se inventa uno.
+   */
+  diagnosticoSnomedId?: string;
   recetaId: string;
   authoredOn: string;
   note?: string;
@@ -113,7 +119,18 @@ export function buildReceta(params: RecetaParams): MedicationRequest[] {
       requester: params.requester as MedicationRequest['requester'],
       authoredOn: params.authoredOn,
       groupIdentifier: { system: RECETA_SYSTEM, value: params.recetaId },
-      reasonCode: [{ text: params.diagnostico }],
+      reasonCode: [
+        {
+          ...(params.diagnosticoSnomedId
+            ? {
+                coding: [
+                  { system: SNOMED_SYSTEM, code: params.diagnosticoSnomedId, display: params.diagnostico },
+                ],
+              }
+            : {}),
+          text: params.diagnostico,
+        },
+      ],
       dosageInstruction: [{ text: item.posologia }],
       dispenseRequest: {
         quantity: { value: item.cantidad, unit: 'unidades' },

@@ -29,6 +29,8 @@ export interface CreateRecetaParams {
   patient: Patient;
   items: ItemReceta[];
   diagnostico: string;
+  /** conceptId SNOMED del diagnóstico, si se eligió del índice. */
+  diagnosticoSnomedId?: string;
   note?: string;
   /** Se puede fijar para que sea reproducible; si no, se genera. */
   recetaId?: string;
@@ -63,6 +65,7 @@ export async function createReceta(medplum: MedplumClient, params: CreateRecetaP
     requester: createReference(practitioner),
     items: params.items,
     diagnostico: params.diagnostico,
+    diagnosticoSnomedId: params.diagnosticoSnomedId,
     recetaId,
     authoredOn,
     note: [params.note, constancia].filter(Boolean).join(' · '),

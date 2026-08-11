@@ -7,7 +7,7 @@
 // de "sin resultados".
 import { useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { VADEMECUM_VALUESET_URL } from '../vademecum';
+import { DIAGNOSTICOS_VALUESET_URL, VADEMECUM_VALUESET_URL } from '../vademecum';
 import type { OpcionVademecum } from '../vademecum';
 
 const MIN_CARACTERES = 3;
@@ -15,6 +15,15 @@ const DEBOUNCE_MS = 300;
 const MAX_RESULTADOS = 10;
 
 export function useVademecum(query: string): { opciones: OpcionVademecum[]; buscando: boolean; caido: boolean } {
+  return useExpansion(VADEMECUM_VALUESET_URL, query);
+}
+
+/** Diagnósticos SNOMED (refset SUMAR), servidos por el mismo mecanismo. */
+export function useDiagnosticos(query: string): { opciones: OpcionVademecum[]; buscando: boolean; caido: boolean } {
+  return useExpansion(DIAGNOSTICOS_VALUESET_URL, query);
+}
+
+function useExpansion(url: string, query: string): { opciones: OpcionVademecum[]; buscando: boolean; caido: boolean } {
   const medplum = useMedplum();
   const [opciones, setOpciones] = useState<OpcionVademecum[]>([]);
   const [buscando, setBuscando] = useState(false);
@@ -31,7 +40,7 @@ export function useVademecum(query: string): { opciones: OpcionVademecum[]; busc
     setBuscando(true);
     const timer = setTimeout(() => {
       medplum
-        .valueSetExpand({ url: VADEMECUM_VALUESET_URL, filter: q, count: MAX_RESULTADOS })
+        .valueSetExpand({ url, filter: q, count: MAX_RESULTADOS })
         .then((vs) => {
           if (!cancelled) {
             setOpciones(
@@ -59,7 +68,7 @@ export function useVademecum(query: string): { opciones: OpcionVademecum[]; busc
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [medplum, query]);
+  }, [medplum, url, query]);
 
   return { opciones, buscando, caido };
 }

@@ -32,17 +32,19 @@ import fs from 'fs';
 import path from 'path';
 import readline from 'readline';
 import { pathToFileURL } from 'url';
+import { DIAGNOSTICOS_SYSTEM, DIAGNOSTICOS_VALUESET_URL, VADEMECUM_VALUESET_URL } from '../recetas/vademecum';
 import { normalizar, parseDescripcion } from './snomed-subset';
 
 /** typeId de la Fully Specified Name en RF2. */
 const FSN_TYPE = '900000000000003001';
 
 export const SNOMED_SYSTEM = 'http://snomed.info/sct';
-export const VADEMECUM_VALUESET_URL = 'https://bio.medplum.com.ar/fhir/ValueSet/vademecum-dnm';
 
 /** Refsets del DNM que definen el vademécum comercializado. */
 export const REFSET_MARCAS = '574461000221103';
 export const REFSETS_GENERICOS = ['574471000221107', '574481000221105'];
+/** Refset de diagnósticos vinculados al Programa SUMAR (Edición Argentina). */
+export const REFSET_DIAGNOSTICOS = '371191000221103';
 
 // ── Parte pura (testeable) ──────────────────────────────────────────────────
 
@@ -66,12 +68,15 @@ export function displaySinTag(fsn: string): string {
   return fsn.replace(/\s*\([^()]+\)\s*$/, '').trim();
 }
 
-export type ClaseVademecum = 'marca' | 'generico';
+export type ClaseVademecum = 'marca' | 'generico' | 'diagnostico';
 
-/** A qué clase del vademécum pertenece un refset del recorte. */
+/** A qué clase del recorte pertenece un refset. */
 export function claseDeRefset(refsetId: string): ClaseVademecum | undefined {
   if (refsetId === REFSET_MARCAS) {
     return 'marca';
+  }
+  if (refsetId === REFSET_DIAGNOSTICOS) {
+    return 'diagnostico';
   }
   return REFSETS_GENERICOS.includes(refsetId) ? 'generico' : undefined;
 }
@@ -166,14 +171,14 @@ async function extraer(rf2Dir: string): Promise<ConceptoVademecum[]> {
 
 const LOTE = 500;
 
-function importParameters(conceptos: ConceptoVademecum[]): Parameters {
+function importParameters(system: string, conceptos: ConceptoVademecum[]): Parameters {
   return {
     resourceType: 'Parameters',
     parameter: [
-      { name: 'system', valueUri: SNOMED_SYSTEM },
+      { name: 'system', valueUri: system },
       ...conceptos.map((c) => ({
         name: 'concept',
-        valueCoding: { system: SNOMED_SYSTEM, code: c.code, display: c.display },
+        valueCoding: { system, code: c.code, display: c.display },
       })),
     ],
   };
@@ -192,66 +197,101 @@ async function conectar(): Promise<MedplumClient> {
   return medplum;
 }
 
-async function aplicar(conceptos: ConceptoVademecum[], version: string): Promise<void> {
-  const medplum = await conectar();
+async function asegurarCodeSystem(
+  medplum: MedplumClient,
+  deseado: Omit<CodeSystem, 'resourceType'>
+): Promise<CodeSystem> {
+  // content=not-present: los conceptos viven en la tabla de términos del
+  // servidor, no en el recurso.
+  const existente = await medplum.searchOne('CodeSystem', { url: deseado.url as string });
+  const cs = existente
+    ? await medplum.updateResource<CodeSystem>({ ...existente, ...deseado, resourceType: 'CodeSystem', id: existente.id })
+    : await medplum.createResource<CodeSystem>({ ...deseado, resourceType: 'CodeSystem' });
+  console.log(`CodeSystem ${existente ? 'actualizado' : 'creado'}: ${deseado.url} → ${cs.id}`);
+  return cs;
+}
 
-  // CodeSystem con content=not-present: los conceptos viven en la tabla de
-  // términos del servidor, no en el recurso.
-  let cs = await medplum.searchOne('CodeSystem', { url: SNOMED_SYSTEM });
-  const deseado: CodeSystem = {
-    resourceType: 'CodeSystem',
-    url: SNOMED_SYSTEM,
-    name: 'SNOMEDCT_AR_DNM',
-    title: 'SNOMED CT Edición Argentina — vademécum DNM (comercializados)',
-    status: 'active',
-    content: 'not-present',
-    version,
-  };
-  if (!cs) {
-    cs = await medplum.createResource(deseado);
-    console.log(`CodeSystem creado: ${cs.id}`);
-  } else {
-    cs = await medplum.updateResource({ ...cs, ...deseado, id: cs.id });
-    console.log(`CodeSystem actualizado: ${cs.id} (versión ${version})`);
-  }
+async function asegurarValueSet(medplum: MedplumClient, deseado: Omit<ValueSet, 'resourceType'>): Promise<ValueSet> {
+  const existente = await medplum.searchOne('ValueSet', { url: deseado.url as string });
+  const vs = existente
+    ? await medplum.updateResource<ValueSet>({ ...existente, ...deseado, resourceType: 'ValueSet', id: existente.id })
+    : await medplum.createResource<ValueSet>({ ...deseado, resourceType: 'ValueSet' });
+  console.log(`ValueSet listo: ${deseado.url} → ${vs.id}`);
+  return vs;
+}
 
+async function importarConceptos(medplum: MedplumClient, system: string, conceptos: ConceptoVademecum[]): Promise<void> {
   const lotes = enLotes(conceptos, LOTE);
   let importados = 0;
   for (const [i, lote] of lotes.entries()) {
-    await medplum.post(medplum.fhirUrl('CodeSystem', '$import'), importParameters(lote));
+    await medplum.post(medplum.fhirUrl('CodeSystem', '$import'), importParameters(system, lote));
     importados += lote.length;
     if ((i + 1) % 10 === 0 || i === lotes.length - 1) {
       console.log(`  ${importados}/${conceptos.length} conceptos importados`);
     }
   }
+}
 
-  // ValueSet del vademécum: el sistema entero (en este servidor, el sistema
-  // ES el recorte importado). $expand con filter lo recorre server-side.
-  let vs = await medplum.searchOne('ValueSet', { url: VADEMECUM_VALUESET_URL });
-  const vsDeseado: ValueSet = {
-    resourceType: 'ValueSet',
-    url: VADEMECUM_VALUESET_URL,
-    name: 'VademecumDNM',
-    title: 'Vademécum DNM (ANMAT, en estado comercializado)',
-    status: 'active',
-    version,
-    compose: { include: [{ system: SNOMED_SYSTEM }] },
-  };
-  vs = vs
-    ? await medplum.updateResource({ ...vs, ...vsDeseado, id: vs.id })
-    : await medplum.createResource(vsDeseado);
-  console.log(`ValueSet listo: ${vs.id}`);
-
-  // Prueba de humo: la búsqueda que motivó todo.
-  const expansion = await medplum.valueSetExpand({ url: VADEMECUM_VALUESET_URL, filter: 'CRESTOR', count: 5 });
+async function humo(medplum: MedplumClient, url: string, filter: string): Promise<void> {
+  const expansion = await medplum.valueSetExpand({ url, filter, count: 5 });
   const hits = expansion.expansion?.contains ?? [];
-  console.log(`\n$expand filter=CRESTOR → ${hits.length} resultado(s):`);
+  console.log(`\n$expand ${url.split('/').pop()} filter=${filter} → ${hits.length} resultado(s):`);
   for (const h of hits) {
     console.log(`  · ${h.code}  ${h.display}`);
   }
   if (hits.length === 0) {
     console.log('  ⚠ sin resultados: revisar que el proyecto del client sea el mismo que usa el Dashboard.');
   }
+}
+
+async function aplicar(conceptos: ConceptoVademecum[], version: string): Promise<void> {
+  const medplum = await conectar();
+  const medicamentos = conceptos.filter((c) => c.clase !== 'diagnostico');
+  const diagnosticos = conceptos.filter((c) => c.clase === 'diagnostico');
+
+  // 1) Vademécum de medicamentos, bajo el sistema SNOMED real.
+  await asegurarCodeSystem(medplum, {
+    url: SNOMED_SYSTEM,
+    name: 'SNOMEDCT_AR_DNM',
+    title: 'SNOMED CT Edición Argentina — vademécum DNM (comercializados)',
+    status: 'active',
+    content: 'not-present',
+    version,
+  });
+  await importarConceptos(medplum, SNOMED_SYSTEM, medicamentos);
+  await asegurarValueSet(medplum, {
+    url: VADEMECUM_VALUESET_URL,
+    name: 'VademecumDNM',
+    title: 'Vademécum DNM (ANMAT, en estado comercializado)',
+    status: 'active',
+    version,
+    compose: { include: [{ system: SNOMED_SYSTEM }] },
+  });
+
+  // 2) Diagnósticos (refset SUMAR), en su índice de búsqueda propio para no
+  // mezclarse con el buscador de medicamentos. El coding que viaja en la
+  // receta sigue siendo http://snomed.info/sct.
+  await asegurarCodeSystem(medplum, {
+    url: DIAGNOSTICOS_SYSTEM,
+    name: 'DiagnosticosSnomedAR',
+    title: 'Diagnósticos SNOMED Edición Argentina (refset SUMAR) — índice de búsqueda',
+    status: 'active',
+    content: 'not-present',
+    version,
+  });
+  await importarConceptos(medplum, DIAGNOSTICOS_SYSTEM, diagnosticos);
+  await asegurarValueSet(medplum, {
+    url: DIAGNOSTICOS_VALUESET_URL,
+    name: 'DiagnosticosSnomedAR',
+    title: 'Diagnósticos SNOMED Edición Argentina (refset SUMAR)',
+    status: 'active',
+    version,
+    compose: { include: [{ system: DIAGNOSTICOS_SYSTEM }] },
+  });
+
+  // Pruebas de humo: una por dominio.
+  await humo(medplum, VADEMECUM_VALUESET_URL, 'CRESTOR');
+  await humo(medplum, DIAGNOSTICOS_VALUESET_URL, 'diabetes');
 }
 
 async function main(): Promise<void> {
@@ -265,12 +305,18 @@ async function main(): Promise<void> {
   const conceptos = await extraer(rf2Dir);
   const marcas = conceptos.filter((c) => c.clase === 'marca');
   const genericos = conceptos.filter((c) => c.clase === 'generico');
-  console.log(`\nVademécum a importar: ${conceptos.length} conceptos`);
+  const diagnosticos = conceptos.filter((c) => c.clase === 'diagnostico');
+  console.log(`\nA importar: ${conceptos.length} conceptos`);
   console.log(`  marcas comercializadas:   ${marcas.length}`);
   console.log(`  genéricos (droga+dosis):  ${genericos.length}`);
+  console.log(`  diagnósticos (SUMAR):     ${diagnosticos.length}`);
   for (const ejemplo of ['crestor', 'aspirina', 'metformina']) {
-    const hit = conceptos.find((c) => normalizar(c.display).includes(ejemplo));
+    const hit = conceptos.find((c) => c.clase !== 'diagnostico' && normalizar(c.display).includes(ejemplo));
     console.log(`  muestra "${ejemplo}": ${hit ? `${hit.code} ${hit.display.slice(0, 70)}` : '(sin match)'}`);
+  }
+  for (const ejemplo of ['diabetes', 'hipertensi']) {
+    const hit = diagnosticos.find((c) => normalizar(c.display).includes(ejemplo));
+    console.log(`  muestra dx "${ejemplo}": ${hit ? `${hit.code} ${hit.display.slice(0, 70)}` : '(sin match)'}`);
   }
 
   if (!args.includes('--aplicar')) {

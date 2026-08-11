@@ -19,10 +19,12 @@ describe('Parseo de miembros de refset simple', () => {
 });
 
 describe('Clase por refset', () => {
-  test('marcas y genéricos del recorte comercializado; el resto no entra', () => {
+  test('marcas, genéricos y diagnósticos del recorte; el resto no entra', () => {
     expect(claseDeRefset(REFSET_MARCAS)).toBe('marca');
     expect(claseDeRefset('574471000221107')).toBe('generico');
     expect(claseDeRefset('574481000221105')).toBe('generico');
+    // Diagnósticos del Programa SUMAR: el índice del campo diagnóstico.
+    expect(claseDeRefset('371191000221103')).toBe('diagnostico');
     // Prácticas de laboratorio: valioso, pero no es este recorte.
     expect(claseDeRefset('537301000221103')).toBeUndefined();
   });

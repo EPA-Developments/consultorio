@@ -14,7 +14,6 @@ import {
   NumberInput,
   Stack,
   Text,
-  Textarea,
   TextInput,
   Title,
 } from '@mantine/core';
@@ -30,7 +29,7 @@ import { ErrorCarga } from '../../components/ErrorCarga';
 import type { EmissionStatus } from '../../laborders/lab-order-emission';
 import { printHtmlDocument } from '../../laborders/lab-order-print';
 import { estadoCatalogo, medicamentosDelCatalogo, presentacionesDe, snomedIdDe } from '../catalogo';
-import { useVademecum } from '../hooks/useVademecum';
+import { useDiagnosticos, useVademecum } from '../hooks/useVademecum';
 import { opcionesDeMarca } from '../marcas';
 import { itemDesdeVademecum } from '../vademecum';
 import { groupByReceta } from '../receta';
@@ -50,6 +49,7 @@ export function RecetasPanel(props: { patient: Patient; cobertura?: string }): J
   const medplum = useMedplum();
   const [items, setItems] = useState<ItemEnEdicion[]>([ITEM_NUEVO(0)]);
   const [diagnostico, setDiagnostico] = useState('');
+  const [diagnosticoCodigo, setDiagnosticoCodigo] = useState<string>();
   const [emitiendo, setEmitiendo] = useState(false);
   const [existentes, setExistentes] = useState<MedicationRequest[]>();
   const [errorLectura, setErrorLectura] = useState(false);
@@ -97,6 +97,7 @@ export function RecetasPanel(props: { patient: Patient; cobertura?: string }): J
         // codificación es del catálogo, no una decisión del formulario.
         items: items.map(({ key: _key, ...item }) => ({ ...item, snomedId: item.snomedId ?? snomedIdDe(item.dci) })),
         diagnostico,
+        diagnosticoSnomedId: diagnosticoCodigo,
       });
       if (refeps.unavailable) {
         showNotification({
@@ -115,6 +116,7 @@ export function RecetasPanel(props: { patient: Patient; cobertura?: string }): J
       }
       setItems([ITEM_NUEVO(Date.now())]);
       setDiagnostico('');
+      setDiagnosticoCodigo(undefined);
       setReloadKey((k) => k + 1);
     } catch (err) {
       showNotification({
@@ -259,14 +261,12 @@ export function RecetasPanel(props: { patient: Patient; cobertura?: string }): J
             </Button>
           </Group>
 
-          <Textarea
-            label="Diagnóstico que motiva la prescripción"
-            placeholder="Diabetes tipo 2 (E11.9)"
-            value={diagnostico}
-            onChange={(e) => setDiagnostico(e.currentTarget.value)}
-            required
-            autosize
-            minRows={1}
+          <DiagnosticoInput
+            valor={diagnostico}
+            onCambio={(texto, codigo) => {
+              setDiagnostico(texto);
+              setDiagnosticoCodigo(codigo);
+            }}
           />
 
           <Group justify="flex-end">
@@ -355,6 +355,36 @@ function MedicamentoInput(props: { item: ItemReceta; onCambio: (cambio: Partial<
           props.onCambio({ dci: v });
         }
       }}
+      required
+    />
+  );
+}
+
+// El diagnóstico con el índice SNOMED (refset SUMAR): elegir de la lista
+// guarda texto + conceptId; CUALQUIER edición manual posterior borra el
+// código — un código que no coincide con el texto es peor que ninguno. El
+// texto libre siempre vale.
+function DiagnosticoInput(props: {
+  valor: string;
+  onCambio: (texto: string, codigo: string | undefined) => void;
+}): JSX.Element {
+  const diagnosticos = useDiagnosticos(props.valor);
+  const delServidor = new Map(diagnosticos.opciones.map((o) => [o.display, o]));
+  return (
+    <Autocomplete
+      label="Diagnóstico que motiva la prescripción"
+      placeholder="diabetes mellitus tipo 2… o texto libre"
+      data={[...delServidor.keys()]}
+      // Los resultados ya vienen filtrados por $expand; el filtro por
+      // substring de Mantine los escondería por acentos o espacios.
+      filter={({ options }) => options}
+      limit={10}
+      value={props.valor}
+      rightSection={diagnosticos.buscando ? <Loader size="xs" /> : undefined}
+      description={
+        diagnosticos.caido ? 'El índice de diagnósticos no respondió: el texto libre vale igual.' : undefined
+      }
+      onChange={(v) => props.onCambio(v, delServidor.get(v)?.code)}
       required
     />
   );

@@ -100,6 +100,20 @@ describe('Construcción de los MedicationRequest', () => {
     expect(sinCodigo.medicationCodeableConcept?.text).toContain('metformina');
   });
 
+  // El diagnóstico elegido del índice SUMAR viaja codificado; el texto libre,
+  // solo como texto — nunca se inventa un código.
+  test('con diagnosticoSnomedId el diagnóstico sale codificado; sin él, solo texto', () => {
+    const [conCodigo] = buildReceta({ ...params, diagnosticoSnomedId: '73211009' });
+    expect(conCodigo.reasonCode?.[0]?.coding?.[0]).toStrictEqual({
+      system: 'http://snomed.info/sct',
+      code: '73211009',
+      display: 'Diabetes tipo 2 (E11.9)',
+    });
+    expect(conCodigo.reasonCode?.[0]?.text).toBe('Diabetes tipo 2 (E11.9)');
+    const [sinCodigo] = buildReceta(params);
+    expect(sinCodigo.reasonCode?.[0]?.coding).toBeUndefined();
+  });
+
   test('la marca sugerida queda como nota sustituible, nunca como el medicamento', () => {
     const [r] = buildReceta({ ...params, items: [{ ...METFORMINA, marcaSugerida: 'Glucophage' }] });
     expect(r.medicationCodeableConcept?.text).not.toContain('Glucophage');
