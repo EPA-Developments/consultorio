@@ -190,13 +190,25 @@ A resolver en el diseño (no antes):
   solo camino de escritura con dos puertas.
 - **Impresión**: cantidad en números y letras ("2 (dos)", como el PDF de
   RCTA) y la cobertura conocida viaja al documento.
+- **Sello de integridad + firma** (`receta-emision.ts`): cada emisión sella
+  la receta (SHA-256 del contenido clínico) y deja Provenance de autoría en
+  la misma transacción. La impresión deriva el estado real y declara SOLO lo
+  que puede probar: con sello y firma verificados, la leyenda sube a
+  "Firmada por el profesional y sellada contra modificaciones"; sin eso (o
+  si la verificación falla), imprime como documento de trabajo — conservador
+  y veraz. 'Legalmente emitida' queda reservado al CUIR del registro
+  nacional, nunca antes.
 
 ## 6. Backlog (el orden importa)
 
 1. **Buscador por marca comercial** (el `+` de Medicamentos): extraer del
-   RF2 ya descargado los refsets del DNM (comerciales ANMAT ↔ genérico) para
-   los DCI del catálogo → autocomplete de dos columnas Principio Activo |
-   Marca. Es Fase 2 del plan SNOMED aplicada a esta pantalla.
+   RF2 ya descargado los fármacos de uso clínico comerciales del DNM
+   (marca ↔ genérico) para los DCI del catálogo → autocomplete de dos
+   columnas Principio Activo | Marca. Es Fase 2 del plan SNOMED aplicada a
+   esta pantalla. **Herramienta lista**: `npm run snomed-marcas -- --rf2
+   <dir>` (reporte) y `--aplicar` (escribe `data/recetas/marcas.json`); las
+   combinaciones se excluyen a propósito. Falta: correrla en el servidor,
+   revisar el resultado y cablear el autocomplete.
 2. **Diagnóstico CIE-10**: pasar el campo diagnóstico de texto libre a
    autocomplete codificado (RCTA lo trae obligatorio codificado).
 3. **Cobertura editable**: alta/edición de `Coverage` desde el contexto del

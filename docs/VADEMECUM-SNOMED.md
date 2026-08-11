@@ -185,6 +185,12 @@ con variantes "en estado comercializado", atributos de expendio controlado
 el recorte "vademécum argentino" ya viene definido como refset; el conversor
 puede importar ese subconjunto en lugar de la jerarquía entera.
 
+Primer entregable de esta fase, ya construido: `npm run snomed-marcas --
+--rf2 <dir>` extrae de los FSN de "fármaco de uso clínico comercial" del DNM
+el mapeo marca comercial → DCI para los medicamentos del catálogo
+(`--aplicar` escribe `data/recetas/marcas.json`). Alimenta el buscador por
+marca del módulo Prescripciones: la marca busca, la DCI prescribe.
+
 Conversor RF2 → `CodeSystem/$import` (script versionado, patrón
 `upload-biomarker-defs`), cargado en un proyecto compartido del servidor para
 servir a todos los tenants. `ValueSet` de la jerarquía de medicamentos +

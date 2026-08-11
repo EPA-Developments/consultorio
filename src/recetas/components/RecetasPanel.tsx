@@ -26,11 +26,13 @@ import { IconCircleCheck, IconPlus, IconPrinter, IconTrash } from '@tabler/icons
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { ErrorCarga } from '../../components/ErrorCarga';
+import type { EmissionStatus } from '../../laborders/lab-order-emission';
 import { printHtmlDocument } from '../../laborders/lab-order-print';
 import { estadoCatalogo, medicamentosDelCatalogo, presentacionesDe, snomedIdDe } from '../catalogo';
 import { groupByReceta } from '../receta';
 import type { ItemReceta } from '../receta';
 import { createReceta } from '../receta-create';
+import { emissionStatusOfReceta, getSelloReceta } from '../receta-emision';
 import { buildRecetaPrintData, renderRecetaHtml } from '../receta-print';
 
 interface ItemEnEdicion extends ItemReceta {
@@ -138,7 +140,25 @@ export function RecetasPanel(props: { patient: Patient; cobertura?: string }): J
         practitioner = profile;
       }
     }
+    // El documento declara SOLO el estado que puede probar: la firma se
+    // confirma leyendo el Provenance; si esa lectura falla, se imprime como
+    // borrador (conservador y veraz), nunca al revés.
+    let hasSignature = false;
+    const first = requests[0];
+    if (first?.id && getSelloReceta(first)) {
+      try {
+        const provs = await medplum.searchResources('Provenance', {
+          target: `MedicationRequest/${first.id}`,
+          _count: '1',
+        });
+        hasSignature = provs.some((p) => (p.signature?.length ?? 0) > 0);
+      } catch (err) {
+        console.error('Recetas: no se pudo leer la firma (Provenance)', err);
+      }
+    }
+    const emissionStatus: EmissionStatus = first ? emissionStatusOfReceta(first, hasSignature) : 'draft';
     const data = buildRecetaPrintData({
+      emissionStatus,
       recetaId,
       requests,
       patient: props.patient,

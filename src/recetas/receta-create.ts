@@ -18,6 +18,7 @@ import { EmissionBlockedError } from '../laborders/practitioner-validation';
 import type { RefepsCheckResult } from '../laborders/refeps-client';
 import { buildReceta, validarReceta } from './receta';
 import type { ItemReceta } from './receta';
+import { buildRecetaProvenance, conSelloReceta, sellarReceta } from './receta-emision';
 
 /** Genera un número de receta legible. */
 export function newRecetaId(): string {
@@ -70,12 +71,27 @@ export async function createReceta(medplum: MedplumClient, params: CreateRecetaP
     extension: [...(r.extension ?? []), { url: EXT_REFEPS_VERIFICACION, valueString: valorVerificacion(refeps) }],
   }));
 
+  // Sello de integridad + Provenance de firma, en la MISMA transacción que
+  // crea la receta: emitir ES el acto firmado del profesional. Los targets
+  // van como urn:uuid y el servidor los reescribe a las referencias reales.
+  const seal = await sellarReceta(requests);
+  const selladas = requests.map((r) => ({ ...r, identifier: conSelloReceta(r, seal) }));
+  const urns = selladas.map(() => `urn:uuid:${crypto.randomUUID()}`);
+  const provenance = buildRecetaProvenance({ targets: urns, practitioner, when: authoredOn, seal });
+
   const bundle: Bundle = {
     resourceType: 'Bundle',
     type: 'transaction',
-    entry: requests.map((resource) => ({ request: { method: 'POST', url: 'MedicationRequest' }, resource })),
+    entry: [
+      ...selladas.map((resource, i) => ({
+        fullUrl: urns[i],
+        request: { method: 'POST' as const, url: 'MedicationRequest' },
+        resource,
+      })),
+      { request: { method: 'POST' as const, url: 'Provenance' }, resource: provenance },
+    ],
   };
   await medplum.executeBatch(bundle);
 
-  return { recetaId, requests, refeps };
+  return { recetaId, requests: selladas, refeps };
 }
