@@ -49,6 +49,8 @@
     },
     {
       "dci": "ezetimibe",
+      "snomedId": "408041006",
+      "terminoSnomed": "ezetimiba",
       "presentaciones": ["comprimidos 10 mg"]
     },
     {
