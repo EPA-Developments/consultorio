@@ -1,7 +1,7 @@
 {
-  "version": "2026-08-11",
-  "estado": "borrador",
-  "nota": "Lista de conveniencia para el formulario de recetas: DCI y presentaciones habituales de la práctica. NO incluye posologías a propósito: la posología la escribe el profesional en cada receta. Pendiente de validación por el equipo médico; la receta libre (DCI tipeada) siempre está disponible.",
+  "version": "2026-08-12",
+  "estado": "validado",
+  "nota": "Lista de conveniencia para el formulario de recetas: DCI y presentaciones habituales de la práctica, validada por el equipo médico (08/2026). NO incluye posologías a propósito: la posología la escribe el profesional en cada receta. La receta libre (DCI tipeada) siempre está disponible.",
   "snomed": "conceptId de nivel producto medicinal, extraídos con snomed-subset (salida revisada a mano, FSN a la vista) de la Extensión Argentina 20260520 + Edición Internacional en Español 20260810, licencia MLDS de afiliado. Verificables contra la release con: npm run snomed-subset -- --rf2 <dir> --verificar",
   "medicamentos": [
     {

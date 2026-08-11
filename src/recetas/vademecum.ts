@@ -13,6 +13,15 @@
 
 export const VADEMECUM_VALUESET_URL = 'https://bio.medplum.com.ar/fhir/ValueSet/vademecum-dnm';
 
+/**
+ * Índice de búsqueda de diagnósticos (refset SUMAR de la Edición Argentina):
+ * CodeSystem propio que espeja los conceptos SNOMED para no mezclar dominios
+ * en el buscador de medicamentos. El coding que viaja en la receta es
+ * http://snomed.info/sct — el índice solo sirve al autocomplete.
+ */
+export const DIAGNOSTICOS_SYSTEM = 'https://bio.medplum.com.ar/fhir/CodeSystem/diagnosticos-snomed-ar';
+export const DIAGNOSTICOS_VALUESET_URL = 'https://bio.medplum.com.ar/fhir/ValueSet/diagnosticos-snomed-ar';
+
 export interface OpcionVademecum {
   code: string;
   display: string;
