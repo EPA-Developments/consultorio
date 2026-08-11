@@ -324,6 +324,35 @@ export function approveProposals(params: {
 }
 
 /** Agrupa ServiceRequest por su requisición (para mostrar una orden como unidad). */
+/**
+ * Resuelve el preset pedido por URL (?preset= de /laboratorio) contra los
+ * paneles del catálogo: 'completo' (o 'todos') selecciona el perfil entero;
+ * si no, matchea por panelCode exacto o por el nombre del panel normalizado
+ * (sin diacríticos, guiones como espacios). Habilita la preselección y los
+ * deep-links desde el Portal sin acoplar la URL a los nombres exactos.
+ */
+export function panelDelPreset<T extends { panelCode?: string; panelDisplay?: string }>(
+  preset: string,
+  grupos: T[]
+): T | 'completo' | undefined {
+  const norm = (s: string): string =>
+    s
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .replace(/[-_]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  const clave = norm(preset);
+  if (!clave) {
+    return undefined;
+  }
+  if (clave === 'completo' || clave === 'perfil completo' || clave === 'todos') {
+    return 'completo';
+  }
+  return grupos.find((g) => g.panelCode === preset) ?? grupos.find((g) => norm(g.panelDisplay ?? '').includes(clave));
+}
+
 export function groupByRequisition(requests: ServiceRequest[]): Map<string, ServiceRequest[]> {
   const map = new Map<string, ServiceRequest[]>();
   for (const req of requests) {

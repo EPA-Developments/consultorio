@@ -11,6 +11,7 @@ import {
   MAX_WRITES_PER_TX,
   ORDERABILITY_INFO,
   orderabilityFor,
+  panelDelPreset,
   REQUISITION_SYSTEM,
   resolveDerivedSources,
   toLabOrderItems,
@@ -383,5 +384,33 @@ describe('groupByRequisition', () => {
     const groups = groupByRequisition(orders);
     expect(groups.size).toBe(1);
     expect(groups.get('ORD-7')).toHaveLength(2);
+  });
+});
+
+describe('Preselección de preset por URL (?preset= de /laboratorio)', () => {
+  const PANELES = [
+    { panelCode: 'salud-celular', panelDisplay: 'Salud celular básica / metabolismo oxidativo' },
+    { panelCode: 'lipidico-avanzado', panelDisplay: 'Perfil lipídico avanzado' },
+  ];
+  test('matchea por panelCode exacto', () => {
+    expect(panelDelPreset('lipidico-avanzado', PANELES)).toBe(PANELES[1]);
+  });
+
+  test('matchea por nombre normalizado: sin diacríticos, guiones como espacios', () => {
+    expect(panelDelPreset('salud-celular-basica', PANELES)).toBe(PANELES[0]);
+    expect(panelDelPreset('LIPIDICO AVANZADO', PANELES)).toBe(PANELES[1]);
+  });
+
+  test("'completo' y 'todos' seleccionan el perfil entero", () => {
+    expect(panelDelPreset('completo', PANELES)).toBe('completo');
+    expect(panelDelPreset('perfil-completo', PANELES)).toBe('completo');
+    expect(panelDelPreset('todos', PANELES)).toBe('completo');
+  });
+
+  // Un preset desconocido no selecciona nada: mejor un formulario vacío que
+  // una orden armada con el panel equivocado.
+  test('un preset desconocido devuelve undefined', () => {
+    expect(panelDelPreset('panel-inexistente', PANELES)).toBeUndefined();
+    expect(panelDelPreset('', PANELES)).toBeUndefined();
   });
 });
