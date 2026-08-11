@@ -56,6 +56,8 @@ export function buildRecetaPrintData(params: {
   logoUrl?: string;
   emissionStatus?: EmissionStatus;
   registryLegend?: string;
+  /** Cobertura del paciente en texto (obra social · plan · N°), si se conoce. */
+  coverage?: string;
 }): RecetaPrintData {
   const { requests, patient, practitioner } = params;
   const first = requests[0];
@@ -66,6 +68,7 @@ export function buildRecetaPrintData(params: {
     patientName: patient.name?.[0] ? formatHumanName(patient.name[0]) : getDisplayString(patient),
     patientDni: getIdentifierValue(patient, DNI_SYSTEM),
     patientBirthDate: patient.birthDate,
+    coverage: params.coverage,
     practitionerName: practitioner?.name?.[0]
       ? formatHumanName(practitioner.name[0])
       : practitioner
@@ -87,6 +90,57 @@ export function buildRecetaPrintData(params: {
   };
 }
 
+/**
+ * Cantidad en letras, como la escriben las recetas argentinas: "1 (uno)".
+ * Números y letras juntos dificultan la adulteración del documento impreso.
+ * Fuera del rango habitual de una receta (1–99 enteros) devuelve solo dígitos.
+ */
+const UNIDADES = [
+  'cero',
+  'uno',
+  'dos',
+  'tres',
+  'cuatro',
+  'cinco',
+  'seis',
+  'siete',
+  'ocho',
+  'nueve',
+  'diez',
+  'once',
+  'doce',
+  'trece',
+  'catorce',
+  'quince',
+  'dieciséis',
+  'diecisiete',
+  'dieciocho',
+  'diecinueve',
+  'veinte',
+  'veintiuno',
+  'veintidós',
+  'veintitrés',
+  'veinticuatro',
+  'veinticinco',
+  'veintiséis',
+  'veintisiete',
+  'veintiocho',
+  'veintinueve',
+];
+const DECENAS = ['', '', '', 'treinta', 'cuarenta', 'cincuenta', 'sesenta', 'setenta', 'ochenta', 'noventa'];
+
+export function cantidadEnLetras(n: number): string | undefined {
+  if (!Number.isInteger(n) || n < 0 || n > 99) {
+    return undefined;
+  }
+  if (n < 30) {
+    return UNIDADES[n];
+  }
+  const decena = DECENAS[Math.floor(n / 10)];
+  const unidad = n % 10;
+  return unidad === 0 ? decena : `${decena} y ${UNIDADES[unidad]}`;
+}
+
 function esc(value: string | undefined): string {
   return (value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
@@ -106,7 +160,13 @@ export function renderRecetaHtml(data: RecetaPrintData): string {
       (item, i) => `
       <div class="rp">
         <div class="rp-head"><span class="rp-num">${i + 1}.</span> <span class="rp-med">${esc(item.medicamento)}</span>
-          ${item.cantidad !== undefined ? `<span class="rp-qty">× ${item.cantidad}</span>` : ''}
+          ${
+            item.cantidad !== undefined
+              ? `<span class="rp-qty">Cantidad: ${item.cantidad}${
+                  cantidadEnLetras(item.cantidad) ? ` (${cantidadEnLetras(item.cantidad)})` : ''
+                }</span>`
+              : ''
+          }
         </div>
         ${item.posologia ? `<div class="rp-pos"><span class="k">Posología:</span> ${esc(item.posologia)}</div>` : ''}
         ${item.nota ? `<div class="rp-nota">${esc(item.nota)}</div>` : ''}

@@ -1,7 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { AppShell, ErrorBoundary, Loading, useMedplum, useMedplumProfile } from '@medplum/react';
-import { IconClipboardHeart, IconClipboardList, IconHeartRateMonitor, IconHome, IconUser } from '@tabler/icons-react';
+import {
+  IconClipboardHeart,
+  IconClipboardList,
+  IconHeartRateMonitor,
+  IconHome,
+  IconPill,
+  IconUser,
+} from '@tabler/icons-react';
 import { Suspense } from 'react';
 import type { JSX } from 'react';
 import { Route, Routes } from 'react-router';
@@ -14,6 +21,7 @@ import { SDOHForm } from './pages/SDOHForm';
 import { SimulatorPage } from './pages/SimulatorPage';
 import { LandingPage } from './pages/LandingPage';
 import { PatientPage } from './pages/PatientPage';
+import { PrescripcionesPage } from './pages/PrescripcionesPage';
 import { ResourcePage } from './pages/ResourcePage';
 import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
@@ -54,6 +62,10 @@ export function App(): JSX.Element | null {
             },
           ],
         },
+        {
+          title: 'Prescripciones',
+          links: [{ icon: <IconPill />, label: 'Recetas', href: '/prescripciones' }],
+        },
       ]}
     >
       <ErrorBoundary>
@@ -62,6 +74,8 @@ export function App(): JSX.Element | null {
             <Route path="/" element={profile ? <HomePage /> : <LandingPage />} />
             <Route path="/signin" element={<SignInPage />} />
             <Route path="/ckm" element={<CKMDashboard />} />
+            <Route path="/prescripciones" element={<PrescripcionesPage />} />
+            <Route path="/prescripciones/:patientId" element={<PrescripcionesPage />} />
             <Route path="/ckm/biomarkers/:patientId" element={<BiomarkerPanelPage />} />
             <Route path="/ckm/sdoh/:patientId" element={<SDOHForm />} />
             <Route path="/ckm/simulator/:patientId" element={<SimulatorPage />} />

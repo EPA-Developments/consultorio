@@ -40,7 +40,7 @@ interface ItemEnEdicion extends ItemReceta {
 
 const ITEM_NUEVO = (key: number): ItemEnEdicion => ({ key, dci: '', presentacion: '', cantidad: 1, posologia: '' });
 
-export function RecetasPanel(props: { patient: Patient }): JSX.Element {
+export function RecetasPanel(props: { patient: Patient; cobertura?: string }): JSX.Element {
   const medplum = useMedplum();
   const [items, setItems] = useState<ItemEnEdicion[]>([ITEM_NUEVO(0)]);
   const [diagnostico, setDiagnostico] = useState('');
@@ -144,6 +144,7 @@ export function RecetasPanel(props: { patient: Patient }): JSX.Element {
       patient: props.patient,
       practitioner,
       logoUrl: '/logo.png',
+      coverage: props.cobertura,
     });
     printHtmlDocument(renderRecetaHtml(data));
   }
