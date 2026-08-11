@@ -57,6 +57,23 @@ describe('Matcheo de DCI', () => {
   test('un término ajeno no matchea', () => {
     expect(matcheaDci('metforminum aliud', 'metformina')).toBe(false);
   });
+
+  // El alias terminoSnomed del catálogo entra por acá: se matchea con la
+  // redacción de la edición aunque el formulario muestre otra DCI.
+  test('un término multi-palabra de la edición matchea como cualquier DCI', () => {
+    expect(
+      matcheaDci(
+        'producto que contiene acido graso omega 3 derivado del pescado (producto medicinal)',
+        'ácido graso omega 3 derivado del pescado'
+      )
+    ).toBe(true);
+    expect(
+      matcheaDci(
+        'producto que contiene exactamente ácido graso omega 3 derivado del pescado 1 gramo por cada cápsula para administración oral de liberación convencional (fármaco de uso clínico)',
+        'ácido graso omega 3 derivado del pescado'
+      )
+    ).toBe(false);
+  });
 });
 
 describe('Clasificación por etiqueta semántica del FSN', () => {
@@ -75,6 +92,14 @@ describe('Clasificación por etiqueta semántica del FSN', () => {
     expect(clasificar('metformina (sustancia)')).toBe('sustancia');
     expect(clasificar('metformin (substance)')).toBe('sustancia');
     expect(clasificar('metformina 500 mg comprimido (producto medicinal clínico)')).toBe('producto-clinico');
+  });
+
+  // Redacción de la extensión argentina (DNM) para forma+concentración,
+  // vista en la release 20260520.
+  test('fármaco de uso clínico (redacción argentina) es producto-clinico', () => {
+    expect(clasificar('rosuvastatina 10 mg y ezetimibe 10 mg comprimido oral (fármaco de uso clínico)')).toBe(
+      'producto-clinico'
+    );
   });
 
   test('sin FSN o sin etiqueta, la clase es otro', () => {

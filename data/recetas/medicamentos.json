@@ -57,6 +57,8 @@
     },
     {
       "dci": "ácidos grasos omega-3",
+      "snomedId": "346441008",
+      "terminoSnomed": "ácido graso omega 3 derivado del pescado",
       "presentaciones": ["cápsulas 1000 mg (EPA+DHA)"]
     },
     {

@@ -95,17 +95,20 @@ export function etiquetaSemantica(fsn: string): string | undefined {
 export type ClaseConcepto = 'producto-medicinal' | 'sustancia' | 'producto-clinico' | 'otro';
 
 export function clasificar(fsn: string | undefined): ClaseConcepto {
-  const tag = fsn ? etiquetaSemantica(fsn) : undefined;
-  if (!tag) {
+  const cruda = fsn ? etiquetaSemantica(fsn) : undefined;
+  if (!cruda) {
     return 'otro';
   }
+  const tag = normalizar(cruda);
   if (tag === 'producto medicinal' || tag === 'medicinal product') {
     return 'producto-medicinal';
   }
   if (tag === 'sustancia' || tag === 'substance') {
     return 'sustancia';
   }
-  if (tag.includes('producto medicinal cl') || tag.includes('clinical drug')) {
+  // "fármaco de uso clínico" es la redacción de la extensión argentina (DNM)
+  // para el nivel forma+concentración.
+  if (tag.includes('producto medicinal cl') || tag.includes('clinical drug') || tag.includes('farmaco de uso clinico')) {
     return 'producto-clinico';
   }
   return 'otro';
@@ -167,7 +170,15 @@ async function porLinea(file: string, fn: (line: string) => void): Promise<void>
 }
 
 interface Catalogo {
-  medicamentos: { dci: string; snomedId?: string; presentaciones: string[] }[];
+  medicamentos: { dci: string; snomedId?: string; terminoSnomed?: string; presentaciones: string[] }[];
+}
+
+/**
+ * Término con el que se busca en la edición: el alias terminoSnomed cuando la
+ * edición nombra distinto que el formulario, la DCI en el caso normal.
+ */
+function terminoDe(m: Catalogo['medicamentos'][number]): string {
+  return m.terminoSnomed ?? m.dci;
 }
 
 async function main(): Promise<void> {
@@ -218,7 +229,7 @@ async function main(): Promise<void> {
         return;
       }
       for (const m of objetivos) {
-        if (matcheaDci(d.term, m.dci)) {
+        if (matcheaDci(d.term, terminoDe(m))) {
           const mapa = candidatosPorDci.get(m.dci) as Map<string, Candidato>;
           if (!mapa.has(d.conceptId)) {
             mapa.set(d.conceptId, { conceptId: d.conceptId, clase: 'otro', terminoMatcheado: d.term });
@@ -275,7 +286,7 @@ async function main(): Promise<void> {
       continue;
     }
 
-    console.log(`── ${m.dci} ──`);
+    console.log(`── ${m.dci}${m.terminoSnomed ? ` (busca: ${m.terminoSnomed})` : ''} ──`);
     if (candidatos.length === 0) {
       sinCandidatos++;
       console.log('  (sin candidatos: buscarlo a mano en el navegador oficial y cargarlo con su FSN a la vista)\n');
