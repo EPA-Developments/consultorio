@@ -1,10 +1,12 @@
 {
-  "version": "2026-08-10",
+  "version": "2026-08-11",
   "estado": "borrador",
   "nota": "Lista de conveniencia para el formulario de recetas: DCI y presentaciones habituales de la práctica. NO incluye posologías a propósito: la posología la escribe el profesional en cada receta. Pendiente de validación por el equipo médico; la receta libre (DCI tipeada) siempre está disponible.",
+  "snomed": "conceptId de nivel producto medicinal, extraídos con snomed-subset (salida revisada a mano, FSN a la vista) de la Extensión Argentina 20260520 + Edición Internacional en Español 20260810, licencia MLDS de afiliado. Verificables contra la release con: npm run snomed-subset -- --rf2 <dir> --verificar",
   "medicamentos": [
     {
       "dci": "semaglutida",
+      "snomedId": "764284009",
       "presentaciones": [
         "solución inyectable SC 0,25 mg/dosis (pluma prellenada)",
         "solución inyectable SC 0,5 mg/dosis (pluma prellenada)",
@@ -17,6 +19,7 @@
     },
     {
       "dci": "tirzepatida",
+      "snomedId": "579341000221106",
       "presentaciones": [
         "solución inyectable SC 2,5 mg/dosis",
         "solución inyectable SC 5 mg/dosis",
@@ -26,14 +29,17 @@
     },
     {
       "dci": "liraglutida",
+      "snomedId": "444907006",
       "presentaciones": ["solución inyectable SC 6 mg/mL (pluma multidosis)"]
     },
     {
       "dci": "metformina",
+      "snomedId": "109081006",
       "presentaciones": ["comprimidos 500 mg", "comprimidos 850 mg", "comprimidos 1000 mg", "comprimidos LP 750 mg"]
     },
     {
       "dci": "atorvastatina",
+      "snomedId": "108600003",
       "presentaciones": ["comprimidos 10 mg", "comprimidos 20 mg", "comprimidos 40 mg"]
     },
     {
@@ -46,6 +52,7 @@
     },
     {
       "dci": "colecalciferol",
+      "snomedId": "108943009",
       "presentaciones": ["solución oral en gotas 100.000 UI/mL", "comprimidos 5.000 UI", "ampolla bebible 100.000 UI"]
     },
     {
@@ -54,6 +61,7 @@
     },
     {
       "dci": "citrato de magnesio",
+      "snomedId": "12495006",
       "presentaciones": ["polvo para solución oral", "comprimidos 400 mg"]
     }
   ]
