@@ -17,7 +17,7 @@
 //   MEDPLUM_ADMIN_EMAIL=admin@... MEDPLUM_ADMIN_PASSWORD=... npm run project-map
 //   MEDPLUM_CLIENT_ID=... MEDPLUM_CLIENT_SECRET=... npm run project-map
 //     (ese client debe pertenecer al proyecto Super Admin)
-import { MedplumClient } from '@medplum/core';
+import { ClientStorage, MedplumClient, MemoryStorage } from '@medplum/core';
 import type {
   Bot,
   ClientApplication,
@@ -191,21 +191,27 @@ export function analizar(resumenes: ResumenProyecto[], botsEsperados: string[]):
 
 async function conectar(): Promise<MedplumClient> {
   const baseUrl = process.env.MEDPLUM_BASE_URL ?? 'https://api.medplum.com.ar';
-  const medplum = new MedplumClient({ baseUrl, fetch });
+  // En Node no hay sessionStorage: el login por email/password guarda estado y
+  // sin storage propio revienta con "sessionStorage is not defined". Los otros
+  // scripts no lo necesitan porque usan client credentials, que no guardan nada.
+  const medplum = new MedplumClient({ baseUrl, fetch, storage: new ClientStorage(new MemoryStorage()) });
   const email = process.env.MEDPLUM_ADMIN_EMAIL;
   const password = process.env.MEDPLUM_ADMIN_PASSWORD;
   const clientId = process.env.MEDPLUM_CLIENT_ID;
   const clientSecret = process.env.MEDPLUM_CLIENT_SECRET;
 
   if (email && password) {
-    let login = (await medplum.startLogin({ email, password })) as {
-      login?: string;
-      code?: string;
-      memberships?: { id: string; project?: { reference?: string; display?: string } }[];
-    };
+    let login = await medplum.startLogin({ email, password });
+    if (login.mfaRequired || login.mfaEnrollRequired) {
+      throw new Error(
+        'Ese usuario tiene MFA: el login por email/password no sirve para un script.\n' +
+          '  Usá un ClientApplication del proyecto Super Admin (MEDPLUM_CLIENT_ID/SECRET).'
+      );
+    }
     if (login.memberships?.length) {
-      // Con varias membresías hay que elegir: la de super admin es la que ve
-      // todos los proyectos. Se puede fijar con MEDPLUM_ADMIN_PROJECT.
+      // Con varias membresías hay que elegir una: la de super admin es la
+      // única que ve todos los proyectos. Se puede fijar con
+      // MEDPLUM_ADMIN_PROJECT (id de proyecto o de membership).
       const preferido = process.env.MEDPLUM_ADMIN_PROJECT;
       const elegida =
         (preferido
@@ -215,7 +221,7 @@ async function conectar(): Promise<MedplumClient> {
         login.memberships[0];
       console.log(`Membresías: ${login.memberships.map((m) => m.project?.display ?? m.id).join(' · ')}`);
       console.log(`Usando: ${elegida.project?.display ?? elegida.id}`);
-      login = (await medplum.post('auth/profile', { login: login.login, profile: elegida.id })) as typeof login;
+      login = await medplum.post('auth/profile', { login: login.login, profile: elegida.id });
     }
     if (login.code) {
       await medplum.processCode(login.code);
