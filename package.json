@@ -36,7 +36,8 @@
     "invite-practitioners": "tsx src/scripts/invite-practitioners.ts",
     "snomed-subset": "tsx src/scripts/snomed-subset.ts",
     "snomed-marcas": "tsx src/scripts/snomed-marcas.ts",
-    "snomed-vademecum": "tsx src/scripts/snomed-vademecum.ts"
+    "snomed-vademecum": "tsx src/scripts/snomed-vademecum.ts",
+    "project-map": "tsx src/scripts/project-map.ts"
   },
   "prettier": {
     "printWidth": 120,
