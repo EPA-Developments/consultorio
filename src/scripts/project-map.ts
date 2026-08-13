@@ -189,11 +189,26 @@ export function analizar(resumenes: ResumenProyecto[], botsEsperados: string[]):
 
 // ── Conexión ────────────────────────────────────────────────────────────────
 
+/**
+ * El login por email/password usa PKCE, y el SDK guarda el `codeVerifier` en
+ * el sessionStorage GLOBAL — no en el storage que se le pasa al cliente. En
+ * Node esa global no existe y el script muere con "sessionStorage is not
+ * defined" antes de tocar el servidor. Le damos una en memoria, que es
+ * exactamente lo que necesita: vive lo que dura el proceso.
+ *
+ * Los demás scripts del repo no lo necesitan porque usan client credentials,
+ * que no pasan por PKCE.
+ */
+function asegurarSessionStorage(): void {
+  const g = globalThis as { sessionStorage?: Storage };
+  if (typeof g.sessionStorage === 'undefined') {
+    g.sessionStorage = new MemoryStorage();
+  }
+}
+
 async function conectar(): Promise<MedplumClient> {
   const baseUrl = process.env.MEDPLUM_BASE_URL ?? 'https://api.medplum.com.ar';
-  // En Node no hay sessionStorage: el login por email/password guarda estado y
-  // sin storage propio revienta con "sessionStorage is not defined". Los otros
-  // scripts no lo necesitan porque usan client credentials, que no guardan nada.
+  asegurarSessionStorage();
   const medplum = new MedplumClient({ baseUrl, fetch, storage: new ClientStorage(new MemoryStorage()) });
   const email = process.env.MEDPLUM_ADMIN_EMAIL;
   const password = process.env.MEDPLUM_ADMIN_PASSWORD;
