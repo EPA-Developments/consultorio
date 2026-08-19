@@ -322,7 +322,7 @@ function VisitLabs(props: {
         showNotification({
           color: 'yellow',
           title: 'Orden generada SIN verificación REFEPS',
-          message: `${requests.length} análisis solicitados para ${props.visit.label}. El registro no respondió; la orden deja constancia.`,
+          message: `${requests.length} análisis solicitados para ${props.visit.label}. ${refeps.unavailableReason ?? 'El registro no respondió.'} La orden deja constancia.`,
           autoClose: false,
         });
       } else {

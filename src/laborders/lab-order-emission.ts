@@ -247,8 +247,17 @@ export function withSeal(request: ServiceRequest, seal: string): ServiceRequest[
 
 // ── Verificación pública ────────────────────────────────────────────────────
 
-/** Base de la URL de verificación de una orden (la resuelve el portal). */
-export const VERIFICATION_BASE_URL = 'https://bio.medplum.com.ar/verificar';
+/**
+ * Base de la URL de verificación (la resuelve el portal).
+ *
+ * OJO con la regla de identificadores congelados (docs/MARCA-Y-PLATAFORMA.md):
+ * esto NO es un canonical URL. Es un enlace que se IMPRIME para que un
+ * laboratorio o una farmacia lo visite. Un identificador puede quedarse con el
+ * nombre viejo para siempre porque nadie lo tipea; un enlace impreso que apunta
+ * a un dominio ajeno no verifica nada. No se guarda en ningún recurso: se
+ * calcula al imprimir, así que cambiarlo no migra datos.
+ */
+export const VERIFICATION_BASE_URL = 'https://consultorio.medplum.com.ar/verificar';
 
 /**
  * URL de verificación de una orden, para imprimir como QR. Permite que el

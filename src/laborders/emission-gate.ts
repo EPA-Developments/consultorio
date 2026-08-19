@@ -61,7 +61,12 @@ export function constanciaRefeps(refeps: RefepsCheckResult, fechaIso: string): s
   if (refeps.verification?.verdict === 'verificado') {
     return `Matrícula verificada en REFEPS (${fechaIso.slice(0, 10)})`;
   }
-  return 'Matrícula sin verificar contra REFEPS al emitir (registro sin respuesta)';
+  // Decía "(registro sin respuesta)" en todos los casos, y eso afirma una causa
+  // que no se comprobó: la verificación también queda sin hacer cuando el bot
+  // refeps-verify no está desplegado en el proyecto, que no es culpa de REFEPS.
+  // El documento dice lo que es cierto —no se verificó, y cuándo— y el motivo
+  // exacto va al profesional por pantalla, no impreso en la orden.
+  return `Matrícula sin verificar contra REFEPS al emitir (${fechaIso.slice(0, 10)})`;
 }
 
 /** El valor de la extensión, a partir del resultado. */

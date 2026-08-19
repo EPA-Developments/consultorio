@@ -1,5 +1,7 @@
 import type { MedicationRequest, Patient, Practitioner } from '@medplum/fhirtypes';
 import { BRAND, brandTitle } from '../brand';
+import { SELLO_RECETA_SYSTEM } from './receta-emision';
+import { RECETA_SYSTEM } from './receta';
 import { buildRecetaPrintData, cantidadEnLetras, renderRecetaHtml } from './receta-print';
 
 describe('Cantidad en letras', () => {
@@ -105,5 +107,37 @@ describe('Impresión de la receta', () => {
     expect(html).toContain(BRAND.clinicSubtitle);
     expect(html).toContain(`Generado desde ${brandTitle()}`);
     expect(html).not.toContain('BioWellness');
+  });
+  // El PDF de la receta es lo que se sube a firmar.gob.ar. Si no lleva el
+  // sello impreso, el papel firmado y el registro FHIR no tienen ningún
+  // vínculo verificable: se firmaría un documento que nadie puede cotejar.
+  describe('Vínculo con el registro (sello impreso)', () => {
+    // Como sale de buildReceta + createReceta: el número de receta va en
+    // groupIdentifier y el sello en identifier.
+    const sellada = {
+      ...REQUEST,
+      groupIdentifier: { system: RECETA_SYSTEM, value: 'REC-TEST' },
+      identifier: [{ system: SELLO_RECETA_SYSTEM, value: 'a'.repeat(64) }],
+    };
+
+    test('una receta sellada imprime verificación y sello abreviado', () => {
+      const html = renderRecetaHtml(
+        buildRecetaPrintData({ recetaId: 'REC-TEST', requests: [sellada], patient: PACIENTE })
+      );
+      expect(html).toContain('Sello de integridad');
+      expect(html).toContain('a'.repeat(16));
+      // Abreviado: el hash entero no aporta a la lectura y ocupa dos renglones.
+      expect(html).not.toContain('a'.repeat(64));
+    });
+
+    // Un borrador tiene número de receta pero no sello: no hay nada que
+    // verificar todavía, y anunciar verificación sería mentir.
+    test('sin sello no inventa un bloque de verificación', () => {
+      const conNumero = { ...REQUEST, groupIdentifier: { system: RECETA_SYSTEM, value: 'REC-TEST' } };
+      const html = renderRecetaHtml(
+        buildRecetaPrintData({ recetaId: 'REC-TEST', requests: [conNumero], patient: PACIENTE })
+      );
+      expect(html).not.toContain('Sello de integridad');
+    });
   });
 });

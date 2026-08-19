@@ -254,3 +254,121 @@ solo lo que puede probar.
    profesional —la app ya lee el tenant para el saludo del tablero
    (`HomePage.tsx`), el papel todavía no—. `BRAND.clinicName` es el punto exacto
    donde se enchufa ese cambio.
+
+---
+
+## 8. Firma Digital Remota — el PDF que se firma
+
+**Confirmado con el flujo real (agosto 2026):** `firmar.gob.ar/firmador` es un
+**portal interactivo, sin API**. El circuito es:
+
+```
+Consultorio genera el PDF → el profesional lo sube a firmar.gob.ar →
+firma con su certificado → descarga el PDF firmado
+```
+
+No hay integración de servicio que hacer: lo que nos toca es **producir el
+archivo**. Y ahí estaba el problema.
+
+### Por qué no alcanzaba con "Guardar como PDF"
+
+`printHtmlDocument` escribe HTML en un iframe oculto y llama a `window.print()`.
+El PDF sale del diálogo del navegador, lo que significa que:
+
+- **nunca pasa por nuestras manos** — la app jamás ve esos bytes, así que no
+  puede hashearlos, guardarlos ni compararlos;
+- **no es reproducible** — cambia con el navegador, los márgenes, el tamaño de
+  papel y los encabezados que el usuario tenga activados. En la prueba real, el
+  navegador le inyectó la URL de la página al pie del documento firmado.
+
+Un documento que se firma tiene que ser determinista: **los mismos datos, los
+mismos bytes, siempre**. Es la única forma de probar después que el PDF firmado
+es el que emitimos.
+
+### Cómo quedó
+
+- `src/pdf/document.ts` — primitivas: la maqueta se expresa como **datos**
+  (bloques con posición) y el dibujo con pdf-lib es un adaptador aparte. Esa
+  costura permite testear el documento sin abrir un PDF.
+- `src/recetas/receta-pdf.ts` — la maqueta de la receta. Consume el **mismo
+  `RecetaPrintData`** que la impresión HTML: el contenido no puede divergir
+  entre lo que se ve en pantalla y lo que se firma, solo la maqueta.
+- Determinismo verificado por test: las fechas del PDF salen de `authoredOn`
+  (no del reloj), se usan fuentes estándar (sin embeber archivos externos) y
+  dos generaciones de la misma receta dan **bytes idénticos**.
+- El nombre del archivo sigue la convención que ya se usaba a mano:
+  `Receta-REC-XXXXXXXX-NombrePaciente.pdf`.
+- pdf-lib se carga con **import dinámico**: pesa ~430 kB y solo hace falta al
+  bajar un PDF, así que no se le cobra a quien entra a ver una historia clínica.
+
+### El vínculo entre el PDF firmado y el registro FHIR
+
+La orden de laboratorio imprimía sello de integridad y URL de verificación; **la
+receta no**. Se corrigió: sin eso, firmar el PDF firma un documento que nadie
+puede cotejar contra la receta guardada, y el sello SHA-256 que ya calculábamos
+no servía de nada en el papel.
+
+Ahora el sello viaja impreso, así que **firmar el PDF firma transitivamente el
+hash del contenido clínico**. Son dos objetos distintos —el sello cubre el
+contenido FHIR, la firma del Estado cubre el PDF— y esto es lo que los ata.
+
+### El camino de vuelta — ✅ hecho
+
+Se firmó una receta generada por el repo y se analizó el archivo que volvió.
+Lo que enseñó, verificado sobre el documento real:
+
+| Hallazgo | Valor |
+| --- | --- |
+| Autoridad certificante | **AC MODERNIZACION-PFDR** (Plataforma de Firma Digital Remota) |
+| Tipo de firma | `adbe.pkcs7.detached`, PKCS#7 de 15.000 bytes |
+| `ByteRange` | `[0 6514 36516 3451]` — arranca en 0 y **cubre el archivo entero** |
+| Identidad del firmante | commonName + `serialNumber` con el **CUIL** |
+| Firma visible | **No**: `/Rect[0 0 0 0]`, sin sello visual en la página |
+
+**El hallazgo que lo cambia todo:** firmar es una **actualización incremental**.
+Los bytes del PDF que generamos aparecen **intactos, como prefijo exacto** del
+archivo firmado — se comprobó byte a byte sobre el documento real.
+
+Combinado con la generación determinista, eso habilita una verificación fuerte
+y casi gratis: **se regenera el PDF de la receta y se compara con el principio
+del firmado**. Si coincide, el documento que alguien firmó es exactamente el que
+emitimos. Sin determinismo esta comparación no existiría.
+
+`src/pdf/signed-pdf.ts` verifica cuatro cosas:
+
+1. el contenido firmado **es el nuestro** (prefijo exacto);
+2. la firma **cubre todo el archivo** (nada colado fuera del `ByteRange`);
+3. el **resumen firmado coincide** con los bytes (SHA-256 contra el atributo
+   `messageDigest` del PKCS#7): detecta alteraciones posteriores a la firma;
+4. el **CUIL del firmante** es el del profesional que prescribió.
+
+⚠️ **Lo que NO hace, y hay que decirlo:** no valida la cadena de certificación,
+ni la revocación (CRL/OCSP), ni que la firma matemática corresponda a la clave
+del titular. Eso lo hace el validador oficial (firmar.gob.ar → *Validar
+documento*). Nunca declarar "firma válida" con esto solo.
+
+`src/recetas/receta-firmada.ts` guarda lo verificado: el PDF como `Binary` +
+`DocumentReference` colgado de la receta, y el **PKCS#7 real en
+`Provenance.signature.data`** con `sigFormat: application/pkcs7-signature`. Ese
+campo estaba modelado y vacío desde que se escribió `lab-order-emission`: era
+exactamente esto lo que esperaba.
+
+El orden no es negociable: **primero verificar, después escribir**. Un PDF que
+no corresponde a la receta quedaría exhibido como su documento legal, así que
+si la verificación falla no se guarda nada — ni el `Binary`.
+
+Los tests usan un **fixture sintético** que reproduce la estructura. Un PDF
+firmado real lleva el CUIL, el correo y el certificado de una persona: eso no se
+versiona.
+
+### Lo que sigue abierto
+
+- **La firma no es visible en la página** (`/Rect[0 0 0 0]`). Quien recibe el
+  papel impreso no ve ninguna marca de que está firmado; el bloque de
+  verificación con el sello es hoy lo único que lo sugiere. Decidir si el
+  documento debe reservar un área de firma visible.
+- **El estado sigue en `signed-internal`.** La firma del profesional acredita
+  AUTORÍA; `legally-emitted` requiere la inscripción en el ReNaPDiS y el CUIR
+  asignado por el Estado. La firma digital no adelanta ese trámite.
+- **La orden de laboratorio** todavía no tiene PDF propio; las primitivas de
+  `src/pdf/` están listas para reusarse.

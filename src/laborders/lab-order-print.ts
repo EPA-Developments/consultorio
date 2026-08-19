@@ -112,7 +112,14 @@ export function diagnosisFromRequests(requests: ServiceRequest[]): string | unde
 export function coverageFromNote(req: ServiceRequest | undefined): string | undefined {
   const text = req?.note?.[0]?.text;
   const match = text?.match(/Cobertura:\s*(.+)/i);
-  return match?.[1]?.trim() ?? undefined;
+  if (!match) {
+    return undefined;
+  }
+  // Las órdenes emitidas antes de separar las notas traen la constancia REFEPS
+  // pegada con ' · ' a la cobertura. Se recorta al leer para que un documento
+  // viejo no siga imprimiendo "Swiss Medical · Matrícula sin verificar…" como
+  // si fuera el plan. Lo nuevo ya viene en notas separadas.
+  return match[1].split(/\s*·\s*Matrícula\s/i)[0].trim() || undefined;
 }
 
 /**

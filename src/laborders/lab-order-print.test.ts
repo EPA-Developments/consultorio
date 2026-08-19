@@ -46,7 +46,7 @@ function order(intent: 'order' | 'proposal', note?: string): ServiceRequest[] {
     requisitionId: 'ORD-ABC123',
     authoredOn: '2026-07-23T10:00:00Z',
     intent,
-    note,
+    notas: note ? [note] : undefined,
   });
 }
 
@@ -239,5 +239,34 @@ describe('renderLabOrderHtml', () => {
     expect(html).toContain(BRAND.clinicSubtitle);
     expect(html).toContain(`Generado desde ${brandTitle()}`);
     expect(html).not.toContain('BioWellness');
+  });
+  // Regresión de un defecto visto en una orden REAL impresa: la cobertura salía
+  // como "Swiss Medical · Matrícula sin verificar contra REFEPS al emitir
+  // (registro sin respuesta)". La constancia, disfrazada de plan de cobertura,
+  // en un documento clínico.
+  test('la cobertura no arrastra la constancia REFEPS de una orden vieja', () => {
+    const vieja: ServiceRequest = {
+      resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
+      subject: { reference: 'Patient/p1' },
+      note: [
+        {
+          text: 'Cobertura: Swiss Medical · Matrícula sin verificar contra REFEPS al emitir (registro sin respuesta)',
+        },
+      ],
+    };
+    expect(coverageFromNote(vieja)).toBe('Swiss Medical');
+  });
+
+  test('una cobertura con separadores propios se conserva entera', () => {
+    const conPlan: ServiceRequest = {
+      resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
+      subject: { reference: 'Patient/p1' },
+      note: [{ text: 'Cobertura: Swiss Medical · SMG20 · N° 800006' }],
+    };
+    expect(coverageFromNote(conPlan)).toBe('Swiss Medical · SMG20 · N° 800006');
   });
 });

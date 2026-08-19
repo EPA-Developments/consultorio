@@ -69,6 +69,15 @@ relevamiento original):
 - **§3.7**: ya **aplica** (hay recetas de medicamentos) y está resuelto con SNOMED CT
   Edición Argentina: 10 DCI codificados + 384 presentaciones comerciales del DNM
   (marca busca, DCI prescribe).
+- **§3.10 (firma del profesional)**: dejó de ser teórico. El repo genera un PDF
+  **determinista** de la receta, el profesional lo firma en **firmar.gob.ar** con su
+  certificado de la **AC MODERNIZACION-PFDR**, y el archivo firmado vuelve a la historia
+  clínica como `Binary` + `DocumentReference`, con el PKCS#7 en
+  `Provenance.signature.data`. Al recibirlo se verifica que el contenido firmado sea el
+  emitido (el original queda como prefijo exacto del firmado), que la firma cubra todo el
+  archivo, que el resumen coincida y que el CUIL del firmante sea el del prescriptor. La
+  validación criptográfica completa (cadena, revocación) sigue siendo del validador
+  oficial. Ver `MARCA-Y-PLATAFORMA.md` §8.
 - El roadmap de inscripción completo está en `RECETARIO-FASE2-LEGAL.md`, Anexo 2.
 
 ### 1.3 Sobre la auditoría del código (esta parte sí es confiable)

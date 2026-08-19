@@ -9,7 +9,12 @@
 // la inscripción en el Registro de Recetarios Electrónicos y el CUIR asignado
 // por el sistema nacional — nunca se declara sin eso.
 import type { Identifier, MedicationRequest, Practitioner, Provenance, Signature } from '@medplum/fhirtypes';
-import { CUIR_SYSTEM, sha256Hex, SIGNATURE_TYPE_AUTHOR } from '../laborders/lab-order-emission';
+import {
+  CUIR_SYSTEM,
+  sha256Hex,
+  SIGNATURE_TYPE_AUTHOR,
+  VERIFICATION_BASE_URL,
+} from '../laborders/lab-order-emission';
 import type { EmissionStatus } from '../laborders/lab-order-emission';
 
 /** `system` del sello de integridad de una receta (hash de su contenido). */
@@ -132,4 +137,25 @@ export function emissionStatusOfReceta(request: MedicationRequest, hasSignature:
     return 'signed-internal';
   }
   return 'draft';
+}
+
+/**
+ * URL de verificación de la receta, para cotejar que existe y no fue alterada.
+ * Mismo criterio que la orden de laboratorio: usa el CUIR si el sistema
+ * nacional ya lo asignó; si no, el número de receta propio.
+ *
+ * Importa que viaje impresa: cuando el PDF se firma en firmar.gob.ar, esto y
+ * el sello son lo único que ata el papel firmado al registro FHIR.
+ */
+export function verificationUrlReceta(requests: MedicationRequest[]): string | undefined {
+  const first = requests[0];
+  if (!first) {
+    return undefined;
+  }
+  const cuir = getCuirReceta(first);
+  if (cuir) {
+    return `${VERIFICATION_BASE_URL}?cuir=${encodeURIComponent(cuir)}`;
+  }
+  const receta = first.groupIdentifier?.value;
+  return receta ? `${VERIFICATION_BASE_URL}?receta=${encodeURIComponent(receta)}` : undefined;
 }
