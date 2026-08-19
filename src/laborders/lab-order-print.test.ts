@@ -1,4 +1,5 @@
 import type { Patient, Practitioner, ServiceRequest } from '@medplum/fhirtypes';
+import { BRAND, brandTitle } from '../brand';
 import { DNI_SYSTEM, MATRICULA_SYSTEM } from '../ckm/argentina';
 import { buildLabOrder, toLabOrderItems } from './lab-order';
 import type { BiomarkerDefinition } from '../ckm/observation-definitions';
@@ -231,5 +232,12 @@ describe('renderLabOrderHtml', () => {
     });
     expect(evil).not.toContain('<script>alert(1)</script>');
     expect(evil).toContain('&lt;script&gt;');
+  });
+  // Mismo criterio que la receta: el emisor del papel sale de src/brand.ts.
+  test('el membrete y el pie salen de la marca, no de un literal', () => {
+    expect(html).toContain(BRAND.clinicName);
+    expect(html).toContain(BRAND.clinicSubtitle);
+    expect(html).toContain(`Generado desde ${brandTitle()}`);
+    expect(html).not.toContain('BioWellness');
   });
 });

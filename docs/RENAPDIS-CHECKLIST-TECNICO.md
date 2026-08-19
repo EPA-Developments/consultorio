@@ -1,7 +1,7 @@
 # Checklist técnico — art. 4 del Anexo del Decreto 98/23 (inscripción ReNaPDiS)
 
 > **Qué es esto.** Mapeo requisito por requisito entre lo que exige el art. 4 del Anexo del
-> Decreto 98/2023 y **lo que la plataforma BioWellness realmente tiene hoy**, verificado
+> Decreto 98/2023 y **lo que la plataforma realmente tiene hoy**, verificado
 > contra el código fuente. Sirve para (a) dimensionar el trabajo pendiente y (b) preparar el
 > "informe de cumplimiento del art. 4" que pide el trámite TAD.
 >
@@ -184,7 +184,7 @@ Leyenda: ✅ presente · 🟡 parcial · ❌ ausente · ❔ no verificable desde
 ### 3.7 Identificación de medicamentos — **no aplica hoy**
 
 Exige DCI/genérico, presentación, forma farmacéutica y cantidad, sin texto libre.
-**BioWellness no prescribe medicamentos**, solo órdenes de estudios. ⚠️ **Si alguna vez se
+**Al momento de este relevamiento la plataforma no prescribía medicamentos**, solo órdenes de estudios (el módulo de recetas llegó después; ver `PRESCRIPCIONES-UX.md`). ⚠️ **Si alguna vez se
 prescriben medicamentos, este requisito se activa por completo** (catálogo de medicamentos,
 sin campo libre).
 
@@ -278,7 +278,7 @@ buscando "receta" o "recetario", con **AFIP o Mi Argentina**.
 De las tres opciones (`RECETARIO` · `RECETARIO + REPOSITORIO` · `REPOSITORIO`), **el equipo
 definió inscribirse como `RECETARIO`** (julio 2026).
 
-**Fundamento:** BioWellness _prescribe_ y guarda la orden en su propia historia clínica
+**Fundamento:** la plataforma _prescribe_ y guarda la orden en su propia historia clínica
 electrónica, pero **no presta el servicio de repositorio del circuito nacional** — ningún
 tercero (farmacia, laboratorio) consulta nuestra plataforma para validar o marcar la dispensa.
 Almacenar la propia historia clínica es una función de EHR, no de "repositorio de recetas".
@@ -458,7 +458,7 @@ Están resueltas en el código, pero conviene confirmarlas con soporte:
 #### Por qué esto necesita un Bot y no puede ir en el front
 
 El Domain Secret es un **secreto compartido**: quien lo tiene emite tokens a nombre de
-BioWellness. En una app Vite terminaría en el bundle, legible por cualquiera con las
+la plataforma. En una app Vite terminaría en el bundle, legible por cualquiera con las
 herramientas de desarrollo. La consulta tiene que salir de un Bot de Medplum o de un
 backend, con el secreto en variables de entorno del servidor.
 
@@ -555,7 +555,7 @@ Estado en nuestro PDF **después del ajuste de julio 2026**:
 |                 | **Leyenda de inscripción en el registro**                             | ⚠️ **soportada pero NO se imprime** hasta tener inscripción real                          |
 
 > ⚠️ **Nota crítica sobre el conjunto mínimo:** está redactado para **recetas de
-> medicamentos**. BioWellness emite **órdenes de estudios**, no prescripciones
+> medicamentos**. A la fecha del relevamiento la plataforma emitía **órdenes de estudios**, no prescripciones
 > medicamentosas. **Hay que preguntarle a la DNSIS si el recetario de prácticas se inscribe
 > bajo este mismo trámite y con qué conjunto de datos** — es una pregunta abierta que puede
 > cambiar el encuadre entero. _(Ver también §6.)_

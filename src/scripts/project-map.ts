@@ -79,6 +79,10 @@ export interface ResumenProyecto {
   bots: { nombre: string; id: string; desplegado: boolean }[];
   subscriptions: { reason?: string; status?: string }[];
   clients: CredencialProyecto[];
+  /** Ids de los proyectos linkeados: su contenido se ve desde este. */
+  links: string[];
+  /** Tipos que este proyecto exporta cuando otro lo linkea. */
+  exporta: string[];
 }
 
 export interface Hallazgo {
@@ -152,19 +156,51 @@ export function analizar(resumenes: ResumenProyecto[], botsEsperados: string[]):
     });
   }
 
-  // Terminología: el vademécum tiene que estar donde entra el Dashboard.
-  const terminologia = clinicos.filter((r) => (r.conteos.CodeSystem ?? 0) > 0 || (r.conteos.ValueSet ?? 0) > 0);
-  const enPrincipal = (principal.conteos.CodeSystem ?? 0) > 0 || (principal.conteos.ValueSet ?? 0) > 0;
-  if (!enPrincipal && terminologia.length > 0) {
+  // Terminología: el vademécum tiene que ser VISIBLE desde donde entra el
+  // Dashboard. Hay dos formas de que lo sea, y las dos son válidas: que esté en
+  // el mismo proyecto, o que viva en un proyecto de terminología (el proyecto
+  // `umls`) que el principal LINKEA. La segunda es la de plataforma: una sola
+  // copia de SNOMED sirve a todos los consultorios. Pero un link solo alcanza
+  // si el proyecto linkeado EXPORTA esos tipos (Project.exportedResourceType);
+  // linkear sin exportar es el fallo silencioso de esta arquitectura.
+  const tieneTerminologia = (r: ResumenProyecto): boolean =>
+    (r.conteos.CodeSystem ?? 0) > 0 || (r.conteos.ValueSet ?? 0) > 0;
+  const terminologia = clinicos.filter(tieneTerminologia);
+  const enPrincipal = tieneTerminologia(principal);
+  const linkeados = resumenes.filter((r) => principal.links.includes(r.id));
+  const linkeadosConTerminologia = linkeados.filter(tieneTerminologia);
+
+  if (enPrincipal) {
+    hallazgos.push({ nivel: 'ok', texto: 'La terminología está en el proyecto de los pacientes.' });
+  } else if (linkeadosConTerminologia.length > 0) {
+    const sinExportar = linkeadosConTerminologia.filter(
+      (r) => !r.exporta.includes('CodeSystem') || !r.exporta.includes('ValueSet')
+    );
+    if (sinExportar.length > 0) {
+      hallazgos.push({
+        nivel: 'problema',
+        texto:
+          `«${principal.nombre}» linkea ` +
+          sinExportar.map((p) => `${p.nombre} (${p.id})`).join(', ') +
+          ', pero ese proyecto no exporta CodeSystem y ValueSet: el link no alcanza y el buscador no la ve.',
+      });
+    } else {
+      hallazgos.push({
+        nivel: 'ok',
+        texto:
+          'La terminología llega por link desde ' +
+          linkeadosConTerminologia.map((p) => `${p.nombre} (${p.id})`).join(', ') +
+          '.',
+      });
+    }
+  } else if (terminologia.length > 0) {
     hallazgos.push({
       nivel: 'problema',
       texto:
         'La terminología está en ' +
         terminologia.map((p) => `${p.nombre} (${p.id})`).join(', ') +
-        `, no en «${principal.nombre}»: el buscador del Dashboard no la ve.`,
+        `, y «${principal.nombre}» no linkea ese proyecto: el buscador del Dashboard no la ve.`,
     });
-  } else if (enPrincipal) {
-    hallazgos.push({ nivel: 'ok', texto: 'La terminología está en el proyecto de los pacientes.' });
   }
 
   if (!principal.features.includes('bots')) {
@@ -339,6 +375,10 @@ async function main(): Promise<void> {
       bots,
       subscriptions,
       clients,
+      links: (p.link ?? [])
+        .map((l) => l.project?.reference?.replace('Project/', ''))
+        .filter((id): id is string => Boolean(id)),
+      exporta: (p.exportedResourceType ?? []) as string[],
     };
   });
 
@@ -346,6 +386,12 @@ async function main(): Promise<void> {
     console.log(`── ${r.nombre}${r.superAdmin ? '  [SUPER ADMIN]' : ''} ──`);
     console.log(`   id: ${r.id}`);
     console.log(`   features: ${r.features.length ? r.features.join(', ') : '(ninguna)'}`);
+    if (r.links.length > 0) {
+      console.log(`   linkea: ${r.links.join(', ')}`);
+    }
+    if (r.exporta.length > 0) {
+      console.log(`   exporta al linkearse: ${r.exporta.join(', ')}`);
+    }
     const linea = TIPOS_CONTADOS.filter((t) => (r.conteos[t] ?? 0) > 0)
       .map((t) => `${t}: ${r.conteos[t]}${r.truncados[t] ? '+' : ''}`)
       .join(' · ');

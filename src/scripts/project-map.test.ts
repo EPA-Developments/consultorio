@@ -32,6 +32,8 @@ describe('Veredicto del mapa', () => {
     bots: [],
     subscriptions: [],
     clients: [],
+    links: [],
+    exporta: [],
     ...over,
   });
   const BOTS = ['ckm-recalculate', 'sdoh-response'];
@@ -119,5 +121,46 @@ describe('Veredicto del mapa', () => {
     const h = analizar([base({ conteos: {} })], BOTS);
     expect(h).toHaveLength(1);
     expect(h[0].nivel).toBe('problema');
+  });
+  // El proyecto `umls` (terminología) sirve SNOMED y el vademécum a todos los
+  // consultorios por link. El mapa tiene que entender esa forma, y sobre todo
+  // tiene que distinguirla del fallo silencioso: linkear sin exportar.
+  test('la terminología en un proyecto linkeado que exporta cuenta como visible', () => {
+    const h = analizar(
+      [
+        base({ id: 'consultorio', nombre: 'Consultorio', conteos: { Patient: 40 }, links: ['umls'] }),
+        base({
+          id: 'umls',
+          nombre: 'umls',
+          conteos: { CodeSystem: 3, ValueSet: 2 },
+          exporta: ['CodeSystem', 'ValueSet', 'ConceptMap'],
+        }),
+      ],
+      []
+    );
+    expect(h.some((x) => x.nivel === 'ok' && x.texto.includes('llega por link'))).toBe(true);
+    expect(h.some((x) => x.nivel === 'problema' && x.texto.includes('terminología'))).toBe(false);
+  });
+
+  test('linkear sin exportar CodeSystem/ValueSet es un problema, no un ok', () => {
+    const h = analizar(
+      [
+        base({ id: 'consultorio', nombre: 'Consultorio', conteos: { Patient: 40 }, links: ['umls'] }),
+        base({ id: 'umls', nombre: 'umls', conteos: { CodeSystem: 3, ValueSet: 2 }, exporta: ['ConceptMap'] }),
+      ],
+      []
+    );
+    expect(h.some((x) => x.nivel === 'problema' && x.texto.includes('no exporta CodeSystem y ValueSet'))).toBe(true);
+  });
+
+  test('terminología en otro proyecto SIN link: el buscador no la ve', () => {
+    const h = analizar(
+      [
+        base({ id: 'consultorio', nombre: 'Consultorio', conteos: { Patient: 40 } }),
+        base({ id: 'umls', nombre: 'umls', conteos: { CodeSystem: 3, ValueSet: 2 }, exporta: ['CodeSystem'] }),
+      ],
+      []
+    );
+    expect(h.some((x) => x.nivel === 'problema' && x.texto.includes('no linkea ese proyecto'))).toBe(true);
   });
 });

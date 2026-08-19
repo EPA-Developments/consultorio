@@ -1,4 +1,4 @@
-// Lector del panel de biomarcadores BioWellness desde sus ObservationDefinitions
+// Lector del panel de biomarcadores desde sus ObservationDefinitions
 // (fuente de verdad FHIR cargada con upload-biomarker-definitions).
 //
 // Cada ObservationDefinition trae: identifier (slug del biomarcador), code
@@ -21,8 +21,9 @@ export const EXT_FUENTE = EXT_BASE + 'fuente';
 
 /**
  * Estas dos usan OTRA base (`biowellness.ar`, no `bio.medplum.com.ar`). Las
- * escribe el catálogo así; no es un error de tipeo acá. Vale unificarlas alguna
- * vez, pero se cambia en el catálogo primero, no en el lector.
+ * escribe el catálogo así; no es un error de tipeo acá. Son identificadores de
+ * datos vivos y NO se renombran con la marca (ver docs/MARCA-Y-PLATAFORMA.md):
+ * si algún día se unifican, se cambia en el catálogo primero, no en el lector.
  */
 const EXT_BASE_CATALOGO = 'https://biowellness.ar/fhir/StructureDefinition/';
 /** El catálogo marca acá lo que no se pide suelto: derivados y componentes de panel. */

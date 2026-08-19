@@ -1,4 +1,4 @@
-// Siembra Observations de demostración de los biomarcadores BioWellness para
+// Siembra Observations de demostración de los biomarcadores del panel para
 // poblar el panel /ckm/biomarkers de un paciente. Para cada biomarcador del
 // bundle genera una serie temporal (5 puntos a lo largo de ~7 meses) que termina
 // en una banda óptimo / normal / fuera de rango (mezcla determinística por

@@ -1,7 +1,14 @@
-# BioWellness · Seguimiento — Proceso y evolución del proyecto
+# Consultorio · Favaloro | Medplum Argentina — Proceso y evolución del proyecto
 
-> Documento integral de **todo lo construido** en el repositorio `dashboard`,
-> desde su creación hasta hoy. Pensado para que un colega o institución nueva
+> **Nota de identidad (agosto 2026).** El producto pasó a llamarse **Consultorio ·
+> Favaloro | Medplum Argentina** y vive en `consultorio.medplum.com.ar`. Este
+> documento es un registro histórico: las menciones a «BioWellness» de las etapas
+> pasadas se conservan tal como ocurrieron —reescribir la historia sería peor que
+> tener dos nombres—. Lo que NO cambió con el nombre son los identificadores FHIR;
+> el fundamento está en `MARCA-Y-PLATAFORMA.md`.
+
+> Documento integral de **todo lo construido** en el repositorio `consultorio`
+> (antes `dashboard`), desde su creación hasta hoy. Pensado para que un colega o institución nueva
 > entienda de dónde viene la herramienta, cómo está armada y qué hace cada pieza.
 > (No cubre la estética/branding; se enfoca en el producto y la ingeniería.)
 
@@ -11,7 +18,7 @@
 
 ## 1. Qué es
 
-**BioWellness · Seguimiento** es una aplicación clínica construida sobre
+**Consultorio · Favaloro | Medplum Argentina** es una aplicación clínica construida sobre
 **Medplum** (EHR open-source, API-first, basado en **FHIR R4**). Acompaña a un
 paciente a lo largo del tiempo con foco **Cardio-Reno-Metabólico (CKM)** y, de a
 poco, hacia **medicina de optimización / BioHacking**:
@@ -20,7 +27,7 @@ poco, hacia **medicina de optimización / BioHacking**:
   Insuficiencia Cardíaca 10a y ECV total 30a.
 - **Estadío CKM** (0–4) según la guía AHA/ACC/ADA/ASN.
 - **hGraph** (GoInvo): visualización radial del estado metabólico del paciente.
-- **Panel de biomarcadores BioWellness** (50 marcadores en 10 paneles) con rangos
+- **Panel de biomarcadores** (50 marcadores en 10 paneles) con rangos
   convencional y óptimo (Medicina 3.0), leídos como fuente de verdad FHIR.
 - **Bots** (backend serverless de Medplum) que recalculan todo al llegar datos,
   generan alertas y planes de cuidado con IA.
@@ -505,7 +512,7 @@ src/
     core/               # Bots de nota de encuentro (base chart-demo)
     ckm/                # ckm-recalculate, sdoh-response, careplan-generate
   pages/                # CKMDashboard, BiomarkerPanelPage, SimulatorPage, SDOHForm, SignIn, Landing
-  components/           # Componentes de chart + BioWellnessLogo
+  components/           # Componentes de chart + BrandLogo
   scripts/              # Operación, seed, verificación, terminología, diagnóstico
 data/
   ckm/                  # biomarker-definitions.json, AccessPolicies, SDOH questionnaire

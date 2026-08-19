@@ -1,4 +1,4 @@
-// Núcleo del "recetario" de órdenes de laboratorio de BioWellness (Fase 1).
+// Núcleo del "recetario" de órdenes de laboratorio del Consultorio (Fase 1).
 //
 // Objetivo del producto: que el médico solicite los 50 marcadores del programa
 // en 1-2 clicks y que el paciente, desde el portal, avise que los necesita
@@ -46,7 +46,7 @@ export function chunk<T>(items: T[], size: number = MAX_WRITES_PER_TX): T[][] {
 }
 
 /**
- * Coberturas privadas ABC1 objetivo de BioWellness (San Isidro). No se incluyen
+ * Coberturas privadas ABC1 más frecuentes en el padrón (AMBA). No se incluyen
  * obras sociales ni PAMI por ahora. "Particular" para pacientes sin cobertura.
  * Es un dato informativo de la orden (viaja como nota); la autorización real
  * frente a la prepaga es un tema de Fase 2.

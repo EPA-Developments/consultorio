@@ -15,7 +15,7 @@ import type {
 } from '@medplum/fhirtypes';
 import type { DietLevel, LE8Inputs, NicotineInput } from './le8';
 
-// URLs canónicas (base BioWellness). Una versión por instrumento.
+// URLs canónicas (base histórica, congelada). Una versión por instrumento.
 export const LE8_SLEEP_QUESTIONNAIRE_URL = 'https://bio.medplum.com.ar/fhir/Questionnaire/le8-sleep-psqi-v1';
 export const LE8_DIET_QUESTIONNAIRE_URL = 'https://bio.medplum.com.ar/fhir/Questionnaire/le8-diet-mepa-v1';
 export const LE8_ACTIVITY_QUESTIONNAIRE_URL = 'https://bio.medplum.com.ar/fhir/Questionnaire/le8-activity-evs-v1';

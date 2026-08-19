@@ -121,8 +121,8 @@ Del PDF real (`prescriptions.rcta.me/....pdf`, verificación en
   verificación.
 - Leyenda registral: "Esta receta fue creada por un emisor inscripto y
   validado en el **Registro de Recetarios Electrónicos** del Ministerio de
-  Salud de la Nación **RL-2024-100292307**" — el número que BioWellness
-  obtendrá con su inscripción (instructivo ya en carpeta).
+  Salud de la Nación **RL-2024-100292307**" — el número que se obtendrá con la
+  inscripción propia (instructivo ya en carpeta).
 - Referencia al "Buscador Nacional de Medicamentos".
 
 ### Lectura comparada (qué tomamos de cada una)

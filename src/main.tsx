@@ -19,7 +19,7 @@ const medplum = new MedplumClient({
   baseUrl: getConfig().baseUrl,
 });
 
-// Paleta de marca BioWellness: cobre como acento sobre una base neutra/clínica.
+// Paleta de marca: cobre como acento sobre una base neutra/clínica.
 // Escala de 10 tonos (claro -> oscuro) para Mantine.
 const copper: MantineColorsTuple = [
   '#fdf4ec',

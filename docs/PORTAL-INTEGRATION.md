@@ -9,7 +9,7 @@
 > Medplum, no porque sean el mismo flujo.
 
 > **Qué es este documento.** El contrato de interoperabilidad entre el
-> **dashboard** (médico, `biowellness/dashboard`) y el **portal del paciente**
+> **consultorio** (médico, `EPA-Developments/consultorio`, antes `biowellness/dashboard`) y el **portal del paciente**
 > (`biowellness/portal`, servido en **app.biowellness.ar**) para el flujo de
 > solicitud de estudios. Y a la vez una **guía/prompt de implementación** lista
 > para ejecutar en una sesión scopeada al repo `portal`.

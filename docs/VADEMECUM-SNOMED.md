@@ -2,7 +2,7 @@
 
 > **Qué es este documento.** El análisis de cómo codificar los medicamentos del
 > recetario con SNOMED CT Edición Argentina, las cuatro vías reales de acceso, y
-> el plan por fases para BioWellness y para el proyecto Favaloro | Medplum
+> el plan por fases para el Consultorio y para el proyecto Favaloro | Medplum
 > Argentina. Hoy la receta lleva la DCI como texto (Ley 25.649, cumplida); la
 > codificación SNOMED es lo que la hace **interoperable** — y es el estándar
 > nacional definido por la Estrategia de Salud Digital, así que suma al
@@ -81,7 +81,7 @@ cualquier pantalla lo consulta con `$expand`.
 
 - **A favor**: es LA opción para **Favaloro | Medplum Argentina** como
   plataforma multi-proyecto: el CodeSystem se carga una vez (en un proyecto
-  compartido/linkeado) y sirve a todos los tenants — BioWellness, Favaloro y
+  compartido/linkeado, hoy el proyecto `umls`) y sirve a todos los tenants —
   los que vengan. Sin servidores extra: el que ya está (`Ver-5.1` soporta
   esto).
 - **En contra**: requiere escribir el conversor RF2 → formato de `$import`, y
@@ -118,7 +118,7 @@ sugerida exista y esté autorizada. Se ingiere como dato con un script (patrón
    credenciales que ya tenemos del Bus: si el dominio ya incluye un servicio de
    terminología, parte del trámite 2 puede estar hecho.
 
-### Fase 1 — El recetario de BioWellness codifica SNOMED (vía B)
+### Fase 1 — El recetario codifica SNOMED (vía B)
 
 > **Estado**: la Fase 0 está completa (afiliado MLDS vigente desde 2023) y la
 > herramienta de extracción existe: `npm run snomed-subset`.
