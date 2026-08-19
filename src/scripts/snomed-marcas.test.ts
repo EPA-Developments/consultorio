@@ -26,7 +26,9 @@ describe('Parseo del FSN comercial del DNM', () => {
   // Combinación escrita como corchetes separados: el segundo corchete la delata.
   test('dos corchetes = combinación, no parsea', () => {
     expect(
-      parseFsnComercial('AMPLIAR DUO [ATORVASTATIN 10 MG] [EZETIMIBA 10 MG] COMPRIMIDO (fármaco de uso clínico comercial)')
+      parseFsnComercial(
+        'AMPLIAR DUO [ATORVASTATIN 10 MG] [EZETIMIBA 10 MG] COMPRIMIDO (fármaco de uso clínico comercial)'
+      )
     ).toBeUndefined();
   });
 });

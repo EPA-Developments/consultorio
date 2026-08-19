@@ -6,6 +6,7 @@
 import { MedplumClient } from '@medplum/core';
 import type { Questionnaire } from '@medplum/fhirtypes';
 import fs from 'fs';
+import { upsertUnico } from './lib/upsert';
 
 const QUESTIONNAIRE_FILE = 'data/ckm/sdoh-questionnaire.json';
 
@@ -27,7 +28,7 @@ async function main(): Promise<void> {
   const medplum = new MedplumClient({ baseUrl, fetch });
   await medplum.startClientLogin(clientId, clientSecret);
 
-  const result = await medplum.upsertResource(questionnaire, `url=${encodeURIComponent(questionnaire.url)}`);
+  const result = await upsertUnico(medplum, questionnaire, `url=${encodeURIComponent(questionnaire.url)}`);
   console.log(`OK: Questionnaire/${result.id} ("${questionnaire.title}")`);
   console.log(`Formulario disponible en /ckm/sdoh/<patientId> de la app.`);
 }

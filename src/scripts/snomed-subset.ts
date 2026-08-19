@@ -108,7 +108,11 @@ export function clasificar(fsn: string | undefined): ClaseConcepto {
   }
   // "fármaco de uso clínico" es la redacción de la extensión argentina (DNM)
   // para el nivel forma+concentración.
-  if (tag.includes('producto medicinal cl') || tag.includes('clinical drug') || tag.includes('farmaco de uso clinico')) {
+  if (
+    tag.includes('producto medicinal cl') ||
+    tag.includes('clinical drug') ||
+    tag.includes('farmaco de uso clinico')
+  ) {
     return 'producto-clinico';
   }
   return 'otro';

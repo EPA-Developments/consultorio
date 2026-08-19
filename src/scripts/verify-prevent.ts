@@ -18,6 +18,7 @@ import { LOINC, LOINC_BP_PANEL, LOINC_SYSTEM } from '../ckm/constants';
 import { getHGraphData } from '../ckm/extensions';
 import { computePrevent } from '../ckm/prevent';
 import type { PreventInputs } from '../ckm/prevent';
+import { upsertUnico } from './lib/upsert';
 
 const SYSTEM = 'https://seguimiento.medplum.com.ar/seed-patient';
 const TEST_ID = 'ckm-prevent-ref';
@@ -75,7 +76,8 @@ async function main(): Promise<void> {
 
   // Paciente de referencia (upsert por identifier). Edad exactamente 50.
   const birthYear = new Date().getFullYear() - REFERENCE.age;
-  const patient = await medplum.upsertResource<Patient>(
+  const patient = await upsertUnico<Patient>(
+    medplum,
     {
       resourceType: 'Patient',
       identifier: [{ system: SYSTEM, value: TEST_ID }],
@@ -94,7 +96,8 @@ async function main(): Promise<void> {
   }
 
   // Comorbilidad y medicación (idempotentes)
-  await medplum.upsertResource(
+  await upsertUnico(
+    medplum,
     {
       resourceType: 'Condition',
       identifier: [{ system: SYSTEM, value: `${TEST_ID}-dm` }],
@@ -104,7 +107,8 @@ async function main(): Promise<void> {
     },
     `identifier=${SYSTEM}|${TEST_ID}-dm`
   );
-  await medplum.upsertResource(
+  await upsertUnico(
+    medplum,
     {
       resourceType: 'MedicationRequest',
       identifier: [{ system: SYSTEM, value: `${TEST_ID}-med` }],

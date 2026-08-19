@@ -12,6 +12,7 @@
 import { MedplumClient } from '@medplum/core';
 import type { ValueSet, ValueSetComposeIncludeConcept } from '@medplum/fhirtypes';
 import { upsertCodeSystemFragment } from './lib/terminology';
+import { upsertUnico } from './lib/upsert';
 
 const VALUESET_URL = 'http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1010.4';
 const RXNORM_SYSTEM = 'http://www.nlm.nih.gov/research/umls/rxnorm';
@@ -176,7 +177,7 @@ async function main(): Promise<void> {
     { name: 'RxNormFragment', title: 'RxNorm — fragmento (CKM)' }
   );
   console.log(`OK: CodeSystem RxNorm (${csCount} conceptos)`);
-  const result = await medplum.upsertResource(valueSet, `url=${encodeURIComponent(VALUESET_URL)}`);
+  const result = await upsertUnico(medplum, valueSet, `url=${encodeURIComponent(VALUESET_URL)}`);
   console.log(`OK: ValueSet/${result.id} (${concepts.length} conceptos) en ${baseUrl}`);
 
   // Prueba de $expand: confirma que el servidor expande/filtra (independiente de la UI).

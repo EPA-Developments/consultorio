@@ -2,6 +2,7 @@
 // curados en el servidor self-hosted (medicación, diagnósticos, alergias).
 import type { MedplumClient } from '@medplum/core';
 import type { CodeSystem, CodeSystemConcept } from '@medplum/fhirtypes';
+import { upsertUnico } from './upsert';
 
 /**
  * Upserta un CodeSystem fragmento por url, MERGEando los conceptos con los que
@@ -39,6 +40,6 @@ export async function upsertCodeSystemFragment(
     title: meta?.title ?? existing?.title,
     concept: [...byCode.values()],
   };
-  const result = await medplum.upsertResource(merged, `url=${encodeURIComponent(url)}`);
+  const result = await upsertUnico(medplum, merged, `url=${encodeURIComponent(url)}`);
   return result.concept?.length ?? 0;
 }

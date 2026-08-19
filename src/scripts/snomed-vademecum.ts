@@ -205,7 +205,12 @@ async function asegurarCodeSystem(
   // servidor, no en el recurso.
   const existente = await medplum.searchOne('CodeSystem', { url: deseado.url as string });
   const cs = existente
-    ? await medplum.updateResource<CodeSystem>({ ...existente, ...deseado, resourceType: 'CodeSystem', id: existente.id })
+    ? await medplum.updateResource<CodeSystem>({
+        ...existente,
+        ...deseado,
+        resourceType: 'CodeSystem',
+        id: existente.id,
+      })
     : await medplum.createResource<CodeSystem>({ ...deseado, resourceType: 'CodeSystem' });
   console.log(`CodeSystem ${existente ? 'actualizado' : 'creado'}: ${deseado.url} → ${cs.id}`);
   return cs;
@@ -220,7 +225,11 @@ async function asegurarValueSet(medplum: MedplumClient, deseado: Omit<ValueSet, 
   return vs;
 }
 
-async function importarConceptos(medplum: MedplumClient, system: string, conceptos: ConceptoVademecum[]): Promise<void> {
+async function importarConceptos(
+  medplum: MedplumClient,
+  system: string,
+  conceptos: ConceptoVademecum[]
+): Promise<void> {
   const lotes = enLotes(conceptos, LOTE);
   let importados = 0;
   for (const [i, lote] of lotes.entries()) {

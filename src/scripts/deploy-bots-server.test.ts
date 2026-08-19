@@ -27,10 +27,7 @@ function fakeMedplum(resultados: Bot[]): { medplum: any; consultas: unknown[] } 
 // "Bot existente" con ids ajenos y sin un solo error.
 describe('Resolución del bot dentro del proyecto', () => {
   test('elige el bot propio aunque el de otro proyecto aparezca primero', async () => {
-    const ctx = fakeMedplum([
-      bot('ajeno', 'ckm-recalculate', BIOWELLNESS),
-      bot('propio', 'ckm-recalculate', FAVALORO),
-    ]);
+    const ctx = fakeMedplum([bot('ajeno', 'ckm-recalculate', BIOWELLNESS), bot('propio', 'ckm-recalculate', FAVALORO)]);
     const encontrado = await botDelProyecto(ctx.medplum, 'ckm-recalculate', FAVALORO);
     expect(encontrado?.id).toBe('propio');
   });

@@ -13,6 +13,7 @@
 import { MedplumClient } from '@medplum/core';
 import type { AccessPolicy } from '@medplum/fhirtypes';
 import fs from 'fs';
+import { upsertUnico } from './lib/upsert';
 
 const DEFAULT_POLICY_FILE = 'data/ckm/patient-access-policy.json';
 
@@ -35,7 +36,7 @@ async function main(): Promise<void> {
   const medplum = new MedplumClient({ baseUrl, fetch });
   await medplum.startClientLogin(clientId, clientSecret);
 
-  const result = await medplum.upsertResource(policy, `name=${encodeURIComponent(policy.name)}`);
+  const result = await upsertUnico(medplum, policy, `name=${encodeURIComponent(policy.name)}`);
   console.log(`OK: AccessPolicy/${result.id} ("${policy.name}")`);
   console.log(
     'Recordá asignarla: pacientes → Project.defaultPatientAccessPolicy; ' +

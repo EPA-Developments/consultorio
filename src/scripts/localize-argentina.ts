@@ -12,6 +12,7 @@
 //   MEDPLUM_CLIENT_ID=xxx MEDPLUM_CLIENT_SECRET=xxx npm run localize-argentina
 import { MedplumClient } from '@medplum/core';
 import type { CodeSystem, NamingSystem, Patient, StructureDefinition } from '@medplum/fhirtypes';
+import { upsertUnico } from './lib/upsert';
 import {
   AR_PROVINCES,
   CUIL_SYSTEM,
@@ -89,7 +90,14 @@ const PATIENT_AR_PROFILE: StructureDefinition = {
         slicing: { discriminator: [{ type: 'value', path: 'system' }], rules: 'open' },
         mustSupport: true,
       },
-      { id: 'Patient.identifier:dni', path: 'Patient.identifier', sliceName: 'dni', min: 0, max: '1', mustSupport: true },
+      {
+        id: 'Patient.identifier:dni',
+        path: 'Patient.identifier',
+        sliceName: 'dni',
+        min: 0,
+        max: '1',
+        mustSupport: true,
+      },
       { id: 'Patient.identifier:dni.system', path: 'Patient.identifier.system', min: 1, fixedUri: DNI_SYSTEM },
       { id: 'Patient.identifier:cuil', path: 'Patient.identifier', sliceName: 'cuil', min: 0, max: '1' },
       { id: 'Patient.identifier:cuil.system', path: 'Patient.identifier.system', min: 1, fixedUri: CUIL_SYSTEM },
@@ -152,23 +160,25 @@ async function main(): Promise<void> {
   }
 
   console.log('\n2. CodeSystem de género autopercibido...');
-  const cs = await medplum.upsertResource(GENDER_CODESYSTEM, `url=${encodeURIComponent(GENDER_IDENTITY_SYSTEM)}`);
+  const cs = await upsertUnico(medplum, GENDER_CODESYSTEM, `url=${encodeURIComponent(GENDER_IDENTITY_SYSTEM)}`);
   console.log(`  OK: CodeSystem/${cs.id} (${GENDER_IDENTITY_OPTIONS.length} opciones)`);
 
   console.log('\n3. StructureDefinition perfil Patient AR...');
-  const sd = await medplum.upsertResource(PATIENT_AR_PROFILE, `url=${encodeURIComponent(PATIENT_AR_PROFILE_URL)}`);
+  const sd = await upsertUnico(medplum, PATIENT_AR_PROFILE, `url=${encodeURIComponent(PATIENT_AR_PROFILE_URL)}`);
   console.log(`  OK: StructureDefinition/${sd.id} (${PATIENT_AR_PROFILE_URL})`);
 
   console.log('\n4. Paciente de ejemplo...');
   const patient = buildExamplePatient();
   const dni = patient.identifier?.find((id) => id.system === DNI_SYSTEM)?.value;
-  const result = await medplum.upsertResource(patient, `identifier=${encodeURIComponent(`${DNI_SYSTEM}|${dni}`)}`);
+  const result = await upsertUnico(medplum, patient, `identifier=${encodeURIComponent(`${DNI_SYSTEM}|${dni}`)}`);
   console.log(`  OK: Patient/${result.id} (DNI ${dni}, género autopercibido femenino)`);
 
   // Prueba de búsqueda por DNI (funciona sin configuración extra).
   const found = await medplum.searchResources('Patient', { identifier: `${DNI_SYSTEM}|${dni}` });
   console.log(`\nTest búsqueda por DNI: ${found.length} paciente(s) con DNI ${dni}`);
-  console.log(genderIdentityConcept('no-binario') ? '  ✓ Género "X" (no binario) disponible para el DNI argentino.' : '');
+  console.log(
+    genderIdentityConcept('no-binario') ? '  ✓ Género "X" (no binario) disponible para el DNI argentino.' : ''
+  );
   console.log(`\nProvincias cargadas para address.state: ${AR_PROVINCES.length}.`);
   console.log('Listo. Recargá el chart (Ctrl+Shift+R) para ver el panel "Datos Argentina".');
 }
