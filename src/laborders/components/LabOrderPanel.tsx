@@ -48,6 +48,8 @@ import {
 } from '../lab-order';
 import type { LabOrderItem } from '../lab-order';
 import { createLabOrder, EXT_REFEPS_VERIFICACION } from '../lab-order-create';
+import { buildEmissionProvenance, emissionStatusOf, getSello, sealOrder, withSeal } from '../lab-order-emission';
+import type { EmissionStatus } from '../lab-order-emission';
 import { buildPrintData, printHtmlDocument, renderLabOrderHtml } from '../lab-order-print';
 import { useLabOrderCatalog } from '../hooks/useLabOrderCatalog';
 
@@ -208,7 +210,26 @@ export function LabOrderPanel(props: {
         practitioner = profile;
       }
     }
+    // El documento declara SOLO el estado que puede probar: la firma se
+    // confirma leyendo el Provenance; si esa lectura falla, se imprime como
+    // borrador (conservador y veraz), nunca al revés.
+    let hasSignature = false;
+    const first = reqs[0];
+    if (first?.id && getSello(first)) {
+      try {
+        const provs = await medplum.searchResources('Provenance', {
+          target: `ServiceRequest/${first.id}`,
+          _count: '1',
+        });
+        hasSignature = provs.some((p) => (p.signature?.length ?? 0) > 0);
+      } catch (err) {
+        console.error('LabOrderPanel: no se pudo leer la firma (Provenance)', err);
+      }
+    }
+    const emissionStatus: EmissionStatus = first ? emissionStatusOf(first, hasSignature) : 'draft';
+
     const data = buildPrintData({
+      emissionStatus,
       requisitionId,
       requests: reqs,
       patient: props.patient,
@@ -270,15 +291,40 @@ export function LabOrderPanel(props: {
         { url: EXT_REFEPS_VERIFICACION, valueString: refeps.unavailable ? 'no-verificable' : 'verificado' },
       ],
     }));
+
+    // Aprobar ES emitir, así que sella y firma igual que createLabOrder. El
+    // sello se calcula sobre las órdenes YA aprobadas: el requester entra en el
+    // contenido canónico, y antes de aprobar todavía no estaba.
+    const when = new Date().toISOString();
+    const seal = await sealOrder(approved);
+    const selladas = approved.map((r) => ({ ...r, identifier: withSeal(r, seal) }));
+    const provenance = buildEmissionProvenance({
+      requests: selladas,
+      practitioner: profile as Practitioner,
+      when,
+      seal,
+    });
+
     try {
-      for (const group of chunk(approved)) {
+      // El Provenance viaja en la ÚLTIMA tanda, no en una escritura aparte: así
+      // la firma llega en la misma transacción que el último PUT en lugar de
+      // agregar un paso propio que puede fallar solo y dejar órdenes emitidas
+      // sin firma, sin camino de reintento (al dejar de ser 'proposal' este
+      // botón ya no vuelve a ofrecerlas).
+      const grupos = chunk(selladas);
+      for (const [i, group] of grupos.entries()) {
         const bundle: Bundle = {
           resourceType: 'Bundle',
           type: 'transaction',
-          entry: group.map((resource) => ({
-            request: { method: 'PUT', url: `ServiceRequest/${resource.id}` },
-            resource,
-          })),
+          entry: [
+            ...group.map((resource) => ({
+              request: { method: 'PUT' as const, url: `ServiceRequest/${resource.id}` },
+              resource,
+            })),
+            ...(i === grupos.length - 1
+              ? [{ request: { method: 'POST' as const, url: 'Provenance' }, resource: provenance }]
+              : []),
+          ],
         };
         await medplum.executeBatch(bundle);
       }

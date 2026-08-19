@@ -40,7 +40,7 @@ describe('Fenotipo metabólico', () => {
     expect(metabolicPhenotype(paciente({ fastingGlucoseMgDl: 112 }))).toBe('prediabetes');
   });
 
-  // El caso más frecuente de la población BioWellness: HOMA alto con glucemia
+  // El caso más frecuente de la población de la práctica: HOMA alto con glucemia
   // todavía normal. Si solo se mirara glucemia, se perdería.
   test('resistencia insulínica con glucemia y HbA1c normales', () => {
     expect(metabolicPhenotype(paciente({ homaIr: 3.4 }))).toBe('resistencia-insulinica');
@@ -185,7 +185,7 @@ describe('Selección de molécula', () => {
   });
 });
 
-describe('Casos clínicos reales de la población BioWellness', () => {
+describe('Casos clínicos reales de la población de la práctica', () => {
   test('55 años, HOMA 3.2, glucemia 96, IMC 29, cintura 98 → candidato', () => {
     const r = assessGLP1({
       ageYears: 55,

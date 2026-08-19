@@ -12,6 +12,7 @@
 // pie lo aclara para no inducir a error.
 import { formatAddress, formatHumanName, getDisplayString } from '@medplum/core';
 import type { Patient, Practitioner, ServiceRequest } from '@medplum/fhirtypes';
+import { BRAND, brandTitle } from '../brand';
 import { DNI_SYSTEM, getIdentifierValue } from '../ckm/argentina';
 import { matriculaOf } from './practitioner-validation';
 import { EMISSION_STATUS, getSello, verificationUrl } from './lab-order-emission';
@@ -66,8 +67,6 @@ export interface LabOrderPrintData {
   seal?: string;
 }
 
-const CLINIC_NAME = 'BioWellness';
-const CLINIC_SUBTITLE = 'Medicina Funcional y Longevidad · San Isidro, PBA';
 const DEFAULT_FASTING =
   'Ayuno de 8 a 12 h para el perfil metabólico y lipídico. Concurrir con esta orden y credencial.';
 
@@ -139,8 +138,8 @@ export function buildPrintData(params: {
   const first = requests[0];
   const address = practitioner?.address?.[0];
   return {
-    clinicName: CLINIC_NAME,
-    clinicSubtitle: CLINIC_SUBTITLE,
+    clinicName: BRAND.clinicName,
+    clinicSubtitle: BRAND.clinicSubtitle,
     logoUrl: params.logoUrl,
     patientName: patient.name?.[0] ? formatHumanName(patient.name[0]) : getDisplayString(patient),
     patientDni: getIdentifierValue(patient, DNI_SYSTEM),
@@ -325,7 +324,7 @@ export function renderLabOrderHtml(data: LabOrderPrintData): string {
 
   <div class="disclaimer">
     ${esc(EMISSION_STATUS[data.emissionStatus ?? 'draft'].legend)}
-    Generado desde BioWellness · Seguimiento.${data.registryLegend ? ' ' + esc(data.registryLegend) : ''}
+    Generado desde ${esc(brandTitle())}.${data.registryLegend ? ' ' + esc(data.registryLegend) : ''}
   </div>
 </body>
 </html>`;

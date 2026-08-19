@@ -1,4 +1,5 @@
 import type { MedicationRequest, Patient, Practitioner } from '@medplum/fhirtypes';
+import { BRAND, brandTitle } from '../brand';
 import { buildRecetaPrintData, cantidadEnLetras, renderRecetaHtml } from './receta-print';
 
 describe('Cantidad en letras', () => {
@@ -92,5 +93,17 @@ describe('Impresión de la receta', () => {
     );
     // Solo la barra del número de receta.
     expect(sinDatos.match(/<svg/g)?.length).toBe(1);
+  });
+  // El membrete es lo único que identifica al emisor en el papel. Sale de
+  // src/brand.ts, nunca de un literal suelto: si alguien vuelve a clavar un
+  // nombre en el módulo de impresión, este test lo encuentra.
+  test('el membrete y el pie salen de la marca, no de un literal', () => {
+    const html = renderRecetaHtml(
+      buildRecetaPrintData({ recetaId: 'REC-TEST', requests: [REQUEST], patient: PACIENTE })
+    );
+    expect(html).toContain(BRAND.clinicName);
+    expect(html).toContain(BRAND.clinicSubtitle);
+    expect(html).toContain(`Generado desde ${brandTitle()}`);
+    expect(html).not.toContain('BioWellness');
   });
 });

@@ -7,7 +7,7 @@
 //
 // ⚠️ EL SECRETO NO PUEDE VIVIR EN EL NAVEGADOR. El Bus autentica con un JWT
 // firmado en HS256 con el Domain Secret, que es un secreto COMPARTIDO: quien lo
-// tiene puede emitir tokens a nombre de BioWellness. Puesto en el front queda en
+// tiene puede emitir tokens a nombre de la plataforma. Puesto en el front queda en
 // el bundle de Vite y lo lee cualquiera. La consulta tiene que salir de un Bot
 // de Medplum o de un backend.
 //

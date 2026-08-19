@@ -1,95 +1,102 @@
-<h1 align="center">Medplum Charting Demo</h1>
-<p align="center">A starter application for building a charting app on Medplum.</p>
+<h1 align="center">Consultorio · Favaloro | Medplum Argentina</h1>
+<p align="center">El espacio de trabajo clínico del profesional, sobre FHIR R4 y Medplum.</p>
 <p align="center">
-<a href="https://github.com/medplum/medplum-hello-world/blob/main/LICENSE.txt">
-    <img src="https://img.shields.io/badge/license-Apache-blue.svg" />
-  </a>
+  <a href="./LICENSE.txt"><img src="https://img.shields.io/badge/license-Apache-blue.svg" /></a>
 </p>
 
-This example app demonstrates the following:
+**Producción:** https://consultorio.medplum.com.ar · **BackEnd:** https://api.medplum.com.ar
 
-- Managing the lifecycle of an encounter and its corresponding notes.
-- Creating and displaying Encounter Notes using the [`ClinicalImpression`](/docs/api/fhir/resources/clinicalimpression) resource.
-- Converting notes into structured data ([`Observations`](/docs/api/fhir/resources/observation) and [`Conditions`](/docs/api/fhir/resources/condition)) for easy retrieval and longitudinal tracking.
-- Using [Medplum React Components](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs) to display a chart that provides visibility on a patient and their medical encounters.
-  - More information on a [charting experience](https://www.medplum.com/docs/charting)
+## Qué es
 
-### Code Organization
+**Consultorio** es el módulo de trabajo diario de la plataforma **Favaloro |
+Medplum Argentina**. Un profesional entra y tiene todo en un solo lugar:
 
-This repo is organized into two main directories: `src` and `data`.
+| Capacidad | Qué resuelve |
+| --- | --- |
+| **Recibir pacientes** | Historia clínica, evoluciones, alta y búsqueda por nombre o DNI. |
+| **Evaluar CKM** | Estadío Cardio-Reno-Metabólico (0–4) según la guía AHA/ACC/ADA/ASN, riesgo con las ecuaciones **PREVENT** (ASCVD 10a, IC 10a, ECV total 30a) y hGraph. |
+| **Plan Bienestar 100 Días** | Planes de cuidado (`CarePlan`) generados y revisados por el profesional. |
+| **Solicitar laboratorio** | Órdenes por preset o marcador, con validación de matrícula y REFEPS. |
+| **Prescribir** | Recetas por nombre genérico (DCI, Ley 25.649), codificadas con SNOMED CT Edición Argentina. |
 
-The `src` directory contains the React app that implements the charting UX. In addition, it contains a `bots` directory, which has [Medplum Bots](/packages/docs/docs/bots/bot-basics.md) to implement the parsing of notes into structured data.
+Los dos últimos —**laboratorio y prescripción**— son el foco de trabajo actual.
 
-The `data` directory contains data that can be uploaded for use in the demo. The `example` directory contains data that is meant to be used for testing and learning, while the `core` directory contains resources, terminologies, and more that are necessary to use the demo.
+## Arquitectura, en una pantalla
 
-### Components of the Encounter Chart
+- **Frontend**: React 19 + Mantine 8 + TypeScript, build con Vite. Este repo.
+- **Backend**: Medplum self-hosted en `api.medplum.com.ar` (FHIR R4). No se usa
+  el servidor hosted de Medplum.
+- **Bots**: lógica serverless de Medplum (`src/bots`) que recalcula riesgo,
+  genera alertas y verifica matrículas contra REFEPS.
+- **Terminología**: SNOMED CT (Edición Argentina) y el vademécum DNM viven en un
+  **proyecto de terminología propio** (`umls`) que los proyectos clínicos
+  consumen por link. Ver `docs/MARCA-Y-PLATAFORMA.md` y `docs/VADEMECUM-SNOMED.md`.
 
-The Encounter Chart has 3 distinct panels
+## Marca e identificadores — la regla que no se rompe
 
-1. Clinical Chart
-   The left panel shows the patient history and their status. Notable information in the clinical chart includes the following Resources:
+El producto se llama **Favaloro | Medplum Argentina**, y ese nombre vive en un
+solo archivo: `src/brand.ts`. Todo lo que el humano lee sale de ahí.
 
-   - Patient Information
-   - Upcoming Appointments
-   - Documented Visits
-   - List of Allergies
-   - List of Problems
-   - Medication Requests
-   - Smoking Status
-   - Vitals
+Los **canonical URL de FHIR** (`https://bio.medplum.com.ar/fhir/...`,
+`https://biowellness.ar/fhir/...`) **no** son marca: son identificadores de
+datos que ya existen en producción —recetas selladas, órdenes emitidas,
+biomarcadores— y se quedan como están. Renombrarlos rompería la trazabilidad de
+documentos legalmente emitidos. Detalle y fundamento en
+**`docs/MARCA-Y-PLATAFORMA.md`**.
 
-2. Encounter Note
-   The center panel allows users to create a note or view it if it already exists. The note allows users to:
+## Documentación
 
-- Enter objective data about the condition relevant to the encounter.
-- Enter subjective data about symptoms that the patient is experiencing.
-- Add their own free text notes about the encounter.
-- Store contextualizing data such as the date of the encounter.
+| Documento | De qué trata |
+| --- | --- |
+| `docs/MARCA-Y-PLATAFORMA.md` | Marca, identificadores congelados, proyecto de terminología, despliegue. |
+| `docs/PROCESO.md` | Todo lo construido, fase por fase. |
+| `docs/PRESCRIPCIONES-UX.md` | Requerimientos y referencias del módulo de recetas. |
+| `docs/VADEMECUM-SNOMED.md` | Cómo se codifica con SNOMED CT Argentina. |
+| `docs/RENAPDIS-CHECKLIST-TECNICO.md` | Requisito por requisito del Decreto 98/23. |
+| `docs/RECETARIO-FASE2-LEGAL.md` | Informe para asesoramiento legal. |
+| `docs/SEGURIDAD.md` | Datos personales, IA, AccessPolicies, cabeceras HTTP. |
+| `docs/PORTAL-INTEGRATION.md` | Contrato con el portal del paciente. |
 
-3. Encounter Actions
-   The right-hand panel allows users to make changes to the encounter, including editing the type of encounter.
+## Organización del código
 
-### Getting Started
-
-If you haven't already done so, follow the instructions in [this tutorial](https://www.medplum.com/docs/tutorials/register) to register a Medplum project to store your data.
-
-[Fork](https://github.com/medplum/medplum-chart-demo/fork) and clone the repo.
-
-If you want to change any environment variables from the defaults, copy the `.env.defaults` file to `.env`
-
-```bash
-cp .env.defaults .env
+```
+src/
+  brand.ts        marca (única fuente de verdad de los nombres visibles)
+  home/           tablero de trabajo del profesional
+  ckm/            estadío CKM, PREVENT, biomarcadores, planes de cuidado
+  recetas/        prescripción: catálogo, vademécum, emisión, impresión
+  laborders/      órdenes de laboratorio: catálogo, REFEPS, emisión, impresión
+  encounters/     evoluciones
+  bots/           lógica serverless (Medplum Bots)
+  scripts/        operación: cargas, verificaciones, doctores
+data/             catálogos versionados (biomarcadores, medicamentos, marcas)
+docs/             decisiones y relevamientos
 ```
 
-And make the changes you need.
-
-Next, install the dependencies.
+## Puesta en marcha
 
 ```bash
+cp .env.defaults .env   # opcional: se copia solo al correr `npm run dev`
 npm install
+npm run build:bots      # requiere credenciales del servidor
+npm run dev             # http://localhost:3008
 ```
 
-Then, build the bots
+Variables de entorno en `.env.defaults`. Vite solo expone las que empiezan con
+`MEDPLUM_` o `GOOGLE_`.
+
+## Calidad
 
 ```bash
-npm run build:bots
+npm run lint
+npm test
 ```
 
-Then, run the app
+## Sobre Medplum
 
-```bash
-npm run dev
-```
+[Medplum](https://www.medplum.com/) es un EHR open-source, API-first. Este repo
+nació como fork del [Medplum Charting Demo](https://github.com/medplum/medplum-chart-demo)
+y corre contra una instancia **self-hosted**.
 
-This app should run on `http://localhost:3000/`
-
-### About Medplum
-
-[Medplum](https://www.medplum.com/) is an open-source, API-first EHR. Medplum makes it easy to build healthcare apps quickly with less code.
-
-Medplum supports self-hosting and provides a [hosted service](https://app.medplum.com/). Medplum Hello World uses the hosted service as a backend.
-
-- Read our [documentation](https://www.medplum.com/docs)
-- Browse our [react component library](https://storybook.medplum.com/)
-- Join our [Discord](https://discord.gg/medplum)
-# seguimiento
+- [Documentación](https://www.medplum.com/docs)
+- [Componentes React](https://storybook.medplum.com/)

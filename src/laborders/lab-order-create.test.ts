@@ -1,7 +1,8 @@
-import type { Bot, Bundle, Patient, Practitioner, ServiceRequest } from '@medplum/fhirtypes';
+import type { Bot, Bundle, Patient, Practitioner, Provenance, ServiceRequest } from '@medplum/fhirtypes';
 import { LOINC_SYSTEM } from '../ckm/observation-definitions';
 import type { LabOrderItem } from './lab-order';
 import { createLabOrder, EXT_REFEPS_VERIFICACION } from './lab-order-create';
+import { getSello, SELLO_SYSTEM, verifySeal } from './lab-order-emission';
 import { EmissionBlockedError } from './practitioner-validation';
 import type { RefepsVerification } from './refeps';
 
@@ -68,7 +69,17 @@ function fakeMedplum(opts: { profile?: Practitioner; veredicto?: RefepsVerificat
 }
 
 function ordenes(batches: Bundle[]): ServiceRequest[] {
-  return batches.flatMap((b) => (b.entry ?? []).map((e) => e.resource as ServiceRequest));
+  return batches.flatMap((b) =>
+    (b.entry ?? [])
+      .map((e) => e.resource)
+      .filter((r): r is ServiceRequest => r?.resourceType === 'ServiceRequest')
+  );
+}
+
+function provenances(batches: Bundle[]): Provenance[] {
+  return batches.flatMap((b) =>
+    (b.entry ?? []).map((e) => e.resource).filter((r): r is Provenance => r?.resourceType === 'Provenance')
+  );
 }
 
 describe('Emisión con REFEPS verificado', () => {
@@ -142,5 +153,69 @@ describe('Qué NO pasa por REFEPS', () => {
     );
     expect(ctx.botCalls).toBe(0);
     expect(ctx.batches).toStrictEqual([]);
+  });
+});
+
+// Fase 2 del recetario: emitir ES el acto firmado del profesional. Antes de
+// esto lab-order-emission era un módulo entero con tests y SIN llamador — y
+// para el regulador una capacidad que no está en el circuito no existe.
+describe('Sello de integridad y firma', () => {
+  test('sella cada orden y firma en la MISMA transacción', async () => {
+    const ctx = fakeMedplum({ profile: MEDICO, veredicto: verification('verificado', 'Matrícula verificada.') });
+    await createLabOrder(ctx.medplum, { patient: PACIENTE, items: ITEMS });
+
+    expect(ctx.batches).toHaveLength(1);
+    const srs = ordenes(ctx.batches);
+    const provs = provenances(ctx.batches);
+    expect(provs).toHaveLength(1);
+
+    // Todas las órdenes del pedido llevan el MISMO sello: es el hash del
+    // contenido de la requisición, no de cada análisis suelto.
+    const sellos = new Set(srs.map(getSello));
+    expect(sellos.size).toBe(1);
+    expect([...sellos][0]).toMatch(/^[0-9a-f]{64}$/);
+
+    // La firma acredita autoría y arrastra el sello para poder auditar sin
+    // releer las órdenes.
+    const [prov] = provs;
+    expect(prov.signature?.[0]?.who?.reference).toBe('Practitioner/dr1');
+    expect(prov.extension?.find((e) => e.url === SELLO_SYSTEM)?.valueString).toBe([...sellos][0]);
+  });
+
+  test('los targets del Provenance son los urn:uuid de la misma transacción', async () => {
+    const ctx = fakeMedplum({ profile: MEDICO, veredicto: verification('verificado', 'ok') });
+    await createLabOrder(ctx.medplum, { patient: PACIENTE, items: ITEMS });
+
+    // Las órdenes todavía no existen cuando se arma el Provenance: si los
+    // targets no son los fullUrl de esta transacción, el servidor guarda una
+    // firma que no apunta a nada.
+    const [bundle] = ctx.batches;
+    const fullUrls = (bundle.entry ?? []).filter((e) => e.fullUrl).map((e) => e.fullUrl);
+    expect(fullUrls.length).toBe(ITEMS.length);
+    expect(fullUrls.every((u) => u?.startsWith('urn:uuid:'))).toBe(true);
+    const [prov] = provenances(ctx.batches);
+    expect(prov.target?.map((t) => t.reference)).toStrictEqual(fullUrls);
+  });
+
+  test('el sello devuelto verifica contra el contenido de la orden', async () => {
+    const ctx = fakeMedplum({ profile: MEDICO, veredicto: verification('verificado', 'ok') });
+    const r = await createLabOrder(ctx.medplum, { patient: PACIENTE, items: ITEMS });
+    await expect(verifySeal(r.requests)).resolves.toBe(true);
+
+    // Y detecta la modificación: cambiar un análisis invalida el sello. Es la
+    // garantía de inalterabilidad que pide el art. 4 del Decreto 98/23.
+    const alterada = r.requests.map((sr) => ({ ...sr, code: { ...sr.code, text: 'Otra cosa' } }));
+    await expect(verifySeal(alterada)).resolves.toBe(false);
+  });
+
+  // Una propuesta del paciente no es un acto firmado: nadie matriculado se
+  // hizo responsable todavía. Se sella al aprobarse, no antes.
+  test('las propuestas del paciente no se sellan ni se firman', async () => {
+    const ctx = fakeMedplum({ profile: undefined });
+    const r = await createLabOrder(ctx.medplum, { patient: PACIENTE, items: ITEMS, intent: 'proposal' });
+
+    expect(provenances(ctx.batches)).toStrictEqual([]);
+    expect(ordenes(ctx.batches).map(getSello)).toStrictEqual([undefined]);
+    expect(r.requests.map(getSello)).toStrictEqual([undefined]);
   });
 });

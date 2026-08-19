@@ -17,7 +17,7 @@ export default defineConfig({
   preview: {
     port: 3008,
     allowedHosts: true,
-    host: 'dashboard.medplum.com.ar',
+    host: 'consultorio.medplum.com.ar',
   },
   server: {
     host: 'localhost',

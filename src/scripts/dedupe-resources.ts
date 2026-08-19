@@ -1,5 +1,5 @@
 // Diagnóstico y limpieza de recursos DUPLICADOS del proyecto (el que corresponda
-// a las credenciales del ClientApplication, ej. "Biowellness San Isidro").
+// a las credenciales del ClientApplication, ej. el proyecto del consultorio).
 // Soporta Practitioner (default) y Organization. Aparecen duplicados cuando un
 // login, un seed o una carga manual crea un recurso nuevo cada vez en lugar de
 // reutilizar el existente.

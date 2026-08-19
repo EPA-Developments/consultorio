@@ -1,4 +1,4 @@
-// Panel de biomarcadores BioWellness de un paciente, agrupado por categoría
+// Panel de biomarcadores de un paciente, agrupado por categoría
 // (metabólico, lipídico, inflamación, …). Para cada biomarcador muestra el
 // último valor del paciente, los rangos convencional/óptimo y un estado
 // (Óptimo/Normal/Alto/Bajo) clasificado contra los rangos de su
@@ -53,7 +53,7 @@ export function BiomarkerPanelPage(): JSX.Element {
           </Anchor>
           <Title order={3}>Panel de biomarcadores</Title>
           <Text c="dimmed" size="sm">
-            {patientName} · {groups.reduce((n, g) => n + g.defs.length, 0)} biomarcadores BioWellness. Estado
+            {patientName} · {groups.reduce((n, g) => n + g.defs.length, 0)} biomarcadores del panel. Estado
             clasificado contra los rangos convencional y óptimo (Medicina 3.0) de cada definición.
           </Text>
         </Stack>

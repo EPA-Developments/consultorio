@@ -1,6 +1,7 @@
 # Seguridad y protección de datos — decisiones y estado
 
-> Documento operativo de las decisiones de seguridad de BioWellness · Seguimiento.
+> Documento operativo de las decisiones de seguridad de Consultorio ·
+> Favaloro | Medplum Argentina.
 > Complementa `RENAPDIS-CHECKLIST-TECNICO.md` (cumplimiento regulatorio).
 >
 > Última actualización: julio 2026 — cierre de los **P0**.
@@ -147,7 +148,7 @@ Hay **dos roles** y cada uno tiene su policy versionada en `data/ckm/`:
 
 | Rol                                   | Archivo                        | Alcance                                                                       |
 | ------------------------------------- | ------------------------------ | ----------------------------------------------------------------------------- |
-| **Médico** (dashboard.biowellness.ar) | `clinician-access-policy.json` | **Todo el proyecto**: ve y edita los pacientes de _Biowellness \| San Isidro_ |
+| **Médico** (consultorio.medplum.com.ar) | `clinician-access-policy.json` | **Todo el proyecto**: ve y edita los pacientes de _Biowellness \| San Isidro_ |
 | **Paciente** (app.biowellness.ar)     | `patient-access-policy.json`   | Solo **su propio** compartment                                                |
 
 ### La policy del médico

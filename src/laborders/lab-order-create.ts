@@ -14,6 +14,7 @@ import type { Bundle, Patient, ServiceRequest } from '@medplum/fhirtypes';
 import { constanciaRefeps, EXT_REFEPS_VERIFICACION, validarEmisor, valorVerificacion } from './emission-gate';
 import type { LabOrderItem } from './lab-order';
 import { buildLabOrder } from './lab-order';
+import { buildEmissionProvenance, sealOrder, withSeal } from './lab-order-emission';
 import type { RefepsCheckResult } from './refeps-client';
 
 export { EXT_REFEPS_VERIFICACION };
@@ -87,12 +88,49 @@ export async function createLabOrder(medplum: MedplumClient, params: CreateLabOr
       : r
   );
 
+  // Sello de integridad + Provenance de firma, en la MISMA transacción que crea
+  // la orden: emitir ES el acto firmado del profesional. Mismo diseño que
+  // createReceta — el objeto cambia, el acto legal no.
+  //
+  // Las PROPUESTAS del paciente no se sellan ni se firman a propósito: no son
+  // un acto firmado por un profesional, sino un pedido. Se sellan recién al
+  // aprobarse, que es cuando alguien matriculado se hace responsable.
+  if (!emisor) {
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: requests.map((resource) => ({ request: { method: 'POST', url: 'ServiceRequest' }, resource })),
+    };
+    await medplum.executeBatch(bundle);
+    return { requisitionId, requests, refeps: undefined };
+  }
+
+  const seal = await sealOrder(requests);
+  const selladas = requests.map((r) => ({ ...r, identifier: withSeal(r, seal) }));
+  // Los targets van como urn:uuid porque las órdenes todavía no existen: el
+  // servidor los reescribe a las referencias reales al resolver la transacción.
+  const urns = selladas.map(() => `urn:uuid:${crypto.randomUUID()}`);
+  const provenance = buildEmissionProvenance({
+    requests: selladas,
+    targets: urns,
+    practitioner: emisor.practitioner,
+    when: authoredOn,
+    seal,
+  });
+
   const bundle: Bundle = {
     resourceType: 'Bundle',
     type: 'transaction',
-    entry: requests.map((resource) => ({ request: { method: 'POST', url: 'ServiceRequest' }, resource })),
+    entry: [
+      ...selladas.map((resource, i) => ({
+        fullUrl: urns[i],
+        request: { method: 'POST' as const, url: 'ServiceRequest' },
+        resource,
+      })),
+      { request: { method: 'POST' as const, url: 'Provenance' }, resource: provenance },
+    ],
   };
   await medplum.executeBatch(bundle);
 
-  return { requisitionId, requests, refeps: emisor?.refeps };
+  return { requisitionId, requests: selladas, refeps: emisor.refeps };
 }

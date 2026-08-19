@@ -4,7 +4,8 @@ import { Group, Text, Title } from '@mantine/core';
 import { SignInForm } from '@medplum/react';
 import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
-import { BioWellnessLogo } from '../components/BioWellnessLogo';
+import { BRAND } from '../brand';
+import { BrandLogo } from '../components/BrandLogo';
 import { getConfig } from '../config';
 
 export function SignInPage(): JSX.Element {
@@ -16,16 +17,16 @@ export function SignInPage(): JSX.Element {
       clientId={getConfig().clientId}
     >
       <Group justify="center">
-        <BioWellnessLogo height={56} />
+        <BrandLogo height={56} />
       </Group>
       <Title ta="center" order={2} mt="sm">
-        BioWellness
+        {BRAND.appName}
       </Title>
       <Text ta="center" size="sm" c="dimmed">
-        Optimización biológica · Seguimiento clínico
+        {BRAND.tagline}
       </Text>
       <Text ta="center" size="xs" c="dimmed" mt="xl">
-        Favaloro · Medplum Argentina
+        {BRAND.name}
       </Text>
     </SignInForm>
   );

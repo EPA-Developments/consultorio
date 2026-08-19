@@ -102,7 +102,7 @@ export interface Seguimiento {
 /**
  * Estado de validación clínica, por terapia.
  *
- * El material publicado de BioWellness tiene hoy `class="validado"` en el body
+ * El material publicado de la práctica tiene hoy `class="validado"` en el body
  * y a la vez el cartel "pendiente de validación": el estado y el mensaje se
  * despegaron. Acá no puede pasar, porque `validadoPor` y `validadoEl` son
  * obligatorios cuando el estado es 'validado', y hay un test que lo verifica.

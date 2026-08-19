@@ -6,7 +6,7 @@
 // que alguien toca un Practitioner.
 //
 // POR QUÉ ES UN BOT Y NO CÓDIGO DEL FRONT: el Domain Secret firma tokens a
-// nombre de BioWellness. En una app Vite quedaría dentro del bundle, legible
+// nombre de la plataforma. En una app Vite quedaría dentro del bundle, legible
 // por cualquiera con las herramientas de desarrollo. Acá vive en los secrets
 // del Bot, del lado del servidor, y nunca sale.
 //

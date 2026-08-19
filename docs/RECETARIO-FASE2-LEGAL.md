@@ -5,6 +5,15 @@
 > **Objeto:** emitir órdenes de estudios de laboratorio con validez legal desde nuestra
 > plataforma propia, e inscribirla en el ReNaPDiS.
 > **Fecha del relevamiento:** julio de 2026.
+>
+> **Nota de actualización (agosto 2026).** El producto pasó a llamarse **Consultorio ·
+> Favaloro | Medplum Argentina** (`consultorio.medplum.com.ar`). El cambio es de **marca
+> del software**, y afecta dos campos del formulario TAD: _nombre de la aplicación_ y
+> _URL del sitio_ (§5.1). **NO resuelve** —ni pretende resolver— quién es la **entidad
+> solicitante** (nombre y CUIT concordantes) ni quién firma como **referente técnico**:
+> esa sigue siendo una definición legal pendiente, y las menciones a «BioWellness» como
+> consultante se conservan hasta que se defina. Es exactamente la clase de pregunta que
+> este informe le lleva al abogado.
 
 ---
 
@@ -24,7 +33,7 @@ reemplazarla.
 
 ## 1. Situación actual de BioWellness
 
-- Operamos una plataforma clínica propia (**BioWellness · Seguimiento**), construida sobre
+- Operamos una plataforma clínica propia (**Consultorio · Favaloro | Medplum Argentina**), construida sobre
   **Medplum** (EHR open source, estándar **HL7 FHIR R4**), en **self-hosting** bajo nuestro
   control (`api.medplum.com.ar`).
 - Ya está construido y en uso un **circuito interno de órdenes de laboratorio** ("recetario"):

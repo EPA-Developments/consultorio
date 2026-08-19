@@ -1,4 +1,4 @@
-// Sube el panel de biomarcadores BioWellness (ObservationDefinitions) a Medplum,
+// Sube el panel de biomarcadores (ObservationDefinitions) a Medplum,
 // como fuente de verdad FHIR de rangos, interpretaciones y paneles. El bundle es
 // idempotente (PUT por id), así que correrlo varias veces actualiza sin duplicar.
 //

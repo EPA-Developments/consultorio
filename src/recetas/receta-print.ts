@@ -10,6 +10,7 @@
 // aplica sobre el PDF generado; este documento deja el espacio y la identidad.
 import { formatAddress, formatHumanName, getDisplayString } from '@medplum/core';
 import type { MedicationRequest, Patient, Practitioner } from '@medplum/fhirtypes';
+import { BRAND, brandTitle } from '../brand';
 import { DNI_SYSTEM, getIdentifierValue } from '../ckm/argentina';
 import { code39Svg } from './barcode';
 import { EMISSION_STATUS } from '../laborders/lab-order-emission';
@@ -49,8 +50,6 @@ export interface RecetaPrintData {
   registryLegend?: string;
 }
 
-const CLINIC_NAME = 'BioWellness';
-const CLINIC_SUBTITLE = 'Medicina Funcional y Longevidad · San Isidro, PBA';
 
 /** Arma los datos de impresión desde los MedicationRequest de una receta. */
 export function buildRecetaPrintData(params: {
@@ -67,8 +66,8 @@ export function buildRecetaPrintData(params: {
   const { requests, patient, practitioner } = params;
   const first = requests[0];
   return {
-    clinicName: CLINIC_NAME,
-    clinicSubtitle: CLINIC_SUBTITLE,
+    clinicName: BRAND.clinicName,
+    clinicSubtitle: BRAND.clinicSubtitle,
     logoUrl: params.logoUrl,
     patientName: patient.name?.[0] ? formatHumanName(patient.name[0]) : getDisplayString(patient),
     patientDni: getIdentifierValue(patient, DNI_SYSTEM),
@@ -304,7 +303,7 @@ export function renderRecetaHtml(data: RecetaPrintData): string {
 
   <div class="disclaimer">
     ${esc(EMISSION_STATUS[data.emissionStatus ?? 'draft'].legend)}
-    Generado desde BioWellness · Seguimiento.${data.registryLegend ? ' ' + esc(data.registryLegend) : ''}
+    Generado desde ${esc(brandTitle())}.${data.registryLegend ? ' ' + esc(data.registryLegend) : ''}
   </div>
 </body>
 </html>`;

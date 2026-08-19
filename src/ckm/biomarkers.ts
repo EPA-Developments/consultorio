@@ -5,7 +5,7 @@
 // limítrofe/intermedio. Etapa 3 (display-only): se LEEN y se MUESTRAN junto a
 // los scores, NO modifican el cálculo de PREVENT.
 //
-// Los umbrales provienen del bundle de ObservationDefinitions de BioWellness
+// Los umbrales provienen del bundle de ObservationDefinitions del catálogo
 // (rango óptimo / convencional). Acá están hardcodeados; una etapa posterior
 // podría leerlos dinámicamente de las ObservationDefinitions cargadas en
 // Medplum. Sin dependencias de UI: usable por el FrontEnd y por los bots.
@@ -63,7 +63,7 @@ export interface EnhancerDefinition {
 }
 
 /**
- * Registro de potenciadores de la Etapa 3. Umbrales del JSON de BioWellness:
+ * Registro de potenciadores de la Etapa 3. Umbrales del JSON del catálogo:
  * - ApoB: óptimo < 90 mg/dL, convencional < 130 mg/dL.
  * - Lp(a): óptimo < 50 nmol/L, convencional < 75 nmol/L (molar); en masa
  *   óptimo < 30 mg/dL, convencional < 50 mg/dL (cutoffs clínicos estándar).

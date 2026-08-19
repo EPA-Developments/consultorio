@@ -138,7 +138,7 @@ export function metabolicPhenotype(i: GLP1Inputs): MetabolicPhenotype {
     return 'prediabetes';
   }
   // Resistencia insulínica con glucemia todavía normal: el caso más frecuente
-  // en la población de BioWellness y el que se pierde si solo se mira glucemia.
+  // en la población de la práctica y el que se pierde si solo se mira glucemia.
   if ((homaIr !== undefined && homaIr > UMBRALES.homaIr) || (ins !== undefined && ins > UMBRALES.insulinaBasal)) {
     return 'resistencia-insulinica';
   }
@@ -390,7 +390,7 @@ export function suggestMolecules(i: GLP1Inputs, phenotype: MetabolicPhenotype): 
   }
 
   // Perfil disglucémico SIN diabetes ni ECV: resistencia insulínica o
-  // prediabetes con sobrepeso. Es el paciente más frecuente de BioWellness y
+  // prediabetes con sobrepeso. Es el paciente más frecuente de la práctica y
   // queda fuera de todas las reglas anteriores (no tiene ERC, ni evento CV, ni
   // DM2, ni IMC ≥30), así que necesita su propia regla o no se sugiere nada.
   if (phenotype === 'resistencia-insulinica' || phenotype === 'prediabetes') {
