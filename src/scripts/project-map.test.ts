@@ -74,10 +74,7 @@ describe('Veredicto del mapa', () => {
   });
 
   test('marca el bot presente pero sin código desplegado', () => {
-    const h = analizar(
-      [base({ conteos: { Patient: 5 }, bots: [bot('ckm-recalculate', false)] })],
-      ['ckm-recalculate']
-    );
+    const h = analizar([base({ conteos: { Patient: 5 }, bots: [bot('ckm-recalculate', false)] })], ['ckm-recalculate']);
     expect(h.some((x) => x.nivel === 'problema' && x.texto.includes('SIN código ejecutable'))).toBe(true);
   });
 
@@ -171,7 +168,13 @@ describe('Veredicto del mapa', () => {
     const h = analizar(
       [
         base({ id: 'consultorio', nombre: 'Consultorio', conteos: { Patient: 40 }, links: ['umls'] }),
-        base({ id: 'umls', nombre: 'umls', conteos: { CodeSystem: 3, ValueSet: 2 }, valueSets: VS, exporta: ['ConceptMap'] }),
+        base({
+          id: 'umls',
+          nombre: 'umls',
+          conteos: { CodeSystem: 3, ValueSet: 2 },
+          valueSets: VS,
+          exporta: ['ConceptMap'],
+        }),
       ],
       []
     );
@@ -182,7 +185,13 @@ describe('Veredicto del mapa', () => {
     const h = analizar(
       [
         base({ id: 'consultorio', nombre: 'Consultorio', conteos: { Patient: 40 } }),
-        base({ id: 'umls', nombre: 'umls', conteos: { CodeSystem: 3, ValueSet: 2 }, valueSets: VS, exporta: ['CodeSystem'] }),
+        base({
+          id: 'umls',
+          nombre: 'umls',
+          conteos: { CodeSystem: 3, ValueSet: 2 },
+          valueSets: VS,
+          exporta: ['CodeSystem'],
+        }),
       ],
       []
     );

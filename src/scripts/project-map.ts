@@ -18,14 +18,7 @@
 //   MEDPLUM_CLIENT_ID=... MEDPLUM_CLIENT_SECRET=... npm run project-map
 //     (ese client debe pertenecer al proyecto Super Admin)
 import { ClientStorage, MedplumClient, MemoryStorage } from '@medplum/core';
-import type {
-  Bot,
-  ClientApplication,
-  Project,
-  ProjectMembership,
-  Resource,
-  Subscription,
-} from '@medplum/fhirtypes';
+import type { Bot, ClientApplication, Project, ProjectMembership, Resource, Subscription } from '@medplum/fhirtypes';
 import { pathToFileURL } from 'url';
 
 /** Tipos que se listan con detalle (son pocos y sus campos importan). */
@@ -208,8 +201,7 @@ export function analizar(resumenes: ResumenProyecto[], botsEsperados: string[], 
   // proyecto con dos ValueSets propios daba ✓ mientras el buscador de
   // medicamentos no encontraba nada. Lo que importa es si están LOS ValueSet
   // que el formulario consulta por $expand.
-  const tieneTerminologia = (r: ResumenProyecto): boolean =>
-    VALUESETS_REQUERIDOS.every((u) => r.valueSets.includes(u));
+  const tieneTerminologia = (r: ResumenProyecto): boolean => VALUESETS_REQUERIDOS.every((u) => r.valueSets.includes(u));
   const terminologia = clinicos.filter(tieneTerminologia);
   const enPrincipal = tieneTerminologia(principal);
   const linkeados = resumenes.filter((r) => principal.links.includes(r.id));
@@ -477,9 +469,7 @@ async function main(): Promise<void> {
       console.log(`   subscription: reason=${s.reason} status=${s.status ?? '?'}`);
     }
     for (const c of r.clients) {
-      console.log(
-        `   client «${c.nombre}»: ${c.id} — admin=${c.admin} — accessPolicy=${c.policy ?? '(ninguna)'}`
-      );
+      console.log(`   client «${c.nombre}»: ${c.id} — admin=${c.admin} — accessPolicy=${c.policy ?? '(ninguna)'}`);
     }
     console.log('');
   }

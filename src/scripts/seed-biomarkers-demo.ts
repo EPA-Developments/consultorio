@@ -20,6 +20,7 @@ import { seedSeries } from '../ckm/biomarker-seed';
 import { ageFromBirthDate } from '../ckm/clinical';
 import { parseObservationDefinition } from '../ckm/observation-definitions';
 import type { BiomarkerDefinition } from '../ckm/observation-definitions';
+import { upsertUnico } from './lib/upsert';
 
 const SEED_IDENTIFIER_SYSTEM = 'https://seguimiento.medplum.com.ar/seed-patient';
 const UCUM = 'http://unitsofmeasure.org';
@@ -102,7 +103,7 @@ async function seedPatient(medplum: MedplumClient, patient: Patient, specs: Biom
       const effectiveDateTime = new Date(now - daysAgo * DAY_MS).toISOString();
       const identifierValue = `biomarker-${patientId}-${biomarcadorId}-${k}`;
       const obs = buildObservation(patientId, spec, series[k], effectiveDateTime, identifierValue);
-      await medplum.upsertResource(obs, `identifier=${SEED_IDENTIFIER_SYSTEM}|${identifierValue}`);
+      await upsertUnico(medplum, obs, `identifier=${SEED_IDENTIFIER_SYSTEM}|${identifierValue}`);
       written++;
     }
   }
@@ -125,7 +126,9 @@ async function main(): Promise<void> {
   await medplum.startClientLogin(clientId, clientSecret);
 
   const specs = loadSpecs();
-  console.log(`${specs.length} biomarcadores en el bundle. Conectado a ${baseUrl} (proyecto ${medplum.getProject()?.id}).`);
+  console.log(
+    `${specs.length} biomarcadores en el bundle. Conectado a ${baseUrl} (proyecto ${medplum.getProject()?.id}).`
+  );
 
   let patients: Patient[];
   if (explicitId) {

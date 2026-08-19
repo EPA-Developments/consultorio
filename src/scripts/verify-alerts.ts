@@ -15,8 +15,16 @@
 //   MEDPLUM_CLIENT_ID=xxx MEDPLUM_CLIENT_SECRET=xxx npm run verify-alerts
 import { MedplumClient } from '@medplum/core';
 import type { Observation, Patient } from '@medplum/fhirtypes';
-import { CKM_STAGE_URL, HGRAPH_DATA_URL, LOINC, LOINC_BP_PANEL, LOINC_SYSTEM, PREVENT_INPUTS_URL } from '../ckm/constants';
+import {
+  CKM_STAGE_URL,
+  HGRAPH_DATA_URL,
+  LOINC,
+  LOINC_BP_PANEL,
+  LOINC_SYSTEM,
+  PREVENT_INPUTS_URL,
+} from '../ckm/constants';
 import { ALERT_RULE_SYSTEM } from '../ckm/alert-rules';
+import { upsertUnico } from './lib/upsert';
 
 const TEST_IDENTIFIER_SYSTEM = 'https://seguimiento.medplum.com.ar/fhir/test';
 const TEST_IDENTIFIER_VALUE = 'ckm-alert-3strikes';
@@ -34,8 +42,14 @@ function bpPanel(patientId: string, systolic: number, diastolic: number, date: s
     effectiveDateTime: date,
     code: { coding: [{ system: LOINC_SYSTEM, code: LOINC_BP_PANEL }] },
     component: [
-      { code: { coding: [{ system: LOINC_SYSTEM, code: LOINC.sbp }] }, valueQuantity: { value: systolic, unit: 'mmHg' } },
-      { code: { coding: [{ system: LOINC_SYSTEM, code: LOINC.dbp }] }, valueQuantity: { value: diastolic, unit: 'mmHg' } },
+      {
+        code: { coding: [{ system: LOINC_SYSTEM, code: LOINC.sbp }] },
+        valueQuantity: { value: systolic, unit: 'mmHg' },
+      },
+      {
+        code: { coding: [{ system: LOINC_SYSTEM, code: LOINC.dbp }] },
+        valueQuantity: { value: diastolic, unit: 'mmHg' },
+      },
     ],
   };
 }
@@ -47,7 +61,11 @@ function daysAgoIso(n: number): string {
 }
 
 /** Borra los recursos de un tipo que matcheen una búsqueda (para limpiar estado). */
-async function deleteWhere(medplum: MedplumClient, type: Parameters<MedplumClient['searchResources']>[0], query: string): Promise<number> {
+async function deleteWhere(
+  medplum: MedplumClient,
+  type: Parameters<MedplumClient['searchResources']>[0],
+  query: string
+): Promise<number> {
   const found = await medplum.searchResources(type, query);
   for (const r of found) {
     await medplum.deleteResource(type, r.id as string);
@@ -68,7 +86,8 @@ async function main(): Promise<void> {
   console.log(`Proyecto del client: ${medplum.getProject()?.id} en ${baseUrl}\n`);
 
   // 1. Paciente de prueba dedicado (idempotente por identifier)
-  const patient = await medplum.upsertResource<Patient>(
+  const patient = await upsertUnico<Patient>(
+    medplum,
     {
       resourceType: 'Patient',
       identifier: [{ system: TEST_IDENTIFIER_SYSTEM, value: TEST_IDENTIFIER_VALUE }],
@@ -88,7 +107,9 @@ async function main(): Promise<void> {
   const di = await deleteWhere(medplum, 'DetectedIssue', pat);
   const tasks = await deleteWhere(medplum, 'Task', pat);
   const comms = await deleteWhere(medplum, 'Communication', subj);
-  console.log(`2. Estado previo limpiado: ${obs} Observation, ${di} DetectedIssue, ${tasks} Task, ${comms} Communication`);
+  console.log(
+    `2. Estado previo limpiado: ${obs} Observation, ${di} DetectedIssue, ${tasks} Task, ${comms} Communication`
+  );
 
   // 3. Cargar 3 PA elevadas (sistólica >=140, diastólica normal, no críticas)
   console.log('3. Cargando 3 registros de PA elevada (145, 148, 150 mmHg)...');
@@ -101,7 +122,10 @@ async function main(): Promise<void> {
   let detected = false;
   for (let i = 0; i < POLL_ATTEMPTS && !detected; i++) {
     await sleep(POLL_INTERVAL_MS);
-    const issues = await medplum.searchResources('DetectedIssue', `${pat}&code=${encodeURIComponent(`${ALERT_RULE_SYSTEM}|${RULE_ID}`)}`);
+    const issues = await medplum.searchResources(
+      'DetectedIssue',
+      `${pat}&code=${encodeURIComponent(`${ALERT_RULE_SYSTEM}|${RULE_ID}`)}`
+    );
     if (issues.length > 0) {
       detected = true;
     } else {
@@ -144,7 +168,9 @@ async function diagnose(medplum: MedplumClient, patientId: string): Promise<void
     const patient = await medplum.readResource('Patient', patientId);
     const has = (url: string): boolean => Boolean(patient.extension?.some((e) => e.url === url));
     const ran = has(CKM_STAGE_URL) || has(HGRAPH_DATA_URL) || has(PREVENT_INPUTS_URL);
-    console.log(`  Bot corrió sobre el paciente: ${ran ? 'SÍ' : 'NO'}  (CKMStage=${has(CKM_STAGE_URL)} hGraph=${has(HGRAPH_DATA_URL)})`);
+    console.log(
+      `  Bot corrió sobre el paciente: ${ran ? 'SÍ' : 'NO'}  (CKMStage=${has(CKM_STAGE_URL)} hGraph=${has(HGRAPH_DATA_URL)})`
+    );
     if (!ran) {
       console.log(
         '  → El bot NO se ejecutó. Causa típica: la Subscription no dispara o falta\n' +
@@ -189,7 +215,9 @@ async function diagnose(medplum: MedplumClient, patientId: string): Promise<void
           `  Código DESPLEGADO tiene la regla 3 strikes: ${hasRule ? 'SÍ ✓' : 'NO ✗  → es código VIEJO, redesplegá'}`
         );
         if (!hasRule) {
-          console.log('      npm run build:bots && npm run deploy-bots-server   (y verificá "✓ ckm-recalculate desplegado")');
+          console.log(
+            '      npm run build:bots && npm run deploy-bots-server   (y verificá "✓ ckm-recalculate desplegado")'
+          );
         }
       } catch (err) {
         console.log(`  (no pude bajar el código desplegado para verificar versión: ${(err as Error).message})`);
@@ -203,7 +231,9 @@ async function diagnose(medplum: MedplumClient, patientId: string): Promise<void
     });
     console.log(`  AuditEvents recientes del bot: ${audits.length}`);
     for (const a of audits) {
-      console.log(`    ${a.recorded} outcome=${a.outcome ?? '?'} ${a.outcomeDesc ? '— ' + a.outcomeDesc.slice(0, 300) : ''}`);
+      console.log(
+        `    ${a.recorded} outcome=${a.outcome ?? '?'} ${a.outcomeDesc ? '— ' + a.outcomeDesc.slice(0, 300) : ''}`
+      );
     }
     if (audits.length === 0) {
       console.log('    (sin AuditEvents: el bot no se está ejecutando; revisá la Subscription)');

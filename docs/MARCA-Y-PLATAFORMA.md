@@ -370,5 +370,8 @@ versiona.
 - **El estado sigue en `signed-internal`.** La firma del profesional acredita
   AUTORÍA; `legally-emitted` requiere la inscripción en el ReNaPDiS y el CUIR
   asignado por el Estado. La firma digital no adelanta ese trámite.
-- **La orden de laboratorio** todavía no tiene PDF propio; las primitivas de
-  `src/pdf/` están listas para reusarse.
+- **La orden de laboratorio ya tiene PDF propio** (`lab-order-pdf.ts`), con las
+  mismas primitivas y la misma propiedad de determinismo. Falta el camino de
+  vuelta del firmado para órdenes: hoy solo la receta lo tiene
+  (`receta-firmada.ts`). El módulo de verificación (`src/pdf/signed-pdf.ts`) no
+  es específico de recetas, así que es cablear, no diseñar.

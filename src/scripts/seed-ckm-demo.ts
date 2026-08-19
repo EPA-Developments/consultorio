@@ -14,6 +14,7 @@ import type { Communication, Extension, Patient, RiskAssessment } from '@medplum
 import { CKM_STAGE_URL, HGRAPH_DATA_URL } from '../ckm/constants';
 import type { CKMParameterId } from '../ckm/constants';
 import type { CKMStage, HGraphMetric, HGraphMetricStatus, PREVENTScores } from '../ckm/types';
+import { upsertUnico } from './lib/upsert';
 
 const SEED_IDENTIFIER_SYSTEM = 'https://seguimiento.medplum.com.ar/seed-patient';
 
@@ -149,7 +150,7 @@ async function main(): Promise<void> {
     };
     await write(
       'RiskAssessment',
-      medplum.upsertResource(riskAssessment, `identifier=${SEED_IDENTIFIER_SYSTEM}|ckm-seed-risk-${patient.id}`)
+      upsertUnico(medplum, riskAssessment, `identifier=${SEED_IDENTIFIER_SYSTEM}|ckm-seed-risk-${patient.id}`)
     );
 
     if (stage >= 3) {
@@ -170,7 +171,7 @@ async function main(): Promise<void> {
       };
       await write(
         'Communication',
-        medplum.upsertResource(alert, `identifier=${SEED_IDENTIFIER_SYSTEM}|ckm-seed-alert-${patient.id}`)
+        upsertUnico(medplum, alert, `identifier=${SEED_IDENTIFIER_SYSTEM}|ckm-seed-alert-${patient.id}`)
       );
     }
 

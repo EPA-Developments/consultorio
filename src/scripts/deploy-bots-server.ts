@@ -13,8 +13,66 @@
 import { MedplumClient } from '@medplum/core';
 import type { Bot, Bundle, BundleEntry, Subscription } from '@medplum/fhirtypes';
 import fs from 'fs';
+import { pathToFileURL } from 'url';
 
 const BUNDLE_FILE = 'data/core/example-bots.json';
+
+/** El proyecto al que pertenece un recurso (meta.project, en extended mode). */
+function proyectoDe(recurso: { meta?: unknown }): string | undefined {
+  return (recurso.meta as { project?: string } | undefined)?.project;
+}
+
+/**
+ * El Bot de ESTE proyecto con ese nombre, o undefined si hay que crearlo.
+ *
+ * No alcanza con `searchOne('Bot', {name})`, y esto no es teórico: un proyecto
+ * que LINKEA a otro ve los recursos del linkeado, y los links encadenan. Con
+ * Favaloro → Super Admin → Biowellness, buscar "ckm-recalculate" desde Favaloro
+ * devolvía el bot de Biowellness, y el deploy terminaba pisando el código
+ * ejecutable de los bots de PRODUCCIÓN de otro consultorio — sin un solo error,
+ * reportando "Bot existente" con un id que no era de este proyecto.
+ *
+ * Un bot con el nombre correcto en el proyecto equivocado no es el bot: si los
+ * candidatos son todos ajenos, corresponde CREAR el propio.
+ *
+ * Cuando `meta.project` no viene (credencial sin extended mode) no se puede
+ * decidir, y ante la duda se aborta: desplegar sobre el proyecto de otro es
+ * mucho peor que no desplegar.
+ */
+export async function botDelProyecto(
+  medplum: MedplumClient,
+  botName: string,
+  projectId: string
+): Promise<Bot | undefined> {
+  const candidatos = (await medplum.searchResources('Bot', { name: botName, _count: '50' })) as Bot[];
+  const exactos = candidatos.filter((b) => b.name === botName);
+  if (exactos.length === 0) {
+    return undefined;
+  }
+
+  const propios = exactos.filter((b) => proyectoDe(b) === projectId);
+  if (propios.length > 0) {
+    return propios[0];
+  }
+
+  const opacos = exactos.filter((b) => !proyectoDe(b));
+  if (opacos.length > 0) {
+    throw new Error(
+      `No puedo determinar a qué proyecto pertenece el Bot «${botName}» (${opacos
+        .map((b) => b.id)
+        .join(', ')}): la búsqueda no devuelve meta.project.\n` +
+        '  Sin ese dato, desplegar puede pisar el bot de otro proyecto linkeado.\n' +
+        '  Usá un ClientApplication admin del proyecto, o verificá el bot a mano antes de seguir.'
+    );
+  }
+
+  // Todos los candidatos son de otros proyectos (linkeados): este proyecto no
+  // tiene el bot, hay que crearlo acá.
+  console.log(
+    `  · «${botName}» existe en otro proyecto (${exactos.map((b) => b.id).join(', ')}), no en este: se crea el propio.`
+  );
+  return undefined;
+}
 
 async function main(): Promise<void> {
   const baseUrl = process.env.MEDPLUM_BASE_URL ?? 'https://api.medplum.com.ar';
@@ -55,7 +113,7 @@ async function main(): Promise<void> {
   // 1. Crear los Bots que falten y resolver los placeholders del bundle
   for (const entry of botEntries) {
     const botName = (entry.resource as Bot).name as string;
-    const found = await medplum.searchOne('Bot', { name: botName });
+    const found = await botDelProyecto(medplum, botName, projectId);
     let bot: Bot;
     if (!found) {
       const url = new URL(`admin/projects/${projectId}/bot`, medplum.getBaseUrl());
@@ -163,7 +221,9 @@ async function main(): Promise<void> {
     .filter((r): r is Subscription => r?.resourceType === 'Subscription');
   if (subsWanted && subsWanted.length > 0) {
     console.log('\nSubscriptions:');
-    const existing = await medplum.searchResources('Subscription', { _count: '100' });
+    const existing = (await medplum.searchResources('Subscription', { _count: '100' })).filter(
+      (s) => proyectoDe(s) === projectId
+    );
     for (const wanted of subsWanted) {
       const endpoint = wanted.channel?.endpoint;
       const actual = existing.find((s) => s.channel?.endpoint === endpoint);
@@ -195,14 +255,19 @@ async function main(): Promise<void> {
   console.log('\nListo. Verificá con: npm run verify-prevent');
 }
 
-main().catch((err) => {
-  console.error('\n✗ Error:', err.message ?? err);
-  if (String(err).includes('Forbidden')) {
-    console.error(
-      '  El ClientApplication necesita rol de admin de proyecto para crear/desplegar Bots.\n' +
-        '  En app.medplum.com.ar: Project → Clients → (tu client) → marcar Admin, o asignarle\n' +
-        '  una membership admin sin AccessPolicy restrictiva.'
-    );
-  }
-  process.exit(1);
-});
+// Ejecutar SOLO cuando se corre como script: importar el módulo desde los
+// tests de las funciones puras no debe intentar conectarse a nada.
+const esEntrada = process.argv[1] ? import.meta.url === pathToFileURL(process.argv[1]).href : false;
+if (esEntrada) {
+  main().catch((err) => {
+    console.error('\n✗ Error:', err.message ?? err);
+    if (String(err).includes('Forbidden')) {
+      console.error(
+        '  El ClientApplication necesita rol de admin de proyecto para crear/desplegar Bots.\n' +
+          '  En app.medplum.com.ar: Project → Clients → (tu client) → marcar Admin, o asignarle\n' +
+          '  una membership admin sin AccessPolicy restrictiva.'
+      );
+    }
+    process.exit(1);
+  });
+}

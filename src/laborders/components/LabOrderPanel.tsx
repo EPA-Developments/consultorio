@@ -28,6 +28,7 @@ import {
   IconCircleCheck,
   IconFlask,
   IconInfoCircle,
+  IconFileTypePdf,
   IconPrinter,
   IconStethoscope,
 } from '@tabler/icons-react';
@@ -52,6 +53,7 @@ import { createLabOrder, EXT_REFEPS_VERIFICACION } from '../lab-order-create';
 import { buildEmissionProvenance, emissionStatusOf, getSello, sealOrder, withSeal } from '../lab-order-emission';
 import type { EmissionStatus } from '../lab-order-emission';
 import { buildPrintData, printHtmlDocument, renderLabOrderHtml } from '../lab-order-print';
+import type { LabOrderPrintData } from '../lab-order-print';
 import { useLabOrderCatalog } from '../hooks/useLabOrderCatalog';
 
 export function LabOrderPanel(props: {
@@ -189,10 +191,15 @@ export function LabOrderPanel(props: {
     }
   }
 
-  // Imprime (o "Guardar como PDF") una orden ya emitida. Resuelve el
-  // profesional desde el requester de la orden; si no se puede, usa el perfil
-  // actual (si es Practitioner).
-  async function printOrder(requisitionId: string, reqs: ServiceRequest[]): Promise<void> {
+  /**
+   * Datos del documento, una sola vez para los dos formatos. Impresión y PDF
+   * comparten CONTENIDO y difieren solo en maqueta: si cada uno armara los
+   * suyos, el papel que se firma podría decir algo distinto del que se ve.
+   *
+   * Resuelve el profesional desde el requester de la orden; si no se puede,
+   * usa el perfil actual (si es Practitioner).
+   */
+  async function datosDelDocumento(requisitionId: string, reqs: ServiceRequest[]): Promise<LabOrderPrintData> {
     let practitioner: Practitioner | undefined;
     const ref = reqs.map((r) => r.requester).find((r) => r?.reference?.startsWith('Practitioner/'));
     try {
@@ -229,7 +236,7 @@ export function LabOrderPanel(props: {
     }
     const emissionStatus: EmissionStatus = first ? emissionStatusOf(first, hasSignature) : 'draft';
 
-    const data = buildPrintData({
+    return buildPrintData({
       emissionStatus,
       requisitionId,
       requests: reqs,
@@ -237,7 +244,34 @@ export function LabOrderPanel(props: {
       practitioner,
       logoUrl: '/logo.png',
     });
-    printHtmlDocument(renderLabOrderHtml(data));
+  }
+
+  async function printOrder(requisitionId: string, reqs: ServiceRequest[]): Promise<void> {
+    printHtmlDocument(renderLabOrderHtml(await datosDelDocumento(requisitionId, reqs)));
+  }
+
+  /**
+   * Genera el PDF y lo baja. Es el archivo que se sube a firmar.gob.ar: el
+   * "Guardar como PDF" del navegador no sirve, porque no es reproducible y le
+   * inyecta la URL de la página al pie — se vio en una orden real impresa.
+   */
+  async function descargarPdf(requisitionId: string, reqs: ServiceRequest[]): Promise<void> {
+    try {
+      const data = await datosDelDocumento(requisitionId, reqs);
+      // Import dinámico: pdf-lib pesa ~430 kB y solo hace falta al bajar un PDF.
+      const [{ labOrderPdfFilename, renderLabOrderPdf }, { downloadPdf }] = await Promise.all([
+        import('../lab-order-pdf'),
+        import('../../pdf/document'),
+      ]);
+      downloadPdf(await renderLabOrderPdf(data), labOrderPdfFilename(data));
+    } catch (err) {
+      showNotification({
+        color: 'red',
+        title: 'No se pudo generar el PDF',
+        message: normalizeErrorString(err),
+        autoClose: false,
+      });
+    }
   }
 
   // Aprueba una solicitud del paciente: convierte sus propuestas en órdenes
@@ -486,6 +520,7 @@ export function LabOrderPanel(props: {
         existing={existing}
         error={existingError}
         onPrint={printOrder}
+        onDownloadPdf={descargarPdf}
         onApprove={approveOrder}
         canApprove={isPractitioner}
         approvingId={approvingId}
@@ -498,6 +533,7 @@ function ExistingOrders(props: {
   existing?: ServiceRequest[];
   error?: boolean;
   onPrint: (requisitionId: string, reqs: ServiceRequest[]) => void | Promise<void>;
+  onDownloadPdf: (requisitionId: string, reqs: ServiceRequest[]) => void | Promise<void>;
   onApprove: (requisitionId: string, reqs: ServiceRequest[]) => void | Promise<void>;
   canApprove: boolean;
   approvingId?: string;
@@ -568,7 +604,17 @@ function ExistingOrders(props: {
                   leftSection={<IconPrinter size={14} />}
                   onClick={() => void props.onPrint(requisitionId, reqs)}
                 >
-                  Imprimir / PDF
+                  Imprimir
+                </Button>
+                {/* El PDF que baja acá es el que se sube a firmar.gob.ar: lo
+                    genera el repo, no el diálogo del navegador. */}
+                <Button
+                  size="xs"
+                  variant="filled"
+                  leftSection={<IconFileTypePdf size={14} />}
+                  onClick={() => void props.onDownloadPdf(requisitionId, reqs)}
+                >
+                  PDF para firmar
                 </Button>
               </Group>
             </Group>

@@ -236,7 +236,8 @@ async function main(): Promise<void> {
   }
 
   const marcas = [...porConcepto.values()].sort(
-    (a, b) => a.dci.localeCompare(b.dci) || a.marca.localeCompare(b.marca) || a.presentacion.localeCompare(b.presentacion)
+    (a, b) =>
+      a.dci.localeCompare(b.dci) || a.marca.localeCompare(b.marca) || a.presentacion.localeCompare(b.presentacion)
   );
 
   // Reporte por DCI: cuántas marcas distintas, con muestras.
@@ -251,7 +252,9 @@ async function main(): Promise<void> {
       console.log(`   … y ${nombres.length - 8} marcas más`);
     }
   }
-  console.log(`\nTotal: ${marcas.length} presentaciones comerciales de ${new Set(marcas.map((m) => m.marca)).size} marcas.`);
+  console.log(
+    `\nTotal: ${marcas.length} presentaciones comerciales de ${new Set(marcas.map((m) => m.marca)).size} marcas.`
+  );
 
   if (aplicar) {
     const salida = {

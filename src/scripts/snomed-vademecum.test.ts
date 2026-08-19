@@ -32,9 +32,9 @@ describe('Clase por refset', () => {
 
 describe('Display del concepto', () => {
   test('el FSN pierde solo su etiqueta semántica final', () => {
-    expect(displaySinTag('CRESTOR [ROSUVASTATINA 10 MG] COMPRIMIDO RECUBIERTO (fármaco de uso clínico comercial)')).toBe(
-      'CRESTOR [ROSUVASTATINA 10 MG] COMPRIMIDO RECUBIERTO'
-    );
+    expect(
+      displaySinTag('CRESTOR [ROSUVASTATINA 10 MG] COMPRIMIDO RECUBIERTO (fármaco de uso clínico comercial)')
+    ).toBe('CRESTOR [ROSUVASTATINA 10 MG] COMPRIMIDO RECUBIERTO');
     // Los paréntesis internos (sales) quedan intactos.
     expect(displaySinTag('X [A (COMO B) 10 MG] COMP (fármaco de uso clínico comercial)')).toBe(
       'X [A (COMO B) 10 MG] COMP'

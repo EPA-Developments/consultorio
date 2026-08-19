@@ -13,6 +13,7 @@
 import { MedplumClient } from '@medplum/core';
 import type { CodeSystemConcept, ValueSet, ValueSetComposeInclude } from '@medplum/fhirtypes';
 import { upsertCodeSystemFragment } from './lib/terminology';
+import { upsertUnico } from './lib/upsert';
 
 const VSAC_FHIR_BASE = 'https://cts.nlm.nih.gov/fhir';
 const PAGE_SIZE = 500;
@@ -147,7 +148,7 @@ async function main(): Promise<void> {
         const n = await upsertCodeSystemFragment(medplum, system, concepts);
         console.log(`  CodeSystem ${system}: ${n} conceptos`);
       }
-      const result = await medplum.upsertResource(valueSet, `url=${encodeURIComponent(valueSet.url as string)}`);
+      const result = await upsertUnico(medplum, valueSet, `url=${encodeURIComponent(valueSet.url as string)}`);
       console.log(`  OK: ValueSet/${result.id}`);
       const expanded = await medplum.valueSetExpand({ url: valueSet.url as string, count: 5 });
       console.log(

@@ -13,6 +13,7 @@
 import { MedplumClient } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
 import { CKM_STAGE_URL, HGRAPH_DATA_URL } from '../ckm/constants';
+import { upsertUnico } from './lib/upsert';
 
 const TEST_IDENTIFIER_SYSTEM = 'https://seguimiento.medplum.com.ar/fhir/test';
 const TEST_IDENTIFIER_VALUE = 'ckm-careplan-test';
@@ -44,7 +45,8 @@ async function main(): Promise<void> {
   console.log(`Proyecto del client: ${medplum.getProject()?.id} en ${baseUrl}\n`);
 
   // 1. Paciente de prueba con contexto CKM (para que el LLM tenga insumos).
-  const patient = await medplum.upsertResource<Patient>(
+  const patient = await upsertUnico<Patient>(
+    medplum,
     {
       resourceType: 'Patient',
       identifier: [{ system: TEST_IDENTIFIER_SYSTEM, value: TEST_IDENTIFIER_VALUE }],
@@ -155,7 +157,9 @@ async function diagnose(medplum: MedplumClient, botId: string, message: string):
     });
     console.log(`  AuditEvents recientes: ${audits.length}`);
     for (const a of audits) {
-      console.log(`    ${a.recorded} outcome=${a.outcome ?? '?'} ${a.outcomeDesc ? '— ' + a.outcomeDesc.slice(0, 300) : ''}`);
+      console.log(
+        `    ${a.recorded} outcome=${a.outcome ?? '?'} ${a.outcomeDesc ? '— ' + a.outcomeDesc.slice(0, 300) : ''}`
+      );
     }
   } catch {
     /* best-effort */
