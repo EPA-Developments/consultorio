@@ -164,6 +164,14 @@ const ACTIVITY_SIGN = {
 export interface SignOrderParams {
   /** Las órdenes (ServiceRequest) de una misma requisición. */
   requests: ServiceRequest[];
+  /**
+   * Referencias a firmar. Acepta URNs (`urn:uuid:…`) para que el Provenance
+   * pueda viajar en la MISMA transacción que crea las órdenes — el servidor
+   * los reescribe a las referencias reales. Si se omite, se derivan de los
+   * `id` de `requests`, que es el caso de la aprobación: ahí las órdenes ya
+   * existen en el servidor.
+   */
+  targets?: string[];
   /** Profesional que firma. */
   practitioner: Practitioner;
   /** Momento de la firma (ISO). Se pasa desde afuera: el core es puro. */
@@ -197,9 +205,11 @@ export function buildEmissionProvenance(params: SignOrderParams): Provenance {
     ...(params.sigFormat ? { sigFormat: params.sigFormat } : {}),
   };
 
+  const targets = params.targets ?? requests.map((r) => `ServiceRequest/${r.id}`);
+
   return {
     resourceType: 'Provenance',
-    target: requests.map((r) => ({ reference: `ServiceRequest/${r.id}` }) as Reference<ServiceRequest>),
+    target: targets.map((reference) => ({ reference }) as Reference<ServiceRequest>),
     recorded: when,
     activity: ACTIVITY_SIGN,
     agent: [

@@ -157,13 +157,19 @@ Con tests para los tres (`project-map.test.ts`).
 
 ### Lo que falta verificar contra el servidor
 
-No pude correr nada contra `api.medplum.com.ar` desde esta sesión (no tengo
-credenciales acá). Antes de dar la Fase 3 por cerrada hay que confirmar, con
-`npm run project-map` y credenciales de super admin:
+**✅ Confirmado (19.08.2026):** el proyecto `umls` **ya exporta `CodeSystem` y
+`ValueSet`**. El lado del proveedor está listo.
+
+Queda el lado del consumidor. No pude correr nada contra `api.medplum.com.ar`
+desde esta sesión (no tengo credenciales acá), así que con `npm run project-map`
+y credenciales de super admin falta confirmar:
 
 1. En qué proyecto viven hoy los CodeSystem/ValueSet del vademécum y de diagnósticos.
-2. Que el proyecto `umls` declare `exportedResourceType` con **`CodeSystem` y `ValueSet`**.
-3. Que el proyecto del consultorio declare el `link` a `umls`.
+2. ~~Que el proyecto `umls` declare `exportedResourceType` con **`CodeSystem` y
+   `ValueSet`**.~~ ✅ confirmado.
+3. Que el proyecto del consultorio declare el `link` a `umls`. **Este es el que
+   falta**: exportar sin que nadie linkee no sirve de nada, igual que linkear sin
+   exportar. Los dos lados o ninguno.
 4. Que `ValueSet/$expand?filter=` devuelva resultados **con las credenciales del
    médico**, no solo con las de super admin. Es la misma distinción que originó
    este script: "¿existe el recurso?" y "¿puede verlo ESTA credencial?" son dos

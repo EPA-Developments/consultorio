@@ -151,6 +151,20 @@ describe('Provenance de la firma', () => {
     expect(p.signature?.[0].who.reference).toBe('Practitioner/dr1');
   });
 
+  // Los dos caminos de emisión firman distinto porque escriben distinto: al
+  // CREAR las órdenes todavía no tienen id (van urn:uuid, y el servidor los
+  // reescribe); al APROBAR propuestas ya existen y se derivan de su id.
+  test('con targets explícitos firma esas referencias (transacción de creación)', () => {
+    const p = buildEmissionProvenance({
+      requests,
+      targets: ['urn:uuid:aaa', 'urn:uuid:bbb'],
+      practitioner,
+      when: '2026-07-24T12:00:00Z',
+      seal: 'abc',
+    });
+    expect(p.target.map((t) => t.reference)).toStrictEqual(['urn:uuid:aaa', 'urn:uuid:bbb']);
+  });
+
   test('guarda el sello para auditar', () => {
     expect(prov.extension?.find((e) => e.url === SELLO_SYSTEM)?.valueString).toBe('abc123');
   });

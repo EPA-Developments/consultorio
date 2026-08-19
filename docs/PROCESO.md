@@ -397,7 +397,28 @@ del Decreto 98/23. El sello y la URL de verificación se imprimen en la orden.
 **Firma**: se modela con **FHIR `Provenance` + `Signature`** (quién, cuándo, sobre qué, con
 qué sello). La misma estructura sirve para **firma electrónica** o **digital** (Ley 25.506):
 cambia `Signature.type`/`data`, no el modelo. **Cuál corresponde es la consulta legal
-bloqueante** (§4.3.8 del informe) — por eso todavía no hay acción de firma en la UI.
+bloqueante** (§4.3.8 del informe).
+
+**Cableado al circuito real (agosto 2026)** — durante meses este módulo fue funciones puras
+con tests y **sin ningún llamador**: existía la capacidad y no existía en el producto. Para
+el regulador esa distinción es la única que cuenta. Hoy está conectado, con el mismo diseño
+que la receta:
+
+- `lab-order-create.ts` sella la orden y escribe el `Provenance` de firma **en la misma
+  transacción** que la crea. Los targets viajan como `urn:uuid` porque las órdenes todavía
+  no existen; el servidor los reescribe.
+- `LabOrderPanel.approveOrder` hace lo propio al **aprobar una propuesta del paciente**:
+  aprobar es emitir. Ahí las órdenes ya existen, así que los targets salen de sus `id`, y
+  el `Provenance` viaja en la última tanda del loteo en lugar de en una escritura aparte
+  que podría fallar sola y dejar órdenes emitidas sin firma y sin reintento posible.
+- Las **propuestas sin aprobar no se sellan**, a propósito: no son un acto firmado por un
+  profesional, son un pedido.
+- `LabOrderPanel.printOrder` deriva el estado leyendo el `Provenance`; si esa lectura
+  falla, imprime como borrador. Conservador y veraz, nunca al revés.
+
+No hay una acción de firma explícita en la UI porque **emitir ES el acto firmado**; lo que
+sigue pendiente de la definición legal es qué va en `Signature.data` (firma digital de una
+AC licenciada) y el trámite de Firma Digital Remota sobre el PDF.
 
 ---
 

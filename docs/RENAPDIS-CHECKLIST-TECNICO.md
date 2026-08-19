@@ -59,10 +59,13 @@ relevamiento original):
   corresponde.
 - **§3.2**: la validación **REFEPS en cada emisión** está cableada (gate compartido
   recetas + órdenes), y el **diagnóstico tiene UI obligatoria** en recetas.
-- **§3.4**: para **recetas**, el sello SHA-256 se persiste como identifier y el
-  `Provenance` de firma viaja en la misma transacción de emisión; la impresión verifica y
-  declara solo lo que puede probar (`receta-emision.ts`). Para órdenes de laboratorio el
-  cableado equivalente sigue pendiente.
+- **§3.4**: el sello SHA-256 se persiste como identifier y el `Provenance` de firma viaja
+  en la misma transacción de emisión, **tanto en recetas como en órdenes de laboratorio**;
+  la impresión verifica y declara solo lo que puede probar (`receta-emision.ts`,
+  `lab-order-emission.ts`). En órdenes cubre los **dos** caminos de emisión: la orden
+  directa (`lab-order-create.ts`) y la aprobación de una propuesta del paciente
+  (`LabOrderPanel.approveOrder`) — aprobar es emitir. Las propuestas sin aprobar no se
+  sellan a propósito: no son un acto firmado por un profesional.
 - **§3.7**: ya **aplica** (hay recetas de medicamentos) y está resuelto con SNOMED CT
   Edición Argentina: 10 DCI codificados + 384 presentaciones comerciales del DNM
   (marca busca, DCI prescribe).
