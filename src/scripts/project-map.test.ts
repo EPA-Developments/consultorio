@@ -163,4 +163,48 @@ describe('Veredicto del mapa', () => {
     );
     expect(h.some((x) => x.nivel === 'problema' && x.texto.includes('no linkea ese proyecto'))).toBe(true);
   });
+  // Con varios consultorios en el mismo servidor, "el que más pacientes tiene"
+  // dejó de ser "el que me interesa" — y un proyecto marcado superAdmin ni
+  // siquiera entraba al análisis.
+  describe('Veredicto enfocado en un proyecto', () => {
+    const server = [
+      base({ id: 'bw', nombre: 'Biowellness | San Isidro', conteos: { Patient: 39 }, bots: [bot('ckm-recalculate')] }),
+      base({
+        id: 'fav',
+        nombre: 'Favaloro | Medplum Argentina',
+        superAdmin: true,
+        conteos: { Patient: 7 },
+        bots: [],
+      }),
+    ];
+
+    test('sin objetivo elige el de más pacientes y avisa que hay más', () => {
+      const h = analizar(server, []);
+      expect(h[0].texto).toContain('Biowellness');
+      expect(h.some((x) => x.texto.includes('--proyecto='))).toBe(true);
+    });
+
+    test('con --proyecto el veredicto es sobre ESE proyecto, aunque sea superAdmin', () => {
+      const h = analizar(server, ['ckm-recalculate'], 'fav');
+      expect(h[0].texto).toContain('Favaloro');
+      // Y ahí sí reporta lo que le falta a ese proyecto, no al otro.
+      expect(h.some((x) => x.nivel === 'problema' && x.texto.includes('Faltan en «Favaloro'))).toBe(true);
+    });
+
+    test('acepta el nombre además del id', () => {
+      expect(analizar(server, [], 'Favaloro | Medplum Argentina')[0].texto).toContain('Favaloro');
+    });
+
+    test('un objetivo inexistente lo dice, no elige otro por las dudas', () => {
+      const h = analizar(server, [], 'no-existe');
+      expect(h).toHaveLength(1);
+      expect(h[0].nivel).toBe('problema');
+      expect(h[0].texto).toContain('no-existe');
+    });
+
+    test('avisa cuando hay más de un proyecto con superAdmin', () => {
+      const h = analizar([...server, base({ id: 'sa', nombre: 'Super Admin', superAdmin: true })], [], 'bw');
+      expect(h.some((x) => x.nivel === 'aviso' && x.texto.includes('poderes sobre todo el servidor'))).toBe(true);
+    });
+  });
 });

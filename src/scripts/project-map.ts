@@ -95,29 +95,58 @@ export interface Hallazgo {
  * TIENEN que convivir están en el mismo proyecto? Y ¿hay credenciales con
  * AccessPolicy que expliquen un "no existe" que en realidad es "no lo veo"?
  */
-export function analizar(resumenes: ResumenProyecto[], botsEsperados: string[]): Hallazgo[] {
+/** Encuentra un proyecto por id o por nombre (sin distinguir mayúsculas). */
+export function buscarProyecto(resumenes: ResumenProyecto[], clave: string): ResumenProyecto | undefined {
+  const k = clave.trim().toLowerCase();
+  return resumenes.find((r) => r.id === clave) ?? resumenes.find((r) => r.nombre.toLowerCase() === k);
+}
+
+export function analizar(resumenes: ResumenProyecto[], botsEsperados: string[], objetivo?: string): Hallazgo[] {
   const hallazgos: Hallazgo[] = [];
   const clinicos = resumenes.filter((r) => !r.superAdmin);
-  const conPacientes = clinicos.filter((r) => (r.conteos.Patient ?? 0) > 0);
-  const conBots = clinicos.filter((r) => r.bots.length > 0);
+  const conPacientes = resumenes.filter((r) => (r.conteos.Patient ?? 0) > 0);
+  const conBots = resumenes.filter((r) => r.bots.length > 0);
 
-  const principal = [...conPacientes].sort((a, b) => (b.conteos.Patient ?? 0) - (a.conteos.Patient ?? 0))[0];
-  if (!principal) {
-    hallazgos.push({ nivel: 'problema', texto: 'Ningún proyecto tiene pacientes: revisar credenciales o servidor.' });
-    return hallazgos;
-  }
-  hallazgos.push({
-    nivel: 'ok',
-    texto: `Los pacientes viven en «${principal.nombre}» (${principal.id}): ${principal.conteos.Patient} Patient.`,
-  });
-  if (conPacientes.length > 1) {
+  // Con un objetivo explícito el veredicto es SOBRE ESE PROYECTO. Sin él se
+  // adivina por cantidad de pacientes, que es lo que se hacía cuando el
+  // servidor tenía un solo inquilino clínico. Ya no: con varios consultorios
+  // conviviendo, "el que más pacientes tiene" no es "el que me interesa", y
+  // encima un proyecto marcado superAdmin quedaba fuera del análisis entero.
+  let principal: ResumenProyecto | undefined;
+  if (objetivo) {
+    principal = buscarProyecto(resumenes, objetivo);
+    if (!principal) {
+      hallazgos.push({
+        nivel: 'problema',
+        texto: `No hay ningún proyecto con id o nombre «${objetivo}». Revisá el listado de arriba.`,
+      });
+      return hallazgos;
+    }
     hallazgos.push({
-      nivel: 'aviso',
-      texto:
-        `Hay pacientes en ${conPacientes.length} proyectos: ` +
-        conPacientes.map((p) => `${p.nombre} (${p.conteos.Patient})`).join(', ') +
-        '. Hay que saber cuál usa el Dashboard.',
+      nivel: 'ok',
+      texto: `Veredicto sobre «${principal.nombre}» (${principal.id}): ${principal.conteos.Patient ?? 0} Patient.`,
     });
+  } else {
+    principal = [...clinicos]
+      .filter((r) => (r.conteos.Patient ?? 0) > 0)
+      .sort((a, b) => (b.conteos.Patient ?? 0) - (a.conteos.Patient ?? 0))[0];
+    if (!principal) {
+      hallazgos.push({ nivel: 'problema', texto: 'Ningún proyecto tiene pacientes: revisar credenciales o servidor.' });
+      return hallazgos;
+    }
+    hallazgos.push({
+      nivel: 'ok',
+      texto: `Los pacientes viven en «${principal.nombre}» (${principal.id}): ${principal.conteos.Patient} Patient.`,
+    });
+    if (conPacientes.length > 1) {
+      hallazgos.push({
+        nivel: 'aviso',
+        texto:
+          `Hay pacientes en ${conPacientes.length} proyectos: ` +
+          conPacientes.map((p) => `${p.nombre} (${p.conteos.Patient})`).join(', ') +
+          '. Pasá --proyecto=<id|nombre> para que el veredicto sea sobre el que te interesa.',
+      });
+    }
   }
 
   // Bots duplicados entre proyectos: la causa de las subscriptions fantasma.
@@ -128,7 +157,7 @@ export function analizar(resumenes: ResumenProyecto[], botsEsperados: string[]):
     } else if (donde.length > 1) {
       hallazgos.push({
         nivel: 'aviso',
-        texto: `El bot ${nombre} existe en ${donde.length} proyectos: ${donde.map((p) => `${p.nombre} (${p.id})`).join(', ')}. Solo el del proyecto de los pacientes cuenta.`,
+        texto: `El bot ${nombre} existe en ${donde.length} proyectos: ${donde.map((p) => `${p.nombre} (${p.id})`).join(', ')}. Solo el de «${principal.nombre}» cuenta.`,
       });
     }
     const enPrincipal = principal.bots.find((b) => b.nombre === nombre);
@@ -144,7 +173,7 @@ export function analizar(resumenes: ResumenProyecto[], botsEsperados: string[]):
   if (faltantesEnPrincipal.length > 0) {
     hallazgos.push({
       nivel: 'problema',
-      texto: `Faltan en el proyecto de los pacientes: ${faltantesEnPrincipal.join(', ')}.`,
+      texto: `Faltan en «${principal.nombre}»: ${faltantesEnPrincipal.join(', ')}.`,
     });
   }
 
@@ -200,6 +229,20 @@ export function analizar(resumenes: ResumenProyecto[], botsEsperados: string[]):
         'La terminología está en ' +
         terminologia.map((p) => `${p.nombre} (${p.id})`).join(', ') +
         `, y «${principal.nombre}» no linkea ese proyecto: el buscador del Dashboard no la ve.`,
+    });
+  }
+
+  // Un proyecto con superAdmin da poderes sobre TODO el servidor a sus
+  // miembros. Que un proyecto de consultorio lo tenga casi nunca es la
+  // intención, y no se nota mirando la app.
+  const superAdmins = resumenes.filter((r) => r.superAdmin);
+  if (superAdmins.length > 1) {
+    hallazgos.push({
+      nivel: 'aviso',
+      texto:
+        `Hay ${superAdmins.length} proyectos marcados superAdmin: ` +
+        superAdmins.map((p) => `${p.nombre} (${p.id})`).join(', ') +
+        '. Sus miembros tienen poderes sobre todo el servidor: revisar si es intencional.',
     });
   }
 
@@ -411,7 +454,11 @@ async function main(): Promise<void> {
   }
 
   console.log('── Veredicto ──');
-  for (const h of analizar(resumenes, botsEsperados)) {
+  // --proyecto=<id|nombre> (o MEDPLUM_TARGET_PROJECT) enfoca el veredicto.
+  const objetivo =
+    process.argv.find((a) => a.startsWith('--proyecto='))?.slice('--proyecto='.length) ??
+    process.env.MEDPLUM_TARGET_PROJECT;
+  for (const h of analizar(resumenes, botsEsperados, objetivo)) {
     console.log(`${h.nivel === 'ok' ? '✓' : h.nivel === 'aviso' ? '•' : '✗'} ${h.texto}`);
   }
   console.log('\n(El "+" en un conteo significa que el barrido se cortó por el tope de páginas.)');
