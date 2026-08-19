@@ -47,6 +47,7 @@ import {
   resolveDerivedSources,
 } from '../lab-order';
 import type { LabOrderItem } from '../lab-order';
+import { constanciaRefeps } from '../emission-gate';
 import { createLabOrder, EXT_REFEPS_VERIFICACION } from '../lab-order-create';
 import { buildEmissionProvenance, emissionStatusOf, getSello, sealOrder, withSeal } from '../lab-order-emission';
 import type { EmissionStatus } from '../lab-order-emission';
@@ -168,7 +169,7 @@ export function LabOrderPanel(props: {
         showNotification({
           color: 'yellow',
           title: 'Orden generada SIN verificación REFEPS',
-          message: `${requests.length} análisis solicitados (${cobertura}). El registro no respondió; la orden deja constancia de que salió sin verificar.`,
+          message: `${requests.length} análisis solicitados (${cobertura}). ${refeps.unavailableReason ?? 'El registro no respondió.'} La orden deja constancia de que salió sin verificar.`,
           autoClose: false,
         });
       } else {
@@ -280,9 +281,10 @@ export function LabOrderPanel(props: {
     const name = profile.name?.[0] ? formatHumanName(profile.name[0]) : 'el profesional';
     const matricula = matriculaOf(profile as Practitioner);
     const fecha = new Date().toLocaleDateString('es-AR');
-    const constancia = refeps.unavailable
-      ? 'Matrícula sin verificar contra REFEPS al emitir (registro sin respuesta).'
-      : 'Matrícula verificada en REFEPS.';
+    // La misma constancia que emite createLabOrder: una sola redacción para
+    // los dos caminos de emisión, o el papel dice cosas distintas según por
+    // qué botón se pasó.
+    const constancia = constanciaRefeps(refeps, new Date().toISOString()) + '.';
     const approvalNote = `Aprobada y emitida por ${name}${matricula ? ` (Matrícula ${matricula})` : ''} el ${fecha}. ${constancia} Originada como solicitud del paciente.`;
     const approved = approveProposals({ proposals, requester: createReference(profile), approvalNote }).map((r) => ({
       ...r,
@@ -332,7 +334,7 @@ export function LabOrderPanel(props: {
         showNotification({
           color: 'yellow',
           title: 'Solicitud aprobada SIN verificación REFEPS',
-          message: `${approved.length} análisis emitidos. El registro no respondió; la orden deja constancia.`,
+          message: `${approved.length} análisis emitidos. ${refeps.unavailableReason ?? 'El registro no respondió.'} La orden deja constancia.`,
           autoClose: false,
         });
       } else {

@@ -252,7 +252,7 @@ describe('buildLabOrder', () => {
   });
 
   test('la nota (ej. cobertura) se adjunta a cada orden', () => {
-    const orders = buildLabOrder({ ...base, note: 'OSDE 210 · ayuno 12 h' });
+    const orders = buildLabOrder({ ...base, notas: ['OSDE 210 · ayuno 12 h'] });
     expect(orders[0].note).toEqual([{ text: 'OSDE 210 · ayuno 12 h' }]);
   });
 
@@ -272,7 +272,7 @@ describe('approveProposals', () => {
     requisitionId: 'SOL-1',
     authoredOn: '2026-07-20T09:00:00Z',
     intent: 'proposal',
-    note: 'Solicitud del paciente desde el portal.',
+    notas: ['Solicitud del paciente desde el portal.'],
   });
 
   test('convierte proposal/draft en order/active sellado por el profesional', () => {

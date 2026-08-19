@@ -68,6 +68,11 @@ function fakeMedplum(opts: { profile?: Practitioner; veredicto?: RefepsVerificat
   } as any;
 }
 
+/** Texto de la constancia REFEPS: es siempre la ÚLTIMA nota de la orden. */
+function constancia(sr: ServiceRequest): string | undefined {
+  return sr.note?.[sr.note.length - 1]?.text;
+}
+
 function ordenes(batches: Bundle[]): ServiceRequest[] {
   return batches.flatMap((b) =>
     (b.entry ?? [])
@@ -89,8 +94,11 @@ describe('Emisión con REFEPS verificado', () => {
 
     expect(r.refeps?.verification?.verdict).toBe('verificado');
     const [sr] = ordenes(ctx.batches);
+    // Cada cosa en su nota: la cobertura es del pedido, la constancia es de la
+    // emisión. Concatenarlas hacía que la impresión leyera la constancia como
+    // parte del plan de cobertura.
     expect(sr.note?.[0]?.text).toContain('Cobertura: OSDE');
-    expect(sr.note?.[0]?.text).toContain('Matrícula verificada en REFEPS');
+    expect(constancia(sr)).toContain('Matrícula verificada en REFEPS');
     expect(sr.extension?.find((e) => e.url === EXT_REFEPS_VERIFICACION)?.valueString).toBe('verificado');
   });
 });
@@ -128,7 +136,7 @@ describe('Emisión con el registro caído', () => {
 
     expect(r.refeps?.unavailable).toBe(true);
     const [sr] = ordenes(ctx.batches);
-    expect(sr.note?.[0]?.text).toContain('sin verificar contra REFEPS');
+    expect(constancia(sr)).toContain('sin verificar contra REFEPS');
     expect(sr.extension?.find((e) => e.url === EXT_REFEPS_VERIFICACION)?.valueString).toBe('no-verificable');
   });
 });

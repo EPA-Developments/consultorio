@@ -65,8 +65,13 @@ export async function createLabOrder(medplum: MedplumClient, params: CreateLabOr
   // La constancia viaja en la nota (se lee y se imprime) y en una extensión
   // (se consulta por máquina). En las dos, para que ni el laboratorio ni un
   // auditor tengan que adivinar si la verificación ocurrió.
+  //
+  // Va en su PROPIA nota, no pegada a la del pedido. Cuando se concatenaban con
+  // ' · ', coverageFromNote leía hasta el fin de línea y la orden impresa salía
+  // con "Cobertura: Swiss Medical · Matrícula sin verificar contra REFEPS…":
+  // la constancia disfrazada de plan de cobertura, en un documento clínico.
   const constancia = emisor ? constanciaRefeps(emisor.refeps, authoredOn) : undefined;
-  const note = [params.note, constancia].filter(Boolean).join(' · ') || undefined;
+  const notas = [params.note, constancia].filter((t): t is string => Boolean(t));
 
   const requests = buildLabOrder({
     subject: createReference(params.patient),
@@ -75,7 +80,7 @@ export async function createLabOrder(medplum: MedplumClient, params: CreateLabOr
     requisitionId,
     authoredOn,
     intent: params.intent ?? 'order',
-    note,
+    notas,
   }).map((r) =>
     emisor
       ? {

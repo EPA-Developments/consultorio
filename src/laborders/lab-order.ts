@@ -255,7 +255,12 @@ export interface LabOrderParams {
   /** 'order' (médico) o 'proposal' (paciente). Por defecto 'order'. */
   intent?: 'order' | 'proposal';
   /** Nota libre (ej. cobertura "OSDE 210", indicación de ayuno). */
-  note?: string;
+  /**
+   * Notas de la orden, una por concepto. Van separadas a propósito: la
+   * cobertura y la constancia REFEPS son cosas distintas, y concatenarlas hacía
+   * que la impresión leyera la constancia como parte del plan de cobertura.
+   */
+  notas?: string[];
 }
 
 function itemCode(item: LabOrderItem): CodeableConcept {
@@ -290,7 +295,7 @@ export function buildLabOrder(params: LabOrderParams): ServiceRequest[] {
       authoredOn: params.authoredOn,
       requisition,
       ...(params.requester ? { requester: params.requester } : {}),
-      ...(params.note ? { note: [{ text: params.note }] } : {}),
+      ...(params.notas?.length ? { note: params.notas.map((text) => ({ text })) } : {}),
     }));
 }
 
