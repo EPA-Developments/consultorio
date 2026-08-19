@@ -36,6 +36,16 @@ const TIPOS_VOLUMEN = ['Patient', 'Observation', 'MedicationRequest', 'ServiceRe
 type TipoContado = (typeof TIPOS_DETALLE)[number] | (typeof TIPOS_VOLUMEN)[number];
 const TIPOS_CONTADOS: TipoContado[] = [...TIPOS_VOLUMEN, ...TIPOS_DETALLE];
 
+/**
+ * Los ValueSet que el formulario de recetas consulta por $expand (ver
+ * src/recetas/vademecum.ts). Son la definición operativa de "hay terminología":
+ * el resto de los CodeSystem/ValueSet de un proyecto no los usa el buscador.
+ */
+const VALUESETS_REQUERIDOS = [
+  'https://bio.medplum.com.ar/fhir/ValueSet/vademecum-dnm',
+  'https://bio.medplum.com.ar/fhir/ValueSet/diagnosticos-snomed-ar',
+];
+
 /** Tope de páginas por tipo: acota el barrido en servidores grandes. */
 const MAX_PAGINAS = 25;
 const POR_PAGINA = 200;
@@ -83,6 +93,8 @@ export interface ResumenProyecto {
   links: string[];
   /** Tipos que este proyecto exporta cuando otro lo linkea. */
   exporta: string[];
+  /** URL canónicas de los ValueSet del proyecto (no alcanza con contarlos). */
+  valueSets: string[];
 }
 
 export interface Hallazgo {
@@ -192,15 +204,20 @@ export function analizar(resumenes: ResumenProyecto[], botsEsperados: string[], 
   // copia de SNOMED sirve a todos los consultorios. Pero un link solo alcanza
   // si el proyecto linkeado EXPORTA esos tipos (Project.exportedResourceType);
   // linkear sin exportar es el fallo silencioso de esta arquitectura.
+  // "Tiene terminología" no puede significar "tiene algún CodeSystem": un
+  // proyecto con dos ValueSets propios daba ✓ mientras el buscador de
+  // medicamentos no encontraba nada. Lo que importa es si están LOS ValueSet
+  // que el formulario consulta por $expand.
   const tieneTerminologia = (r: ResumenProyecto): boolean =>
-    (r.conteos.CodeSystem ?? 0) > 0 || (r.conteos.ValueSet ?? 0) > 0;
+    VALUESETS_REQUERIDOS.every((u) => r.valueSets.includes(u));
   const terminologia = clinicos.filter(tieneTerminologia);
   const enPrincipal = tieneTerminologia(principal);
   const linkeados = resumenes.filter((r) => principal.links.includes(r.id));
   const linkeadosConTerminologia = linkeados.filter(tieneTerminologia);
 
+  const faltantes = VALUESETS_REQUERIDOS.filter((u) => !principal.valueSets.includes(u));
   if (enPrincipal) {
-    hallazgos.push({ nivel: 'ok', texto: 'La terminología está en el proyecto de los pacientes.' });
+    hallazgos.push({ nivel: 'ok', texto: `La terminología que consulta el buscador está en «${principal.nombre}».` });
   } else if (linkeadosConTerminologia.length > 0) {
     const sinExportar = linkeadosConTerminologia.filter(
       (r) => !r.exporta.includes('CodeSystem') || !r.exporta.includes('ValueSet')
@@ -226,9 +243,16 @@ export function analizar(resumenes: ResumenProyecto[], botsEsperados: string[], 
     hallazgos.push({
       nivel: 'problema',
       texto:
-        'La terminología está en ' +
+        'La terminología que consulta el buscador está en ' +
         terminologia.map((p) => `${p.nombre} (${p.id})`).join(', ') +
-        `, y «${principal.nombre}» no linkea ese proyecto: el buscador del Dashboard no la ve.`,
+        `, y «${principal.nombre}» no la ve: falta ${faltantes.join(', ')}.`,
+    });
+  } else {
+    hallazgos.push({
+      nivel: 'problema',
+      texto:
+        `Ningún proyecto del servidor tiene los ValueSet que consulta el buscador: falta ${faltantes.join(', ')}. ` +
+        'El formulario cae al catálogo local (no bloquea la prescripción, pero se pierden los conceptos del vademécum).',
     });
   }
 
@@ -360,7 +384,11 @@ async function barrer(
 }
 
 async function main(): Promise<void> {
-  const botsEsperados = ['ckm-recalculate', 'sdoh-response', 'ckm-alerts'];
+  // Los cinco del bundle. careplan-generate y refeps-verify no los dispara
+  // ninguna Subscription (los invoca la app con executeBot), pero su ausencia
+  // es igual de grave y hasta ahora era invisible: sin refeps-verify, CADA
+  // emisión sale "sin verificar contra REFEPS" y parece que falló el Estado.
+  const botsEsperados = ['ckm-recalculate', 'sdoh-response', 'ckm-alerts', 'careplan-generate', 'refeps-verify'];
   const medplum = await conectar();
 
   const proyectos = (await medplum.searchResources('Project', { _count: '100' })) as Project[];
@@ -418,6 +446,9 @@ async function main(): Promise<void> {
       bots,
       subscriptions,
       clients,
+      valueSets: ((porTipo.get('ValueSet')?.mapa.get(pid) ?? []) as { url?: string }[])
+        .map((v) => v.url)
+        .filter((u): u is string => Boolean(u)),
       links: (p.link ?? [])
         .map((l) => l.project?.reference?.replace('Project/', ''))
         .filter((id): id is string => Boolean(id)),

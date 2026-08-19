@@ -34,8 +34,13 @@ describe('Veredicto del mapa', () => {
     clients: [],
     links: [],
     exporta: [],
+    valueSets: [],
     ...over,
   });
+  const VS = [
+    'https://bio.medplum.com.ar/fhir/ValueSet/vademecum-dnm',
+    'https://bio.medplum.com.ar/fhir/ValueSet/diagnosticos-snomed-ar',
+  ];
   const BOTS = ['ckm-recalculate', 'sdoh-response'];
   const bot = (nombre: string, desplegado = true): ResumenProyecto['bots'][number] => ({
     nombre,
@@ -80,11 +85,30 @@ describe('Veredicto del mapa', () => {
     const h = analizar(
       [
         base({ id: 'app', nombre: 'App', conteos: { Patient: 10 } }),
-        base({ id: 'otro', nombre: 'Otro', conteos: { CodeSystem: 1, ValueSet: 1 } }),
+        base({ id: 'otro', nombre: 'Otro', conteos: { CodeSystem: 1, ValueSet: 2 }, valueSets: VS }),
       ],
       []
     );
     expect(h.some((x) => x.nivel === 'problema' && x.texto.includes('no la ve'))).toBe(true);
+  });
+
+  // El caso que se vio en el servidor: el proyecto tenía CodeSystem: 2 y
+  // ValueSet: 5 propios, así que "tiene terminología" daba ✓ mientras el
+  // buscador de medicamentos no encontraba un solo concepto del vademécum.
+  test('tener ValueSets propios no es tener los que el buscador consulta', () => {
+    const h = analizar(
+      [
+        base({
+          id: 'fav',
+          nombre: 'Favaloro',
+          conteos: { Patient: 7, CodeSystem: 2, ValueSet: 5 },
+          valueSets: ['https://ejemplo/ValueSet/otra-cosa'],
+        }),
+      ],
+      []
+    );
+    expect(h.some((x) => x.nivel === 'ok' && x.texto.includes('terminología'))).toBe(false);
+    expect(h.some((x) => x.nivel === 'problema' && x.texto.includes('vademecum-dnm'))).toBe(true);
   });
 
   test('bots sin ninguna subscription activa', () => {
@@ -133,6 +157,7 @@ describe('Veredicto del mapa', () => {
           id: 'umls',
           nombre: 'umls',
           conteos: { CodeSystem: 3, ValueSet: 2 },
+          valueSets: VS,
           exporta: ['CodeSystem', 'ValueSet', 'ConceptMap'],
         }),
       ],
@@ -146,7 +171,7 @@ describe('Veredicto del mapa', () => {
     const h = analizar(
       [
         base({ id: 'consultorio', nombre: 'Consultorio', conteos: { Patient: 40 }, links: ['umls'] }),
-        base({ id: 'umls', nombre: 'umls', conteos: { CodeSystem: 3, ValueSet: 2 }, exporta: ['ConceptMap'] }),
+        base({ id: 'umls', nombre: 'umls', conteos: { CodeSystem: 3, ValueSet: 2 }, valueSets: VS, exporta: ['ConceptMap'] }),
       ],
       []
     );
@@ -157,11 +182,11 @@ describe('Veredicto del mapa', () => {
     const h = analizar(
       [
         base({ id: 'consultorio', nombre: 'Consultorio', conteos: { Patient: 40 } }),
-        base({ id: 'umls', nombre: 'umls', conteos: { CodeSystem: 3, ValueSet: 2 }, exporta: ['CodeSystem'] }),
+        base({ id: 'umls', nombre: 'umls', conteos: { CodeSystem: 3, ValueSet: 2 }, valueSets: VS, exporta: ['CodeSystem'] }),
       ],
       []
     );
-    expect(h.some((x) => x.nivel === 'problema' && x.texto.includes('no linkea ese proyecto'))).toBe(true);
+    expect(h.some((x) => x.nivel === 'problema' && x.texto.includes('no la ve: falta'))).toBe(true);
   });
   // Con varios consultorios en el mismo servidor, "el que más pacientes tiene"
   // dejó de ser "el que me interesa" — y un proyecto marcado superAdmin ni
