@@ -80,6 +80,9 @@ const Bots: BotDescription[] = [
   },
 ];
 
+/** Artefacto de build que consume `npm run deploy-bots-server`. */
+export const BUNDLE_FILE = 'data/core/example-bots.json';
+
 async function main(): Promise<void> {
   const bundle: Bundle = {
     resourceType: 'Bundle',
@@ -135,7 +138,13 @@ async function main(): Promise<void> {
     }),
   };
 
-  fs.writeFileSync('data/core/example-bots.json', JSON.stringify(bundle, null, 2));
+  // El directorio se crea acá y no se versiona: `data/core/example-bots.json`
+  // está en .gitignore (es un artefacto de build, no una fuente), y git no
+  // versiona directorios vacíos. O sea que en un clone NUEVO `data/core/` no
+  // existe y este write fallaba con ENOENT: el pipeline de bots no arrancaba
+  // en una máquina donde el repo no se hubiera construido antes.
+  fs.mkdirSync(path.dirname(BUNDLE_FILE), { recursive: true });
+  fs.writeFileSync(BUNDLE_FILE, JSON.stringify(bundle, null, 2));
 }
 
 function readBotFiles(description: BotDescription): Record<string, BundleEntry> {
