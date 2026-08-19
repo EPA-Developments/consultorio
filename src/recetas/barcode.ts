@@ -59,33 +59,64 @@ const ANCHO_ANGOSTO = 1;
 const ANCHO_ANCHO = 3;
 const SEPARACION = 1;
 
+/** Una barra del código: posición y ancho en unidades del patrón. */
+export interface Code39Bar {
+  x: number;
+  width: number;
+}
+
+/** Geometría del código de barras, sin decidir en qué se dibuja. */
+export interface Code39Geometry {
+  /** El texto efectivamente codificado (mayúsculas, sin caracteres inválidos). */
+  texto: string;
+  bars: Code39Bar[];
+  anchoTotal: number;
+}
+
+/**
+ * Geometría pura del Code 39 para un valor: las barras negras y el ancho total,
+ * en unidades del patrón. Los caracteres fuera del alfabeto se descartan
+ * (mayúsculas primero); si no queda nada, no hay código.
+ *
+ * Vive separada del render porque el mismo código se dibuja de dos maneras:
+ * como `<rect>` en el SVG del HTML de impresión y como rectángulos en el PDF
+ * que se firma. Una sola geometría, dos salidas — que diverjan sería que el
+ * documento impreso y el firmado tengan códigos distintos.
+ */
+export function code39Geometry(valor: string): Code39Geometry | undefined {
+  const texto = valor.toUpperCase().replace(/[^A-Z0-9 .-]/g, '');
+  if (!texto) {
+    return undefined;
+  }
+  const bars: Code39Bar[] = [];
+  let x = 0;
+  for (const ch of `*${texto}*`) {
+    const patron = CODE39_PATRONES[ch];
+    for (let i = 0; i < patron.length; i++) {
+      const width = patron[i] === 'w' ? ANCHO_ANCHO : ANCHO_ANGOSTO;
+      if (i % 2 === 0) {
+        bars.push({ x, width });
+      }
+      x += width;
+    }
+    x += SEPARACION;
+  }
+  return { texto, bars, anchoTotal: x - SEPARACION };
+}
+
 /**
  * SVG del código de barras Code 39 para un valor. Los caracteres fuera del
  * alfabeto se descartan (mayúsculas primero); si no queda nada, no hay código.
  */
 export function code39Svg(valor: string, alto: number = 34): string | undefined {
-  const texto = valor.toUpperCase().replace(/[^A-Z0-9 .-]/g, '');
-  if (!texto) {
+  const geo = code39Geometry(valor);
+  if (!geo) {
     return undefined;
   }
-  const completo = `*${texto}*`;
-  const rects: string[] = [];
-  let x = 0;
-  for (const ch of completo) {
-    const patron = CODE39_PATRONES[ch];
-    for (let i = 0; i < patron.length; i++) {
-      const ancho = patron[i] === 'w' ? ANCHO_ANCHO : ANCHO_ANGOSTO;
-      if (i % 2 === 0) {
-        rects.push(`<rect x="${x}" y="0" width="${ancho}" height="${alto}"/>`);
-      }
-      x += ancho;
-    }
-    x += SEPARACION;
-  }
-  const anchoTotal = x - SEPARACION;
+  const rects = geo.bars.map((b) => `<rect x="${b.x}" y="0" width="${b.width}" height="${alto}"/>`);
   return (
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${anchoTotal}" height="${alto}" ` +
-    `viewBox="0 0 ${anchoTotal} ${alto}" preserveAspectRatio="none" shape-rendering="crispEdges" ` +
-    `fill="#111" role="img" aria-label="${texto}">${rects.join('')}</svg>`
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${geo.anchoTotal}" height="${alto}" ` +
+    `viewBox="0 0 ${geo.anchoTotal} ${alto}" preserveAspectRatio="none" shape-rendering="crispEdges" ` +
+    `fill="#111" role="img" aria-label="${geo.texto}">${rects.join('')}</svg>`
   );
 }

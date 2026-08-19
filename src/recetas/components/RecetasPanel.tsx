@@ -22,7 +22,7 @@ import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import type { MedicationRequest, Patient, Practitioner } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
-import { IconCircleCheck, IconPlus, IconPrinter, IconTrash } from '@tabler/icons-react';
+import { IconCircleCheck, IconFileTypePdf, IconPlus, IconPrinter, IconTrash } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { ErrorCarga } from '../../components/ErrorCarga';
@@ -37,6 +37,7 @@ import type { ItemReceta } from '../receta';
 import { createReceta } from '../receta-create';
 import { emissionStatusOfReceta, getSelloReceta } from '../receta-emision';
 import { buildRecetaPrintData, renderRecetaHtml } from '../receta-print';
+import type { RecetaPrintData } from '../receta-print';
 
 interface ItemEnEdicion extends ItemReceta {
   /** Clave de React estable mientras se edita. */
@@ -130,7 +131,13 @@ export function RecetasPanel(props: { patient: Patient; cobertura?: string }): J
     }
   }
 
-  async function imprimir(recetaId: string, requests: MedicationRequest[]): Promise<void> {
+  /**
+   * Datos del documento, una sola vez para los dos formatos. Impresión y PDF
+   * comparten CONTENIDO y difieren solo en maqueta: si cada uno armara sus
+   * datos, el papel que se firma podría decir algo distinto del que se ve en
+   * pantalla.
+   */
+  async function datosDelDocumento(recetaId: string, requests: MedicationRequest[]): Promise<RecetaPrintData> {
     let practitioner: Practitioner | undefined;
     const requesterRef = requests[0]?.requester?.reference;
     if (requesterRef?.startsWith('Practitioner/')) {
@@ -163,7 +170,7 @@ export function RecetasPanel(props: { patient: Patient; cobertura?: string }): J
       }
     }
     const emissionStatus: EmissionStatus = first ? emissionStatusOfReceta(first, hasSignature) : 'draft';
-    const data = buildRecetaPrintData({
+    return buildRecetaPrintData({
       emissionStatus,
       recetaId,
       requests,
@@ -172,7 +179,37 @@ export function RecetasPanel(props: { patient: Patient; cobertura?: string }): J
       logoUrl: '/logo.png',
       coverage: props.cobertura,
     });
-    printHtmlDocument(renderRecetaHtml(data));
+  }
+
+  async function imprimir(recetaId: string, requests: MedicationRequest[]): Promise<void> {
+    printHtmlDocument(renderRecetaHtml(await datosDelDocumento(recetaId, requests)));
+  }
+
+  /**
+   * Genera el PDF y lo baja. Este archivo es el que el profesional sube a
+   * firmar.gob.ar (Firma Digital Argentina) para firmarlo con su certificado:
+   * el "Guardar como PDF" del navegador no sirve para eso, porque no es
+   * reproducible y le inyecta la URL de la página al pie.
+   */
+  async function descargarPdf(recetaId: string, requests: MedicationRequest[]): Promise<void> {
+    try {
+      const data = await datosDelDocumento(recetaId, requests);
+      // Import dinámico: pdf-lib pesa ~450 kB y solo hace falta cuando alguien
+      // baja un PDF. Cargarlo con la app se lo cobraría a todos los que solo
+      // vienen a ver la historia clínica.
+      const [{ recetaPdfFilename, renderRecetaPdf }, { downloadPdf }] = await Promise.all([
+        import('../receta-pdf'),
+        import('../../pdf/document'),
+      ]);
+      downloadPdf(await renderRecetaPdf(data), recetaPdfFilename(data));
+    } catch (err) {
+      showNotification({
+        color: 'red',
+        title: 'No se pudo generar el PDF',
+        message: normalizeErrorString(err),
+        autoClose: false,
+      });
+    }
   }
 
 
@@ -277,7 +314,7 @@ export function RecetasPanel(props: { patient: Patient; cobertura?: string }): J
         </Stack>
       </Card>
 
-      <RecetasEmitidas existentes={existentes} error={errorLectura} onPrint={imprimir} />
+      <RecetasEmitidas existentes={existentes} error={errorLectura} onPrint={imprimir} onDownloadPdf={descargarPdf} />
     </Stack>
   );
 }
@@ -394,6 +431,7 @@ function RecetasEmitidas(props: {
   existentes?: MedicationRequest[];
   error: boolean;
   onPrint: (recetaId: string, requests: MedicationRequest[]) => void | Promise<void>;
+  onDownloadPdf: (recetaId: string, requests: MedicationRequest[]) => void | Promise<void>;
 }): JSX.Element {
   if (props.existentes === undefined) {
     return <Loader size="sm" />;
@@ -431,14 +469,26 @@ function RecetasEmitidas(props: {
                 </Text>
               )}
             </div>
-            <Button
-              size="xs"
-              variant="light"
-              leftSection={<IconPrinter size={14} />}
-              onClick={() => props.onPrint(recetaId, reqs)}
-            >
-              Imprimir
-            </Button>
+            <Group gap="xs" wrap="nowrap">
+              <Button
+                size="xs"
+                variant="light"
+                leftSection={<IconPrinter size={14} />}
+                onClick={() => props.onPrint(recetaId, reqs)}
+              >
+                Imprimir
+              </Button>
+              {/* El PDF que baja acá es el que se sube a firmar.gob.ar: lo
+                  genera el repo, no el diálogo del navegador. */}
+              <Button
+                size="xs"
+                variant="filled"
+                leftSection={<IconFileTypePdf size={14} />}
+                onClick={() => props.onDownloadPdf(recetaId, reqs)}
+              >
+                PDF para firmar
+              </Button>
+            </Group>
           </Group>
         </Card>
       ))}

@@ -11,6 +11,7 @@
 import { formatAddress, formatHumanName, getDisplayString } from '@medplum/core';
 import type { MedicationRequest, Patient, Practitioner } from '@medplum/fhirtypes';
 import { BRAND, brandTitle } from '../brand';
+import { getSelloReceta, verificationUrlReceta } from './receta-emision';
 import { DNI_SYSTEM, getIdentifierValue } from '../ckm/argentina';
 import { code39Svg } from './barcode';
 import { EMISSION_STATUS } from '../laborders/lab-order-emission';
@@ -48,6 +49,10 @@ export interface RecetaPrintData {
   items: RecetaPrintItem[];
   emissionStatus?: EmissionStatus;
   registryLegend?: string;
+  /** URL para cotejar la receta contra el registro. */
+  verificationUrl?: string;
+  /** Sello de integridad (hash del contenido), si ya fue sellada. */
+  seal?: string;
 }
 
 
@@ -66,6 +71,8 @@ export function buildRecetaPrintData(params: {
   const { requests, patient, practitioner } = params;
   const first = requests[0];
   return {
+    verificationUrl: verificationUrlReceta(requests),
+    seal: first ? getSelloReceta(first) : undefined,
     clinicName: BRAND.clinicName,
     clinicSubtitle: BRAND.clinicSubtitle,
     logoUrl: params.logoUrl,
@@ -223,6 +230,18 @@ export function renderRecetaHtml(data: RecetaPrintData): string {
     data.diagnostico ? esc(data.diagnostico) : '<span class="blank"></span>'
   }</div>`;
 
+  // Bloque de verificación: URL para cotejar la receta y sello de integridad
+  // abreviado. Solo aparece si la receta fue sellada (o sea, ya emitida). Es lo
+  // que ata el PDF —el que se firma en firmar.gob.ar— al registro FHIR: sin
+  // esto, el papel firmado y la receta guardada no tienen vínculo verificable.
+  const verificationBlock =
+    data.verificationUrl && data.seal
+      ? `<div class="verify">
+    <span class="k">Verificación:</span> ${esc(data.verificationUrl)}
+    <br /><span class="k">Sello de integridad:</span> <span class="mono">${esc(data.seal.slice(0, 16))}…</span>
+  </div>`
+      : '';
+
   return `<!doctype html>
 <html lang="es">
 <head>
@@ -261,6 +280,9 @@ export function renderRecetaHtml(data: RecetaPrintData): string {
   .sign .box { text-align: center; min-width: 260px; border-top: 1px solid #333; padding-top: 6px; }
   .sign .name { font-weight: 600; }
   .sign .mat { color: #555; font-size: 12px; }
+  .verify { margin-top: 20px; background: #f7f4f1; border-radius: 6px; padding: 8px 12px; font-size: 11px; color: #444; line-height: 1.6; }
+  .verify .k { font-weight: 600; }
+  .verify .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
   .disclaimer { margin-top: 28px; border-top: 1px dashed #ccc; padding-top: 8px; color: #999; font-size: 10.5px; line-height: 1.5; }
   @media print { body { padding: 0; } @page { margin: 16mm; } }
 </style>
@@ -300,6 +322,8 @@ export function renderRecetaHtml(data: RecetaPrintData): string {
       ${data.practitionerMatricula ? barraConTexto(data.practitionerMatricula) : ''}
     </div>
   </div>
+
+  ${verificationBlock}
 
   <div class="disclaimer">
     ${esc(EMISSION_STATUS[data.emissionStatus ?? 'draft'].legend)}

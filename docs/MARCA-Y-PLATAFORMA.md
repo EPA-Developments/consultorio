@@ -254,3 +254,77 @@ solo lo que puede probar.
    profesional —la app ya lee el tenant para el saludo del tablero
    (`HomePage.tsx`), el papel todavía no—. `BRAND.clinicName` es el punto exacto
    donde se enchufa ese cambio.
+
+---
+
+## 8. Firma Digital Remota — el PDF que se firma
+
+**Confirmado con el flujo real (agosto 2026):** `firmar.gob.ar/firmador` es un
+**portal interactivo, sin API**. El circuito es:
+
+```
+Consultorio genera el PDF → el profesional lo sube a firmar.gob.ar →
+firma con su certificado → descarga el PDF firmado
+```
+
+No hay integración de servicio que hacer: lo que nos toca es **producir el
+archivo**. Y ahí estaba el problema.
+
+### Por qué no alcanzaba con "Guardar como PDF"
+
+`printHtmlDocument` escribe HTML en un iframe oculto y llama a `window.print()`.
+El PDF sale del diálogo del navegador, lo que significa que:
+
+- **nunca pasa por nuestras manos** — la app jamás ve esos bytes, así que no
+  puede hashearlos, guardarlos ni compararlos;
+- **no es reproducible** — cambia con el navegador, los márgenes, el tamaño de
+  papel y los encabezados que el usuario tenga activados. En la prueba real, el
+  navegador le inyectó la URL de la página al pie del documento firmado.
+
+Un documento que se firma tiene que ser determinista: **los mismos datos, los
+mismos bytes, siempre**. Es la única forma de probar después que el PDF firmado
+es el que emitimos.
+
+### Cómo quedó
+
+- `src/pdf/document.ts` — primitivas: la maqueta se expresa como **datos**
+  (bloques con posición) y el dibujo con pdf-lib es un adaptador aparte. Esa
+  costura permite testear el documento sin abrir un PDF.
+- `src/recetas/receta-pdf.ts` — la maqueta de la receta. Consume el **mismo
+  `RecetaPrintData`** que la impresión HTML: el contenido no puede divergir
+  entre lo que se ve en pantalla y lo que se firma, solo la maqueta.
+- Determinismo verificado por test: las fechas del PDF salen de `authoredOn`
+  (no del reloj), se usan fuentes estándar (sin embeber archivos externos) y
+  dos generaciones de la misma receta dan **bytes idénticos**.
+- El nombre del archivo sigue la convención que ya se usaba a mano:
+  `Receta-REC-XXXXXXXX-NombrePaciente.pdf`.
+- pdf-lib se carga con **import dinámico**: pesa ~430 kB y solo hace falta al
+  bajar un PDF, así que no se le cobra a quien entra a ver una historia clínica.
+
+### El vínculo entre el PDF firmado y el registro FHIR
+
+La orden de laboratorio imprimía sello de integridad y URL de verificación; **la
+receta no**. Se corrigió: sin eso, firmar el PDF firma un documento que nadie
+puede cotejar contra la receta guardada, y el sello SHA-256 que ya calculábamos
+no servía de nada en el papel.
+
+Ahora el sello viaja impreso, así que **firmar el PDF firma transitivamente el
+hash del contenido clínico**. Son dos objetos distintos —el sello cubre el
+contenido FHIR, la firma del Estado cubre el PDF— y esto es lo que los ata.
+
+### Lo que falta: el camino de vuelta
+
+Hoy el PDF firmado termina en la carpeta de Descargas del profesional. **No
+vuelve a la historia clínica.** Eso deja dos cosas abiertas:
+
+1. **Guardarlo**: subir el PDF firmado y colgarlo de la receta como
+   `DocumentReference`. Sin eso no hay dónde exhibir el documento firmado, y la
+   retención mínima de 3 años (Res. 2214/2025, ya modelada en `RETENTION_YEARS`)
+   no tiene sobre qué aplicarse.
+2. **Verificarlo al recibirlo**: comparar el PDF firmado contra el que emitimos.
+   Como la generación es determinista, esa comparación es posible — se regenera
+   el PDF, se compara, y recién ahí se acepta. Sin determinismo no habría forma.
+
+Mientras tanto el estado de emisión sigue en `signed-internal`. La firma del
+profesional en firmar.gob.ar **no** habilita `legally-emitted`: eso requiere la
+inscripción en el ReNaPDiS y el CUIR asignado por el Estado.
