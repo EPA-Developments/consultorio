@@ -23,6 +23,7 @@ import { buscarBotPropio } from '../bot-lookup';
 import { BOT_CKM_ALERTS, BOT_CKM_RECALCULATE, BOT_CKM_SDOH_RESPONSE, BOTS, BOTS_CKM } from '../bot-names';
 import { SDOH_QUESTIONNAIRE_URL } from '../ckm/constants';
 import { CKM_OBSERVATION_CODES } from '../ckm/observations';
+import { describirErrorDeStorage, errorDeStorage } from './lib/storage-error';
 
 const CKM_BOT_NAMES = BOTS_CKM;
 
@@ -376,6 +377,7 @@ async function checkCode(medplum: MedplumClient): Promise<void> {
   }
   const porBot = codigoDelBundle(JSON.parse(fs.readFileSync(BUNDLE_FILE, 'utf8')) as Bundle);
   let discrepancias = 0;
+  let ilegibles = 0;
 
   console.log('── CÓDIGO DESPLEGADO vs BUNDLE LOCAL ──\n');
   for (const { nombre } of BOTS) {
@@ -398,6 +400,21 @@ async function checkCode(medplum: MedplumClient): Promise<void> {
     }
     try {
       const desplegado = await (await medplum.download(url)).text();
+
+      // El bucket puede contestar un XML de error con status 200. Comparar eso
+      // contra el código daría "DISTINTO" y mandaría a redesplegar un bot que
+      // quizás está bien: acá no se sabe qué código corre, se sabe que no se
+      // puede leer.
+      const errStorage = errorDeStorage(desplegado);
+      if (errStorage) {
+        console.log(`  ? ${nombre}: no pude LEER el código desplegado — ${describirErrorDeStorage(errStorage)}`);
+        console.log(`     El Binary de Bot.executableCode no se puede bajar (${url}).`);
+        console.log('     Es config del storage del servidor, no del bot: no dice nada sobre qué');
+        console.log('     código ejecuta el Lambda. Para eso: --reprocess <PatientId> (corre el bot).');
+        ilegibles++;
+        continue;
+      }
+
       const v = compararCodigo(local, desplegado);
       if (v.coincide) {
         console.log(`  ✓ ${nombre}: el servidor ejecuta el código del repo (${v.bytesDesplegado} bytes)`);
@@ -415,11 +432,18 @@ async function checkCode(medplum: MedplumClient): Promise<void> {
     }
   }
 
+  if (ilegibles > 0) {
+    console.log(`\n${ilegibles} bot(s) con el código ILEGIBLE: el storage no entrega el Binary.`);
+    console.log('  Este chequeo no puede opinar sobre ellos. Es un problema del servidor Medplum');
+    console.log('  (bucket de Binary mal configurado o los objetos no están), y afecta a cualquier');
+    console.log('  lectura de Binary del proyecto, no solo a los bots.');
+    console.log('  Para saber qué código ejecuta un bot, corrélo: --reprocess <PatientId>.');
+  }
   if (discrepancias > 0) {
     console.log(`\n${discrepancias} bot(s) no ejecutan el código de este repo.`);
     console.log('Re-desplegá y volvé a correr este chequeo:');
     console.log('  npm run build:bots && npm run deploy-bots-server && npm run ckm-bots-doctor -- --check-code');
-  } else {
+  } else if (ilegibles === 0) {
     console.log('\nTodos los bots ejecutan el código de este repo.');
   }
 }

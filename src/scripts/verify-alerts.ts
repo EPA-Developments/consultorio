@@ -33,6 +33,7 @@ import {
 import { buscarBotPropio } from '../bot-lookup';
 import { BOT_CKM_ALERTS, BOT_CKM_RECALCULATE } from '../bot-names';
 import { ALERT_RULE_SYSTEM } from '../ckm/alert-rules';
+import { describirErrorDeStorage, errorDeStorage } from './lib/storage-error';
 import { upsertUnico } from './lib/upsert';
 
 const TEST_IDENTIFIER_SYSTEM = 'https://seguimiento.medplum.com.ar/fhir/test';
@@ -233,6 +234,15 @@ async function dumpBot(medplum: MedplumClient, nombre: string, esperaRegla: bool
     if (esperaRegla && codeUrl) {
       try {
         const code = await (await medplum.download(codeUrl)).text();
+
+        // Si el bucket devuelve su XML de error, no estamos mirando el bot.
+        const errStorage = errorDeStorage(code);
+        if (errStorage) {
+          console.log(`     no pude LEER el código desplegado (${describirErrorDeStorage(errStorage)}):`);
+          console.log('     es el storage del servidor, no el bot. No dice si la regla está o no.');
+          return;
+        }
+
         const tieneRegla = code.includes(ALERT_RULE_SYSTEM) || code.includes('ckm-alert-rule');
         console.log(
           `     código desplegado con la regla 3 strikes: ${tieneRegla ? 'SÍ ✓' : 'NO ✗  → es código VIEJO, redesplegá'}`
