@@ -7,6 +7,8 @@
 //
 // Subcomandos (no destructivos por defecto):
 //   npm run ckm-bots-doctor              -> status (bots, subscriptions, audit)
+//   npm run ckm-bots-doctor -- --check-code   -> compara el código DESPLEGADO de
+//                                                 cada bot contra el bundle local
 //   npm run ckm-bots-doctor -- --reset-subs   -> borra las subs CKM (para
 //                                                 recrearlas limpias con deploy)
 //   npm run ckm-bots-doctor -- --reprocess <PatientId>  -> re-ejecuta los bots
@@ -14,9 +16,11 @@
 //
 // Requiere MEDPLUM_CLIENT_ID / MEDPLUM_CLIENT_SECRET (admin de proyecto).
 import { MedplumClient } from '@medplum/core';
-import type { Observation, QuestionnaireResponse } from '@medplum/fhirtypes';
+import type { Bundle, Observation, QuestionnaireResponse } from '@medplum/fhirtypes';
+import fs from 'fs';
+import { pathToFileURL } from 'url';
 import { buscarBotPropio } from '../bot-lookup';
-import { BOT_CKM_ALERTS, BOT_CKM_RECALCULATE, BOT_CKM_SDOH_RESPONSE, BOTS_CKM } from '../bot-names';
+import { BOT_CKM_ALERTS, BOT_CKM_RECALCULATE, BOT_CKM_SDOH_RESPONSE, BOTS, BOTS_CKM } from '../bot-names';
 import { SDOH_QUESTIONNAIRE_URL } from '../ckm/constants';
 import { CKM_OBSERVATION_CODES } from '../ckm/observations';
 
@@ -55,6 +59,10 @@ async function main(): Promise<void> {
   }
   if (process.argv.includes('--reprocess-all')) {
     await reprocessAll(medplum);
+    return;
+  }
+  if (process.argv.includes('--check-code')) {
+    await checkCode(medplum);
     return;
   }
   if (process.argv.includes('--fix-bot-membership')) {
@@ -302,6 +310,120 @@ async function reprocessAll(medplum: MedplumClient): Promise<void> {
   console.log(`Listo. Pacientes con bots ejecutados: ${updated}/${patients.length}.`);
 }
 
+/** Artefacto que produce `npm run build:bots` y que consume el deploy. */
+const BUNDLE_FILE = 'data/core/example-bots.json';
+
+export interface VeredictoCodigo {
+  coincide: boolean;
+  bytesLocal: number;
+  bytesDesplegado: number;
+  /** true si lo desplegado parece el bot de ejemplo que crea el servidor. */
+  esPlantilla: boolean;
+}
+
+/**
+ * Compara el código que se quiso desplegar con el que quedó en el servidor.
+ *
+ * Existe porque "✓ desplegado" no prueba nada: el servidor puede haber
+ * aceptado el $deploy y seguir sirviendo otro código. Un bot recién creado por
+ * `admin/projects/{id}/bot` nace con el ejemplo "Hello world" del template, y
+ * si el despliegue del código real no llegó a aplicarse, el bot ejecuta ese
+ * ejemplo — corre bien, no falla, y no hace nada. Sin comparar los dos códigos
+ * ese caso es indistinguible de un bot sano que no tenía nada que hacer.
+ */
+export function compararCodigo(local: string, desplegado: string): VeredictoCodigo {
+  return {
+    coincide: local.trim() === desplegado.trim(),
+    bytesLocal: local.length,
+    bytesDesplegado: desplegado.length,
+    esPlantilla: /Hello world/i.test(desplegado) && desplegado.length < 2000,
+  };
+}
+
+/** El JavaScript de cada bot dentro del bundle, por nombre de bot. */
+export function codigoDelBundle(bundle: Bundle): Map<string, string> {
+  const porUrl = new Map<string, string>();
+  for (const e of bundle.entry ?? []) {
+    const r = e.resource as { resourceType?: string; data?: string } | undefined;
+    if (e.fullUrl && r?.resourceType === 'Binary' && r.data) {
+      porUrl.set(e.fullUrl, Buffer.from(r.data, 'base64').toString('utf8'));
+    }
+  }
+  const porBot = new Map<string, string>();
+  for (const e of bundle.entry ?? []) {
+    const r = e.resource as { resourceType?: string; name?: string; executableCode?: { url?: string } } | undefined;
+    if (r?.resourceType === 'Bot' && r.name) {
+      const codigo = porUrl.get(r.executableCode?.url ?? '');
+      if (codigo) {
+        porBot.set(r.name, codigo);
+      }
+    }
+  }
+  return porBot;
+}
+
+/**
+ * ¿El servidor está ejecutando el código de este repo?
+ *
+ * Un bot que corre sin error y no escribe nada no dice si el problema es el
+ * código o los datos. Esto lo separa: si lo desplegado no coincide con el
+ * bundle, no hay nada que depurar en la lógica.
+ */
+async function checkCode(medplum: MedplumClient): Promise<void> {
+  if (!fs.existsSync(BUNDLE_FILE)) {
+    console.log(`No existe ${BUNDLE_FILE}. Corré primero: npm run build:bots`);
+    return;
+  }
+  const porBot = codigoDelBundle(JSON.parse(fs.readFileSync(BUNDLE_FILE, 'utf8')) as Bundle);
+  let discrepancias = 0;
+
+  console.log('── CÓDIGO DESPLEGADO vs BUNDLE LOCAL ──\n');
+  for (const { nombre } of BOTS) {
+    const local = porBot.get(nombre);
+    if (!local) {
+      console.log(`  ? ${nombre}: no está en el bundle local (¿build:bots desactualizado?)`);
+      continue;
+    }
+    const bot = await buscarBotPropio(medplum, nombre);
+    if (!bot) {
+      console.log(`  ✗ ${nombre}: no existe en este proyecto`);
+      discrepancias++;
+      continue;
+    }
+    const url = bot.executableCode?.url;
+    if (!url) {
+      console.log(`  ✗ ${nombre}: sin código ejecutable desplegado`);
+      discrepancias++;
+      continue;
+    }
+    try {
+      const desplegado = await (await medplum.download(url)).text();
+      const v = compararCodigo(local, desplegado);
+      if (v.coincide) {
+        console.log(`  ✓ ${nombre}: el servidor ejecuta el código del repo (${v.bytesDesplegado} bytes)`);
+        continue;
+      }
+      discrepancias++;
+      console.log(`  ✗ ${nombre}: DISTINTO — local ${v.bytesLocal} bytes, desplegado ${v.bytesDesplegado}`);
+      if (v.esPlantilla) {
+        console.log('     Lo desplegado es el bot de EJEMPLO del servidor ("Hello world"): el');
+        console.log('     $deploy del código real nunca se aplicó. El bot corre, no falla y no hace nada.');
+      }
+      console.log(`     primera línea desplegada: ${desplegado.split('\n')[0]?.slice(0, 120)}`);
+    } catch (err) {
+      console.log(`  ? ${nombre}: no pude bajar el código desplegado — ${(err as Error).message}`);
+    }
+  }
+
+  if (discrepancias > 0) {
+    console.log(`\n${discrepancias} bot(s) no ejecutan el código de este repo.`);
+    console.log('Re-desplegá y volvé a correr este chequeo:');
+    console.log('  npm run build:bots && npm run deploy-bots-server && npm run ckm-bots-doctor -- --check-code');
+  } else {
+    console.log('\nTodos los bots ejecutan el código de este repo.');
+  }
+}
+
 /**
  * Crea una ProjectMembership para cada bot CKM en el proyecto ACTUAL si no la
  * tiene. Sin ella, el disparo por Subscription falla con "Could not find
@@ -337,7 +459,12 @@ async function fixBotMembership(medplum: MedplumClient): Promise<void> {
   console.log('\nVerificá con: npm run verify-prevent (la subscription debería disparar el bot).');
 }
 
-main().catch((err) => {
-  console.error('\n✗ Error:', err.message ?? err);
-  process.exit(1);
-});
+// Ejecutar SOLO cuando se corre como script: importar el módulo desde los tests
+// de las funciones puras no debe intentar conectarse a nada.
+const esEntrada = process.argv[1] ? import.meta.url === pathToFileURL(process.argv[1]).href : false;
+if (esEntrada) {
+  main().catch((err) => {
+    console.error('\n✗ Error:', err.message ?? err);
+    process.exit(1);
+  });
+}
