@@ -33,6 +33,7 @@ import {
 import { buscarBotPropio } from '../bot-lookup';
 import { BOT_CKM_ALERTS, BOT_CKM_RECALCULATE } from '../bot-names';
 import { ALERT_RULE_SYSTEM } from '../ckm/alert-rules';
+import { descargarTexto } from './lib/descargar-binary';
 import { describirErrorDeStorage, errorDeStorage } from './lib/storage-error';
 import { upsertUnico } from './lib/upsert';
 
@@ -233,7 +234,7 @@ async function dumpBot(medplum: MedplumClient, nombre: string, esperaRegla: bool
 
     if (esperaRegla && codeUrl) {
       try {
-        const code = await (await medplum.download(codeUrl)).text();
+        const code = await descargarTexto(medplum, codeUrl);
 
         // Si el bucket devuelve su XML de error, no estamos mirando el bot.
         const errStorage = errorDeStorage(code);

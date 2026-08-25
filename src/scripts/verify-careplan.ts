@@ -13,6 +13,7 @@
 import { MedplumClient } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
 import { buscarBotPropio } from '../bot-lookup';
+import { descargarTexto } from './lib/descargar-binary';
 import { BOT_CKM_CAREPLAN_GENERATE } from '../bot-names';
 import { CKM_STAGE_URL, HGRAPH_DATA_URL } from '../ckm/constants';
 import { upsertUnico } from './lib/upsert';
@@ -137,7 +138,7 @@ async function diagnose(medplum: MedplumClient, botId: string, message: string):
   const codeUrl = (await medplum.readResource('Bot', botId)).executableCode?.url;
   if (codeUrl) {
     try {
-      const code = await (await medplum.download(codeUrl)).text();
+      const code = await descargarTexto(medplum, codeUrl);
       const ok = code.includes('crear_plan_bienestar');
       // Bot.executableCode puede quedar viejo si el deploy salteó la transacción
       // "strict isolation" (el Lambda igual corre el código nuevo vía $deploy),
