@@ -21,7 +21,7 @@ import fs from 'fs';
 import { pathToFileURL } from 'url';
 import { buscarBotPropio } from '../bot-lookup';
 import { BOT_CKM_ALERTS, BOT_CKM_RECALCULATE, BOT_CKM_SDOH_RESPONSE, BOTS, BOTS_CKM } from '../bot-names';
-import { SDOH_QUESTIONNAIRE_URL } from '../ckm/constants';
+import { CKM_STAGE_URL, HGRAPH_DATA_URL, SDOH_QUESTIONNAIRE_URL } from '../ckm/constants';
 import { CKM_OBSERVATION_CODES } from '../ckm/observations';
 import { describirErrorDeStorage, errorDeStorage } from './lib/storage-error';
 
@@ -194,6 +194,24 @@ async function recreateSubscriptions(medplum: MedplumClient): Promise<void> {
   console.log('\nVerificá con: npm run verify-prevent (debe disparar el bot solo).');
 }
 
+/**
+ * Resume lo que devolvió un $execute.
+ *
+ * Un bot que devuelve `undefined` salió por un early-return sin hacer nada, y
+ * el $execute igual reporta éxito. Sin mirar la salida, ese caso es
+ * indistinguible de uno que trabajó.
+ */
+export function resumirSalida(salida: unknown): string {
+  if (salida === undefined || salida === null || salida === '') {
+    return 'nada (el bot salió sin procesar: el recurso no le correspondía, o le faltaban datos)';
+  }
+  const r = salida as { resourceType?: string; id?: string };
+  if (r.resourceType) {
+    return `${r.resourceType}${r.id ? '/' + r.id : ''}`;
+  }
+  return JSON.stringify(salida).slice(0, 200);
+}
+
 async function reprocess(medplum: MedplumClient, patientId: string): Promise<void> {
   console.log(`Re-procesando recursos existentes de Patient/${patientId}...\n`);
 
@@ -231,8 +249,12 @@ async function reprocess(medplum: MedplumClient, patientId: string): Promise<voi
     _count: '1',
   });
   if (sdohBot && responses.length > 0) {
-    await medplum.post(medplum.fhirUrl('Bot', sdohBot.id as string, '$execute'), responses[0] as QuestionnaireResponse);
-    console.log(`  ✓ sdoh-response ejecutado sobre QuestionnaireResponse/${responses[0].id}`);
+    const salida = await medplum.post(
+      medplum.fhirUrl('Bot', sdohBot.id as string, '$execute'),
+      responses[0] as QuestionnaireResponse
+    );
+    console.log(`  ✓ ${BOT_CKM_SDOH_RESPONSE} ejecutado sobre QuestionnaireResponse/${responses[0].id}`);
+    console.log(`     devolvió: ${resumirSalida(salida)}`);
   } else {
     console.log(
       `  · SDOH: ${sdohBot ? 'sin QuestionnaireResponse del canónico para este paciente' : 'bot no encontrado'}`
@@ -247,14 +269,36 @@ async function reprocess(medplum: MedplumClient, patientId: string): Promise<voi
     _sort: '-_lastUpdated',
     _count: '1',
   });
+  const antes = patient.meta?.lastUpdated;
   if (ckmBot && obs.length > 0) {
-    await medplum.post(medplum.fhirUrl('Bot', ckmBot.id as string, '$execute'), obs[0] as Observation);
-    console.log(`  ✓ ckm-recalculate ejecutado sobre Observation/${obs[0].id}`);
+    const salida = await medplum.post(medplum.fhirUrl('Bot', ckmBot.id as string, '$execute'), obs[0] as Observation);
+    console.log(`  ✓ ${BOT_CKM_RECALCULATE} ejecutado sobre Observation/${obs[0].id}`);
+    console.log(`     devolvió: ${resumirSalida(salida)}`);
   } else {
     console.log(`  · CKM: ${ckmBot ? 'sin Observation CKM para este paciente' : 'bot no encontrado'}`);
   }
 
-  console.log('\nVerificá el Patient: las extensiones hGraph/CKM/PREVENTInputs deben tener lastUpdated nuevo.');
+  // El veredicto, acá y no "verificá el Patient a mano": un $execute que no
+  // falla no prueba que el bot haya hecho algo. Lo que lo prueba es que las
+  // extensiones estén y que el Patient tenga lastUpdated nuevo.
+  const despues = await medplum.readResource('Patient', patientId);
+  const tiene = (url: string): boolean => Boolean(despues.extension?.some((e) => e.url === url));
+  const escribio = despues.meta?.lastUpdated !== antes;
+  console.log('\n── ¿Escribió el bot? ──');
+  console.log(
+    `  Patient.meta.lastUpdated: ${antes} -> ${despues.meta?.lastUpdated} ${escribio ? '(cambió ✓)' : '(igual ✗)'}`
+  );
+  console.log(`  Extensiones: CKMStage=${tiene(CKM_STAGE_URL)} hGraphData=${tiene(HGRAPH_DATA_URL)}`);
+  if (escribio && tiene(HGRAPH_DATA_URL)) {
+    console.log('\n  ✓ El bot FUNCIONA cuando se lo ejecuta a mano.');
+    console.log('    Entonces el código desplegado está bien y lo que falla es el disparo por');
+    console.log('    Subscription. Compará con: npm run verify-prevent');
+  } else {
+    console.log('\n  ✗ El bot corrió sin error y NO escribió.');
+    console.log('    Con el $execute directo no hay Subscription ni indexación de por medio,');
+    console.log('    así que el problema es el bot: código desplegado viejo, o su AccessPolicy');
+    console.log('    no lo deja escribir el Patient (el bot se traga ese error).');
+  }
 }
 
 /** Ejecuta los bots (vía $execute) sobre el último recurso de cada tipo del
