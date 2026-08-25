@@ -4,9 +4,12 @@ import type { LabOrderItem } from './lab-order';
 import { createLabOrder, EXT_REFEPS_VERIFICACION } from './lab-order-create';
 import { getSello, SELLO_SYSTEM, verifySeal } from './lab-order-emission';
 import { EmissionBlockedError } from './practitioner-validation';
+import { REFEPS_BOT_NAME } from './refeps-client';
 import type { RefepsVerification } from './refeps';
 
 const PACIENTE: Patient = { resourceType: 'Patient', id: 'p1' };
+
+const PROYECTO = '78ead38c-0f59-4576-b196-71685537588c';
 
 // El Practitioner real del admin: matrícula bajo el dominio de REFEPS.
 const MEDICO: Practitioner = {
@@ -48,8 +51,11 @@ function fakeMedplum(opts: { profile?: Practitioner; veredicto?: RefepsVerificat
   const state = { botCalls: 0 };
   const medplum = {
     getProfile: () => opts.profile,
-    searchOne: async (type: string, _q: string) =>
-      type === 'Bot' && !opts.sinBot ? ({ resourceType: 'Bot', id: 'bot-refeps' } as Bot) : undefined,
+    getProject: () => ({ resourceType: 'Project', id: PROYECTO }),
+    searchResources: async (type: string) =>
+      type === 'Bot' && !opts.sinBot
+        ? [{ resourceType: 'Bot', id: 'bot-refeps', name: REFEPS_BOT_NAME, meta: { project: PROYECTO } } as Bot]
+        : [],
     executeBot: async (_id: string, _input: unknown) => {
       state.botCalls++;
       return opts.veredicto;
@@ -75,9 +81,7 @@ function constancia(sr: ServiceRequest): string | undefined {
 
 function ordenes(batches: Bundle[]): ServiceRequest[] {
   return batches.flatMap((b) =>
-    (b.entry ?? [])
-      .map((e) => e.resource)
-      .filter((r): r is ServiceRequest => r?.resourceType === 'ServiceRequest')
+    (b.entry ?? []).map((e) => e.resource).filter((r): r is ServiceRequest => r?.resourceType === 'ServiceRequest')
   );
 }
 

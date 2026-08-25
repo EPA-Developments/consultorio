@@ -1,7 +1,7 @@
 // Panel "Plan Bienestar 100 días" del chart: genera el plan con IA (bot
-// careplan-generate vía executeBot), lista los CarePlan del paciente y permite
-// al médico APROBAR (draft -> active) o DESCARTAR (draft -> revoked) los
-// borradores generados por IA.
+// favaloro-ckm-careplan-generate vía executeBot), lista los CarePlan del
+// paciente y permite al médico APROBAR (draft -> active) o DESCARTAR
+// (draft -> revoked) los borradores generados por IA.
 import { Accordion, Alert, Badge, Button, Group, List, Paper, Stack, Text, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
@@ -10,6 +10,8 @@ import { useMedplum } from '@medplum/react';
 import { IconCheck, IconRobot, IconSparkles, IconTrash } from '@tabler/icons-react';
 import { useCallback, useEffect, useState } from 'react';
 import type { JSX } from 'react';
+import { buscarBotPropio } from '../../bot-lookup';
+import { BOT_CKM_CAREPLAN_GENERATE } from '../../bot-names';
 import { AI_GENERATED_TAG } from '../careplan';
 
 export interface CarePlanPanelProps {
@@ -45,11 +47,14 @@ export function CarePlanPanel(props: CarePlanPanelProps): JSX.Element {
   async function generate(): Promise<void> {
     setBusy(true);
     try {
-      const bot = await medplum.searchOne('Bot', 'name=careplan-generate');
+      // buscarBotPropio y no searchOne: el nombre de un bot de un proyecto
+      // linkeado también matchea, y generar el plan con el bot de otro
+      // consultorio le mandaría el paciente a ese proyecto.
+      const bot = await buscarBotPropio(medplum, BOT_CKM_CAREPLAN_GENERATE);
       if (!bot?.id) {
         showNotification({
           color: 'red',
-          message: 'El bot careplan-generate no está desplegado en el proyecto.',
+          message: `El bot ${BOT_CKM_CAREPLAN_GENERATE} no está desplegado en el proyecto.`,
         });
         return;
       }

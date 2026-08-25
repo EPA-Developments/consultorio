@@ -14,6 +14,7 @@
 // NUNCA imprime el valor de un secreto: solo si está o no está.
 import { MedplumClient } from '@medplum/core';
 import type { Practitioner, Project } from '@medplum/fhirtypes';
+import { buscarBotPropio } from '../bot-lookup';
 import { identifierIn, MATRICULA_SYSTEMS } from '../ckm/argentina';
 import { REFEPS_BOT_NAME } from '../laborders/refeps-client';
 
@@ -52,7 +53,7 @@ async function main(): Promise<void> {
 
   // ── 1. El bot ────────────────────────────────────────────────────────────
   console.log('── BOT ──');
-  const bot = await medplum.searchOne('Bot', `name=${REFEPS_BOT_NAME}`);
+  const bot = await buscarBotPropio(medplum, REFEPS_BOT_NAME);
   if (!bot) {
     console.log(`  ✗ No existe el bot "${REFEPS_BOT_NAME}".`);
     console.log('    Desplegarlo son DOS pasos, no uno:');

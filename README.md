@@ -27,7 +27,9 @@ Los dos últimos —**laboratorio y prescripción**— son el foco de trabajo ac
 - **Backend**: Medplum self-hosted en `api.medplum.com.ar` (FHIR R4). No se usa
   el servidor hosted de Medplum.
 - **Bots**: lógica serverless de Medplum (`src/bots`) que recalcula riesgo,
-  genera alertas y verifica matrículas contra REFEPS.
+  genera alertas y verifica matrículas contra REFEPS. Se despliegan con el
+  prefijo `favaloro-` para no colisionar con los de los proyectos linkeados
+  (ver `docs/BOTS-NOMBRES-Y-DESPLIEGUE.md`).
 - **Terminología**: SNOMED CT (Edición Argentina) y el vademécum DNM viven en un
   **proyecto de terminología propio** (`umls`) que los proyectos clínicos
   consumen por link. Ver `docs/MARCA-Y-PLATAFORMA.md` y `docs/VADEMECUM-SNOMED.md`.
@@ -78,12 +80,17 @@ docs/             decisiones y relevamientos
 ```bash
 cp .env.defaults .env   # opcional: se copia solo al correr `npm run dev`
 npm install
-npm run build:bots      # requiere credenciales del servidor
+npm run build:bots      # compila los bots a un bundle local (no toca el servidor)
 npm run dev             # http://localhost:3008
 ```
 
 Variables de entorno en `.env.defaults`. Vite solo expone las que empiezan con
-`MEDPLUM_` o `GOOGLE_`.
+`MEDPLUM_` o `GOOGLE_` — por eso el `MEDPLUM_CLIENT_SECRET` de los scripts NO va
+en `.env`: se pasa inline en la línea de comandos.
+
+Desplegar los bots al servidor es un paso aparte
+(`npm run deploy-bots-server`) y tiene su propia guía, incluida la migración de
+nombres: ver [`docs/BOTS-NOMBRES-Y-DESPLIEGUE.md`](docs/BOTS-NOMBRES-Y-DESPLIEGUE.md).
 
 ## Calidad
 

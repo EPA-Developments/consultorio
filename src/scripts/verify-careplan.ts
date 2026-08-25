@@ -12,12 +12,14 @@
 //   MEDPLUM_CLIENT_ID=xxx MEDPLUM_CLIENT_SECRET=xxx npm run verify-careplan
 import { MedplumClient } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
+import { buscarBotPropio } from '../bot-lookup';
+import { BOT_CKM_CAREPLAN_GENERATE } from '../bot-names';
 import { CKM_STAGE_URL, HGRAPH_DATA_URL } from '../ckm/constants';
 import { upsertUnico } from './lib/upsert';
 
 const TEST_IDENTIFIER_SYSTEM = 'https://seguimiento.medplum.com.ar/fhir/test';
 const TEST_IDENTIFIER_VALUE = 'ckm-careplan-test';
-const BOT_NAME = 'careplan-generate';
+const BOT_NAME = BOT_CKM_CAREPLAN_GENERATE;
 
 /** Borra los recursos de un tipo que matcheen una búsqueda (limpieza previa). */
 async function deleteWhere(
@@ -80,7 +82,7 @@ async function main(): Promise<void> {
   console.log(`2. Limpieza previa: ${cp} CarePlan, ${goals} Goal, ${tasks} Task`);
 
   // 3. Disparar el bot (síncrono). Acá aparece el error real si falla.
-  const bot = await medplum.searchOne('Bot', `name=${BOT_NAME}`);
+  const bot = await buscarBotPropio(medplum, BOT_NAME);
   if (!bot?.id) {
     console.log(`\n✗ El bot ${BOT_NAME} no existe en el proyecto. Desplegá: npm run deploy-bots-server`);
     process.exit(1);

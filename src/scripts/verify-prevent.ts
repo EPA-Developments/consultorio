@@ -14,6 +14,8 @@
 //   ... npm run verify-prevent -- --cleanup   (borra el paciente de prueba)
 import { MedplumClient, sleep } from '@medplum/core';
 import type { Observation, Patient } from '@medplum/fhirtypes';
+import { buscarBotPropio } from '../bot-lookup';
+import { BOT_CKM_RECALCULATE } from '../bot-names';
 import { LOINC, LOINC_BP_PANEL, LOINC_SYSTEM } from '../ckm/constants';
 import { getHGraphData } from '../ckm/extensions';
 import { computePrevent } from '../ckm/prevent';
@@ -59,10 +61,10 @@ async function main(): Promise<void> {
   await medplum.startClientLogin(clientId, clientSecret);
 
   // Chequeo previo: ¿está desplegado el bot y su Subscription?
-  const bot = await medplum.searchOne('Bot', 'name=ckm-recalculate');
+  const bot = await buscarBotPropio(medplum, BOT_CKM_RECALCULATE);
   const subs = await medplum.searchResources('Subscription', { _count: '50' });
-  const ckmSub = subs.find((s) => s.criteria?.startsWith('Observation?code=') && s.reason === 'ckm-recalculate');
-  console.log(`Bot ckm-recalculate: ${bot ? `Bot/${bot.id}` : 'NO ENCONTRADO'}`);
+  const ckmSub = subs.find((s) => s.criteria?.startsWith('Observation?code=') && s.reason === BOT_CKM_RECALCULATE);
+  console.log(`Bot ${BOT_CKM_RECALCULATE}: ${bot ? `Bot/${bot.id}` : 'NO ENCONTRADO'}`);
   console.log(`Subscription del bot: ${ckmSub ? `${ckmSub.id} (status=${ckmSub.status})` : 'NO ENCONTRADA'}`);
   if (!bot || !ckmSub || ckmSub.status !== 'active') {
     console.log(

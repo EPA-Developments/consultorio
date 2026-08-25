@@ -5,6 +5,7 @@ import type { Bundle, BundleEntry } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import fs from 'fs';
 import path from 'path';
+import { identidadDeBot } from '../bot-names';
 import { SDOH_QUESTIONNAIRE_URL } from '../ckm/constants';
 import { CKM_OBSERVATION_CODES } from '../ckm/observations';
 
@@ -88,7 +89,12 @@ async function main(): Promise<void> {
     resourceType: 'Bundle',
     type: 'transaction',
     entry: Bots.flatMap((botDescription): BundleEntry[] => {
-      const botName = path.parse(botDescription.src).name;
+      // El nombre NO sale del nombre del archivo: sale de la tabla de
+      // src/bot-names.ts, que le antepone el prefijo del proyecto. Sin
+      // prefijo, `Bot?name=ckm-recalculate` lanzado desde Favaloro puede
+      // resolver al bot de Biowellness (los proyectos linkeados se ven entre
+      // sí por búsqueda).
+      const botName = identidadDeBot(botDescription.src).nombre;
       const botUrlPlaceholder = `$bot-${botName}-reference`;
       const botIdPlaceholder = `$bot-${botName}-id`;
       const results: BundleEntry[] = [];

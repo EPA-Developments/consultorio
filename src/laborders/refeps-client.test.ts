@@ -1,16 +1,28 @@
 import type { MedplumClient } from '@medplum/core';
-import type { Practitioner } from '@medplum/fhirtypes';
+import type { Bot, Practitioner } from '@medplum/fhirtypes';
 import { checkRefeps, isRejected, isVerified, REFEPS_BOT_NAME } from './refeps-client';
 
 const MEDICO: Practitioner = { resourceType: 'Practitioner', id: 'p1' };
+const PROYECTO = '78ead38c-0f59-4576-b196-71685537588c';
+const BIOWELLNESS = '7f068d7d-4633-46e9-9eff-d52bc03625b9';
 
 /**
  * Cliente falso. `botAusente` es explícito en vez de `bot: undefined` porque
  * con `??` no se distingue "no me lo pasaron" de "me lo pasaron vacío".
  */
-function fakeMedplum(over: { botAusente?: boolean; result?: unknown; throws?: Error }): MedplumClient {
+function fakeMedplum(over: {
+  botAusente?: boolean;
+  result?: unknown;
+  throws?: Error;
+  /** Bots que devuelve la búsqueda por nombre, incluidos los de otros proyectos. */
+  bots?: Bot[];
+}): MedplumClient {
+  const encontrados =
+    over.bots ??
+    (over.botAusente ? [] : [{ resourceType: 'Bot', id: 'bot-1', name: REFEPS_BOT_NAME, meta: { project: PROYECTO } }]);
   return {
-    searchOne: async () => (over.botAusente ? undefined : { id: 'bot-1' }),
+    getProject: () => ({ resourceType: 'Project', id: PROYECTO }),
+    searchResources: async () => encontrados,
     executeBot: async () => {
       if (over.throws) {
         throw over.throws;
@@ -44,6 +56,21 @@ describe('checkRefeps', () => {
     expect(r.unavailable).toBe(true);
     expect(r.unavailableReason).toContain(REFEPS_BOT_NAME);
     expect(isRejected(r)).toBe(false);
+  });
+
+  // El proyecto linkea a otros y sus bots aparecen en la misma búsqueda.
+  // Mandarle nuestro Practitioner al bot de otro consultorio sería filtrarle
+  // datos: si el único candidato es ajeno, para nosotros el bot no está.
+  test('no ejecuta el bot de otro proyecto', async () => {
+    const ajeno: Bot = {
+      resourceType: 'Bot',
+      id: 'bot-ajeno',
+      name: REFEPS_BOT_NAME,
+      meta: { project: BIOWELLNESS } as Bot['meta'],
+    };
+    const r = await checkRefeps(fakeMedplum({ bots: [ajeno] }), MEDICO);
+    expect(r.unavailable).toBe(true);
+    expect(r.unavailableReason).toContain(REFEPS_BOT_NAME);
   });
 
   test('una respuesta sin veredicto no se toma por buena', async () => {
