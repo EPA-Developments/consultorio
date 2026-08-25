@@ -21,7 +21,7 @@
 //
 // Después: npm run build:bots && npm run deploy-bots-server
 import { MedplumClient } from '@medplum/core';
-import type { Bot, Subscription } from '@medplum/fhirtypes';
+import type { Bot, ProjectMembership, Subscription } from '@medplum/fhirtypes';
 import { pathToFileURL } from 'url';
 import { proyectoDe } from '../bot-lookup';
 import type { IdentidadBot } from '../bot-names';
@@ -72,6 +72,27 @@ export function planearRenombres(botsPropios: Bot[], identidades: IdentidadBot[]
 export function botsAjenosAlRepo(botsPropios: Bot[], identidades: IdentidadBot[] = BOTS): Bot[] {
   const conocidos = new Set(identidades.flatMap((i) => [i.nombre, i.legado]));
   return botsPropios.filter((b) => !conocidos.has(b.name ?? ''));
+}
+
+/**
+ * Membresías del proyecto cuyo Bot NO es de este proyecto.
+ *
+ * Esto es lo que se ve en app.medplum.com.ar/admin/bots como una fila cruda
+ * `Bot/<id>` en vez de un nombre: el admin no puede resolver el recurso porque
+ * vive en otro proyecto. No es cosmético — una membership le da a un bot AJENO
+ * identidad dentro de este proyecto.
+ *
+ * Las creaba `ckm-bots-doctor --fix-bot-membership` cuando buscaba el bot por
+ * nombre a secas y el nombre resolvía al del proyecto linkeado. Ese camino ya
+ * usa `buscarBotPropio`, así que no vuelven a aparecer; las que quedaron hay
+ * que borrarlas a mano.
+ */
+export function membresiasHuerfanas(memberships: ProjectMembership[], botsPropios: Bot[]): ProjectMembership[] {
+  const propios = new Set(botsPropios.map((b) => b.id));
+  return memberships.filter((m) => {
+    const ref = m.profile?.reference ?? '';
+    return ref.startsWith('Bot/') && !propios.has(ref.slice('Bot/'.length));
+  });
 }
 
 async function main(): Promise<void> {
@@ -132,6 +153,24 @@ async function main(): Promise<void> {
         );
         console.log('     No se toca. Decidí a mano cuál queda y borrá el otro con sus Subscriptions.');
         break;
+    }
+  }
+
+  // Membresías que apuntan a bots de otro proyecto: son las filas `Bot/<id>`
+  // sin nombre del admin, y explican por qué un bot "aparece" en el proyecto
+  // sin estar en el inventario.
+  const membresias = (await medplum
+    .searchResources('ProjectMembership', { _count: '200' })
+    .catch(() => [])) as ProjectMembership[];
+  const huerfanas = membresiasHuerfanas(
+    membresias.filter((m) => m.project?.reference === `Project/${projectId}`),
+    propios
+  );
+  if (huerfanas.length > 0) {
+    console.log('\n── MEMBRESÍAS QUE APUNTAN A BOTS DE OTRO PROYECTO ──');
+    console.log('  (le dan identidad en ESTE proyecto a un bot ajeno; revisalas y borralas desde el admin)');
+    for (const m of huerfanas) {
+      console.log(`  ! ProjectMembership/${m.id} -> ${m.profile?.reference}`);
     }
   }
 
