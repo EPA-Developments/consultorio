@@ -47,6 +47,7 @@ export async function recomputeCKM(medplum: MedplumClient, patient: Patient): Pr
     previous.prevent === undefined &&
     previousStage === undefined
   ) {
+    console.log(`[ckm] ${patientId}: sin datos CKM ni cálculo previo — no escribe`);
     return patient;
   }
 
@@ -67,6 +68,17 @@ export async function recomputeCKM(medplum: MedplumClient, patient: Patient): Pr
   const stage = snapshot.stage ?? previousStage;
   const prevent = snapshot.prevent ?? previous.prevent;
 
+  // Una línea por ejecución. Medplum guarda la salida del bot en
+  // AuditEvent.outcomeDesc, así que esto es lo único que deja ver QUÉ vio el
+  // bot cuando lo dispara una Subscription: por dentro del Lambda no hay
+  // depurador, y un bot que sale sin escribir es indistinguible de uno que no
+  // corrió. Cuenta recursos, no valores: nada de esto es dato clínico.
+  console.log(
+    `[ckm] ${patientId}: obs=${Object.keys(values).length} cond=${active.length} med=${medications.length}` +
+      ` previo(metrics=${previous.metrics?.length ?? 'no'} stage=${previousStage ?? 'no'})` +
+      ` -> metrics=${metrics.length} stage=${stage ?? 'no'} prevent=${prevent ? 'sí' : 'no'}`
+  );
+
   return medplum.updateResource({
     ...patient,
     extension: withCKMExtensions(patient, stage, { metrics, prevent }),
@@ -80,6 +92,10 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Observatio
   const triggeredValues = extractCKMValues(observation);
   const patientId = observation.subject?.reference?.match(/^Patient\/(.+)$/)?.[1];
   if (!patientId || Object.keys(triggeredValues).length === 0) {
+    console.log(
+      `[ckm] Observation/${observation.id ?? '?'} ignorada:` +
+        ` sujeto=${observation.subject?.reference ?? 'sin sujeto'} params=${Object.keys(triggeredValues).length}`
+    );
     return undefined;
   }
 
