@@ -23,6 +23,7 @@ import { buscarBotPropio } from '../bot-lookup';
 import { BOT_CKM_ALERTS, BOT_CKM_RECALCULATE, BOT_CKM_SDOH_RESPONSE, BOTS, BOTS_CKM } from '../bot-names';
 import { CKM_STAGE_URL, HGRAPH_DATA_URL, SDOH_QUESTIONNAIRE_URL } from '../ckm/constants';
 import { CKM_OBSERVATION_CODES } from '../ckm/observations';
+import { descargarTexto } from './lib/descargar-binary';
 import { describirErrorDeStorage, errorDeStorage } from './lib/storage-error';
 
 const CKM_BOT_NAMES = BOTS_CKM;
@@ -443,7 +444,7 @@ async function checkCode(medplum: MedplumClient): Promise<void> {
       continue;
     }
     try {
-      const desplegado = await (await medplum.download(url)).text();
+      const desplegado = await descargarTexto(medplum, url);
 
       // El bucket puede contestar un XML de error con status 200. Comparar eso
       // contra el código daría "DISTINTO" y mandaría a redesplegar un bot que
@@ -452,9 +453,8 @@ async function checkCode(medplum: MedplumClient): Promise<void> {
       const errStorage = errorDeStorage(desplegado);
       if (errStorage) {
         console.log(`  ? ${nombre}: no pude LEER el código desplegado — ${describirErrorDeStorage(errStorage)}`);
-        console.log(`     El Binary de Bot.executableCode no se puede bajar (${url}).`);
-        console.log('     Es config del storage del servidor, no del bot: no dice nada sobre qué');
-        console.log('     código ejecuta el Lambda. Para eso: --reprocess <PatientId> (corre el bot).');
+        console.log('     No dice nada sobre qué código ejecuta el Lambda. Para eso, corré el bot:');
+        console.log('       npm run ckm-bots-doctor -- --reprocess <PatientId>');
         ilegibles++;
         continue;
       }
