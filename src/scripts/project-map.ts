@@ -20,6 +20,7 @@
 import { ClientStorage, MedplumClient, MemoryStorage } from '@medplum/core';
 import type { Bot, ClientApplication, Project, ProjectMembership, Resource, Subscription } from '@medplum/fhirtypes';
 import { pathToFileURL } from 'url';
+import { BOTS } from '../bot-names';
 
 /** Tipos que se listan con detalle (son pocos y sus campos importan). */
 const TIPOS_DETALLE = ['Bot', 'Subscription', 'ClientApplication', 'CodeSystem', 'ValueSet', 'Practitioner'] as const;
@@ -376,11 +377,15 @@ async function barrer(
 }
 
 async function main(): Promise<void> {
-  // Los cinco del bundle. careplan-generate y refeps-verify no los dispara
-  // ninguna Subscription (los invoca la app con executeBot), pero su ausencia
-  // es igual de grave y hasta ahora era invisible: sin refeps-verify, CADA
-  // emisión sale "sin verificar contra REFEPS" y parece que falló el Estado.
-  const botsEsperados = ['ckm-recalculate', 'sdoh-response', 'ckm-alerts', 'careplan-generate', 'refeps-verify'];
+  // Los cinco del bundle, con el prefijo del proyecto (src/bot-names.ts).
+  // Los dos de disparo manual no los dispara ninguna Subscription (los invoca
+  // la app con executeBot), pero su ausencia es igual de grave y hasta ahora
+  // era invisible: sin favaloro-refeps-verify, CADA emisión sale "sin verificar
+  // contra REFEPS" y parece que falló el Estado.
+  //
+  // Como este script corre de super admin y ve TODOS los proyectos, un bot
+  // prefijado que aparezca en más de uno ya es en sí mismo un hallazgo.
+  const botsEsperados = BOTS.map((b) => b.nombre);
   const medplum = await conectar();
 
   const proyectos = (await medplum.searchResources('Project', { _count: '100' })) as Project[];

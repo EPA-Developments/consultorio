@@ -23,6 +23,8 @@ import {
   LOINC_SYSTEM,
   PREVENT_INPUTS_URL,
 } from '../ckm/constants';
+import { buscarBotPropio } from '../bot-lookup';
+import { BOT_CKM_RECALCULATE } from '../bot-names';
 import { ALERT_RULE_SYSTEM } from '../ckm/alert-rules';
 import { upsertUnico } from './lib/upsert';
 
@@ -194,13 +196,13 @@ async function diagnose(medplum: MedplumClient, patientId: string): Promise<void
 
   // 2. AuditEvents recientes del bot: ¿corrió?, ¿con qué error?
   try {
-    const bot = await medplum.searchOne('Bot', 'name=ckm-recalculate');
+    const bot = await buscarBotPropio(medplum, BOT_CKM_RECALCULATE);
     if (!bot) {
-      console.log('  Bot ckm-recalculate: NO existe en este proyecto.');
+      console.log(`  Bot ${BOT_CKM_RECALCULATE}: NO existe en este proyecto.`);
       return;
     }
     console.log(
-      `  Bot ckm-recalculate: Bot/${bot.id} — código ejecutable ${bot.executableCode?.url ? 'presente' : 'AUSENTE (no desplegado)'}`
+      `  Bot ${BOT_CKM_RECALCULATE}: Bot/${bot.id} — código ejecutable ${bot.executableCode?.url ? 'presente' : 'AUSENTE (no desplegado)'}`
     );
 
     // Chequeo DEFINITIVO de versión: bajar el código desplegado y ver si tiene

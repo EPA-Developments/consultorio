@@ -8,10 +8,12 @@
 // matriculado, así que ese caso se marca aparte y no bloquea.
 import type { MedplumClient } from '@medplum/core';
 import type { Practitioner } from '@medplum/fhirtypes';
+import { buscarBotPropio } from '../bot-lookup';
+import { BOT_REFEPS_VERIFY } from '../bot-names';
 import type { RefepsVerdict, RefepsVerification } from './refeps';
 
 /** Nombre con el que quedó deployado el bot. */
-export const REFEPS_BOT_NAME = 'refeps-verify';
+export const REFEPS_BOT_NAME = BOT_REFEPS_VERIFY;
 
 export interface RefepsCheckResult {
   /** El veredicto del registro, si se pudo consultar. */
@@ -54,16 +56,15 @@ export function isRejected(result: RefepsCheckResult): boolean {
  * emisión porque el Bus del Ministerio está caído sería trasladarle al médico un
  * problema que no es suyo.
  */
-export async function checkRefeps(
-  medplum: MedplumClient,
-  practitioner: Practitioner
-): Promise<RefepsCheckResult> {
+export async function checkRefeps(medplum: MedplumClient, practitioner: Practitioner): Promise<RefepsCheckResult> {
   if (!practitioner.id) {
     return { unavailable: true, unavailableReason: 'El profesional no está guardado todavía.' };
   }
   try {
-    // Mismo patrón que el resto del proyecto: se busca el Bot por nombre.
-    const bot = await medplum.searchOne('Bot', `name=${REFEPS_BOT_NAME}`);
+    // Por nombre, como el resto del proyecto, pero descartando los bots de
+    // proyectos linkeados: ejecutar el refeps-verify de otro consultorio con
+    // nuestro profesional sería mandarle sus datos a un proyecto ajeno.
+    const bot = await buscarBotPropio(medplum, REFEPS_BOT_NAME);
     if (!bot?.id) {
       return { unavailable: true, unavailableReason: `El bot ${REFEPS_BOT_NAME} no está desplegado en el proyecto.` };
     }

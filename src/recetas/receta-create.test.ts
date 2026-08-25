@@ -1,12 +1,15 @@
 import type { Bot, Bundle, MedicationRequest, Patient, Practitioner, Provenance } from '@medplum/fhirtypes';
 import { EXT_REFEPS_VERIFICACION } from '../laborders/emission-gate';
 import { EmissionBlockedError } from '../laborders/practitioner-validation';
+import { REFEPS_BOT_NAME } from '../laborders/refeps-client';
 import type { RefepsVerification } from '../laborders/refeps';
 import { createReceta } from './receta-create';
 import { getSelloReceta, verificarSelloReceta } from './receta-emision';
 import type { ItemReceta } from './receta';
 
 const PACIENTE: Patient = { resourceType: 'Patient', id: 'p1' };
+
+const PROYECTO = '78ead38c-0f59-4576-b196-71685537588c';
 
 const MEDICO: Practitioner = {
   resourceType: 'Practitioner',
@@ -34,8 +37,11 @@ function fakeMedplum(opts: { profile?: Practitioner; veredicto?: RefepsVerificat
   const batches: Bundle[] = [];
   const medplum = {
     getProfile: () => opts.profile,
-    searchOne: async (type: string, _q: string) =>
-      type === 'Bot' && !opts.sinBot ? ({ resourceType: 'Bot', id: 'bot-refeps' } as Bot) : undefined,
+    getProject: () => ({ resourceType: 'Project', id: PROYECTO }),
+    searchResources: async (type: string) =>
+      type === 'Bot' && !opts.sinBot
+        ? [{ resourceType: 'Bot', id: 'bot-refeps', name: REFEPS_BOT_NAME, meta: { project: PROYECTO } } as Bot]
+        : [],
     executeBot: async () => opts.veredicto,
     executeBatch: async (bundle: Bundle) => {
       batches.push(bundle);

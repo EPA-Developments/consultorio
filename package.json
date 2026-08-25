@@ -23,6 +23,7 @@
     "verify-alerts": "tsx src/scripts/verify-alerts.ts",
     "verify-careplan": "tsx src/scripts/verify-careplan.ts",
     "deploy-bots-server": "tsx src/scripts/deploy-bots-server.ts",
+    "rename-bots": "tsx src/scripts/rename-bots.ts",
     "upload-access-policy": "tsx src/scripts/upload-access-policy.ts",
     "access-policy-doctor": "tsx src/scripts/access-policy-doctor.ts",
     "upload-sdoh": "tsx src/scripts/upload-sdoh-questionnaire.ts",

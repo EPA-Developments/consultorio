@@ -14,13 +14,10 @@ import { MedplumClient } from '@medplum/core';
 import type { Bot, Bundle, BundleEntry, Subscription } from '@medplum/fhirtypes';
 import fs from 'fs';
 import { pathToFileURL } from 'url';
+import { elegirBotPropio, proyectoDe } from '../bot-lookup';
+import { verificarProyecto } from './lib/proyecto';
 
 const BUNDLE_FILE = 'data/core/example-bots.json';
-
-/** El proyecto al que pertenece un recurso (meta.project, en extended mode). */
-function proyectoDe(recurso: { meta?: unknown }): string | undefined {
-  return (recurso.meta as { project?: string } | undefined)?.project;
-}
 
 /**
  * El Bot de ESTE proyecto con ese nombre, o undefined si hay que crearlo.
@@ -32,12 +29,10 @@ function proyectoDe(recurso: { meta?: unknown }): string | undefined {
  * ejecutable de los bots de PRODUCCIÓN de otro consultorio — sin un solo error,
  * reportando "Bot existente" con un id que no era de este proyecto.
  *
- * Un bot con el nombre correcto en el proyecto equivocado no es el bot: si los
- * candidatos son todos ajenos, corresponde CREAR el propio.
- *
- * Cuando `meta.project` no viene (credencial sin extended mode) no se puede
- * decidir, y ante la duda se aborta: desplegar sobre el proyecto de otro es
- * mucho peor que no desplegar.
+ * La decisión vive en `elegirBotPropio` (src/bot-lookup.ts), compartida con el
+ * FrontEnd. Acá se usa en modo ESTRICTO: cuando `meta.project` no viene
+ * (credencial sin extended mode) no se puede decidir, y ante la duda se aborta.
+ * Desplegar sobre el proyecto de otro es mucho peor que no desplegar.
  */
 export async function botDelProyecto(
   medplum: MedplumClient,
@@ -45,32 +40,19 @@ export async function botDelProyecto(
   projectId: string
 ): Promise<Bot | undefined> {
   const candidatos = (await medplum.searchResources('Bot', { name: botName, _count: '50' })) as Bot[];
-  const exactos = candidatos.filter((b) => b.name === botName);
-  if (exactos.length === 0) {
-    return undefined;
+  const propio = elegirBotPropio(candidatos, botName, projectId, 'estricto');
+  if (propio) {
+    return propio;
   }
 
-  const propios = exactos.filter((b) => proyectoDe(b) === projectId);
-  if (propios.length > 0) {
-    return propios[0];
-  }
-
-  const opacos = exactos.filter((b) => !proyectoDe(b));
-  if (opacos.length > 0) {
-    throw new Error(
-      `No puedo determinar a qué proyecto pertenece el Bot «${botName}» (${opacos
-        .map((b) => b.id)
-        .join(', ')}): la búsqueda no devuelve meta.project.\n` +
-        '  Sin ese dato, desplegar puede pisar el bot de otro proyecto linkeado.\n' +
-        '  Usá un ClientApplication admin del proyecto, o verificá el bot a mano antes de seguir.'
+  // Un bot con el nombre correcto en el proyecto equivocado no es el bot: si
+  // los candidatos son todos ajenos, corresponde CREAR el propio.
+  const ajenos = candidatos.filter((b) => b.name === botName);
+  if (ajenos.length > 0) {
+    console.log(
+      `  · «${botName}» existe en otro proyecto (${ajenos.map((b) => b.id).join(', ')}), no en este: se crea el propio.`
     );
   }
-
-  // Todos los candidatos son de otros proyectos (linkeados): este proyecto no
-  // tiene el bot, hay que crearlo acá.
-  console.log(
-    `  · «${botName}» existe en otro proyecto (${exactos.map((b) => b.id).join(', ')}), no en este: se crea el propio.`
-  );
   return undefined;
 }
 
@@ -87,23 +69,11 @@ async function main(): Promise<void> {
 
   const medplum = new MedplumClient({ baseUrl, fetch });
   await medplum.startClientLogin(clientId, clientSecret);
-  const projectId = medplum.getProject()?.id;
-  if (!projectId) {
-    throw new Error('No se pudo determinar el proyecto del ClientApplication.');
-  }
+  // Red de seguridad, ANTES de escribir nada: los bots/subscriptions deben
+  // quedar en el mismo proyecto que los pacientes, y en este servidor conviven
+  // varios consultorios. Si el client es de otro proyecto, se aborta.
+  const projectId = verificarProyecto(medplum);
   console.log(`Proyecto ${projectId} en ${baseUrl}`);
-
-  // Red de seguridad: los bots/subscriptions DEBEN quedar en el mismo proyecto
-  // que los pacientes (los de Control). Si MEDPLUM_EXPECTED_PROJECT está seteado
-  // y no coincide, abortar para no desplegar al proyecto equivocado.
-  const expected = process.env.MEDPLUM_EXPECTED_PROJECT;
-  if (expected && expected !== projectId) {
-    throw new Error(
-      `El client pertenece al proyecto ${projectId}, pero MEDPLUM_EXPECTED_PROJECT=${expected}.\n` +
-        '  Las Subscriptions solo disparan dentro de su proyecto: usá un ClientApplication\n' +
-        '  del proyecto donde viven los pacientes (Control). Deploy abortado.'
-    );
-  }
 
   const bundle = JSON.parse(fs.readFileSync(BUNDLE_FILE, 'utf8')) as Bundle;
   let transactionString = fs.readFileSync(BUNDLE_FILE, 'utf8');
