@@ -1,5 +1,5 @@
-import type { Bundle } from '@medplum/fhirtypes';
-import { codigoDelBundle, compararCodigo, resumirSalida } from './ckm-bots-doctor';
+import type { Bundle, Subscription } from '@medplum/fhirtypes';
+import { codigoDelBundle, compararCodigo, duplicadasPorEndpoint, resumirSalida } from './ckm-bots-doctor';
 
 // "✓ desplegado" no prueba que el servidor esté ejecutando este código: el
 // $deploy puede aceptarse y el bot seguir sirviendo otro. Comparar los dos es
@@ -77,5 +77,53 @@ describe('Salida de un $execute', () => {
 
   test('cualquier otra cosa se muestra recortada', () => {
     expect(resumirSalida({ verdict: 'verificado' })).toBe('{"verdict":"verificado"}');
+  });
+});
+
+// Cada Subscription dispara el bot por separado: tres al mismo bot son tres
+// recálculos por laboratorio y tres alertas al médico por el mismo hallazgo.
+describe('Subscriptions duplicadas', () => {
+  function sub(id: string, endpoint: string, lastUpdated: string): Subscription {
+    return {
+      resourceType: 'Subscription',
+      id,
+      status: 'active',
+      reason: 'x',
+      criteria: 'Observation?code=1',
+      channel: { type: 'rest-hook', endpoint },
+      meta: { lastUpdated },
+    };
+  }
+
+  test('conserva la más vieja y marca el resto como sobrante', () => {
+    const dup = duplicadasPorEndpoint([
+      sub('nueva', 'Bot/a', '2026-08-25T21:00:00Z'),
+      sub('vieja', 'Bot/a', '2026-08-25T14:00:00Z'),
+      sub('media', 'Bot/a', '2026-08-25T18:00:00Z'),
+    ]);
+    const grupo = dup.get('Bot/a');
+    expect(grupo?.conservar.id).toBe('vieja');
+    expect(grupo?.sobran.map((s) => s.id).sort()).toEqual(['media', 'nueva']);
+  });
+
+  test('una sola Subscription no es un duplicado', () => {
+    expect(duplicadasPorEndpoint([sub('a', 'Bot/a', '2026-08-25T14:00:00Z')]).size).toBe(0);
+  });
+
+  test('bots distintos no se mezclan', () => {
+    const dup = duplicadasPorEndpoint([
+      sub('a1', 'Bot/a', '2026-08-25T14:00:00Z'),
+      sub('b1', 'Bot/b', '2026-08-25T14:00:00Z'),
+    ]);
+    expect(dup.size).toBe(0);
+  });
+
+  // Una Subscription a un webhook externo no es asunto de este comando.
+  test('ignora los endpoints que no son bots', () => {
+    const dup = duplicadasPorEndpoint([
+      sub('w1', 'https://example.org/hook', '2026-08-25T14:00:00Z'),
+      sub('w2', 'https://example.org/hook', '2026-08-25T15:00:00Z'),
+    ]);
+    expect(dup.size).toBe(0);
   });
 });

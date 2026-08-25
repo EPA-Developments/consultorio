@@ -9,6 +9,8 @@
 //   npm run ckm-bots-doctor              -> status (bots, subscriptions, audit)
 //   npm run ckm-bots-doctor -- --check-code   -> compara el código DESPLEGADO de
 //                                                 cada bot contra el bundle local
+//   npm run ckm-bots-doctor -- --dedupe-subs  -> deja UNA Subscription por bot
+//                                                 (borra las duplicadas)
 //   npm run ckm-bots-doctor -- --reset-subs   -> borra las subs CKM (para
 //                                                 recrearlas limpias con deploy)
 //   npm run ckm-bots-doctor -- --reprocess <PatientId>  -> re-ejecuta los bots
@@ -16,7 +18,7 @@
 //
 // Requiere MEDPLUM_CLIENT_ID / MEDPLUM_CLIENT_SECRET (admin de proyecto).
 import { MedplumClient } from '@medplum/core';
-import type { Bundle, Observation, QuestionnaireResponse } from '@medplum/fhirtypes';
+import type { Bundle, Observation, QuestionnaireResponse, Subscription } from '@medplum/fhirtypes';
 import fs from 'fs';
 import { pathToFileURL } from 'url';
 import { buscarBotPropio } from '../bot-lookup';
@@ -61,6 +63,10 @@ async function main(): Promise<void> {
   }
   if (process.argv.includes('--reprocess-all')) {
     await reprocessAll(medplum);
+    return;
+  }
+  if (process.argv.includes('--dedupe-subs')) {
+    await dedupeSubscriptions(medplum);
     return;
   }
   if (process.argv.includes('--check-code')) {
@@ -137,9 +143,15 @@ async function status(medplum: MedplumClient): Promise<void> {
     });
     console.log(`  ${name}: ${audits.length} AuditEvents`);
     for (const a of audits) {
-      console.log(
-        `     ${a.recorded} outcome=${a.outcome ?? '?'} ${a.outcomeDesc ? '— ' + a.outcomeDesc.slice(0, 160) : ''}`
-      );
+      console.log(`     ${a.recorded} outcome=${a.outcome ?? '?'}`);
+      if (a.outcomeDesc) {
+        // Sin recortar: acá viene la salida del bot, que es todo el punto de
+        // haberlo instrumentado. Recortarla dejaba el log cortado justo en la
+        // parte que decide el diagnóstico.
+        for (const linea of a.outcomeDesc.trim().split('\n')) {
+          console.log(`       ${linea.trim()}`);
+        }
+      }
     }
   }
 }
@@ -359,6 +371,72 @@ async function reprocessAll(medplum: MedplumClient): Promise<void> {
     }
   }
   console.log(`Listo. Pacientes con bots ejecutados: ${updated}/${patients.length}.`);
+}
+
+/**
+ * Agrupa las Subscriptions por el bot al que disparan.
+ *
+ * Función pura: decidir cuál se conserva y cuáles sobran no debe depender del
+ * servidor. Se conserva la MÁS VIEJA (la que viene disparando) y sobran las
+ * demás, para que borrar sea lo menos disruptivo posible.
+ */
+export function duplicadasPorEndpoint(
+  subs: Subscription[]
+): Map<string, { conservar: Subscription; sobran: Subscription[] }> {
+  const porEndpoint = new Map<string, Subscription[]>();
+  for (const s of subs) {
+    const endpoint = s.channel?.endpoint;
+    if (!endpoint?.startsWith('Bot/')) {
+      continue;
+    }
+    porEndpoint.set(endpoint, [...(porEndpoint.get(endpoint) ?? []), s]);
+  }
+
+  const resultado = new Map<string, { conservar: Subscription; sobran: Subscription[] }>();
+  for (const [endpoint, lista] of porEndpoint) {
+    if (lista.length < 2) {
+      continue;
+    }
+    const ordenadas = [...lista].sort((a, b) => (a.meta?.lastUpdated ?? '').localeCompare(b.meta?.lastUpdated ?? ''));
+    resultado.set(endpoint, { conservar: ordenadas[0], sobran: ordenadas.slice(1) });
+  }
+  return resultado;
+}
+
+/**
+ * Deja UNA Subscription por bot.
+ *
+ * Las duplicadas no son inofensivas: cada una dispara el bot por separado, así
+ * que tres Subscriptions al mismo bot son tres recálculos por cada laboratorio
+ * y tres alertas al médico de cabecera por el mismo hallazgo.
+ */
+async function dedupeSubscriptions(medplum: MedplumClient): Promise<void> {
+  const subs = (await medplum.searchResources('Subscription', { _count: '200' })) as Subscription[];
+  const duplicadas = duplicadasPorEndpoint(subs);
+  if (duplicadas.size === 0) {
+    console.log(`Sin duplicados: ${subs.length} Subscription(s), una por bot como mucho.`);
+    return;
+  }
+
+  const aplicar = process.argv.includes('--apply');
+  console.log(aplicar ? 'Modo: APLICAR\n' : 'Modo: SIMULACIÓN (agregá --apply para borrar)\n');
+  for (const [endpoint, { conservar, sobran }] of duplicadas) {
+    console.log(`${endpoint}: ${sobran.length + 1} Subscriptions`);
+    console.log(`  conservar Subscription/${conservar.id} (${conservar.meta?.lastUpdated})`);
+    for (const s of sobran) {
+      if (aplicar) {
+        await medplum.deleteResource('Subscription', s.id as string);
+        console.log(`  ✗ borrada  Subscription/${s.id}`);
+      } else {
+        console.log(`  · sobra    Subscription/${s.id} (${s.meta?.lastUpdated})`);
+      }
+    }
+  }
+  if (!aplicar) {
+    console.log('\nRepetí con --apply para borrarlas.');
+  } else {
+    console.log('\nListo. Verificá con: npm run ckm-bots-doctor');
+  }
 }
 
 /** Artefacto que produce `npm run build:bots` y que consume el deploy. */

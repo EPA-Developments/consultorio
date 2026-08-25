@@ -191,12 +191,32 @@ async function main(): Promise<void> {
     .filter((r): r is Subscription => r?.resourceType === 'Subscription');
   if (subsWanted && subsWanted.length > 0) {
     console.log('\nSubscriptions:');
-    const existing = (await medplum.searchResources('Subscription', { _count: '100' })).filter(
-      (s) => proyectoDe(s) === projectId
-    );
+    // El filtro por meta.project NO puede ser estricto acá, y esto rompió de
+    // verdad: la búsqueda de Subscription no devuelve meta.project, así que
+    // `existing` quedaba VACÍO y cada deploy creaba una Subscription nueva en
+    // vez de reconocer la suya. Tres deploys = tres Subscriptions por bot =
+    // cada Observation recalculando tres veces y tres alertas al médico.
+    //
+    // Un candidato sin proyecto conocido se acepta: lo que se busca es una sub
+    // que apunte a `Bot/<id nuestro>`, y ese id ya es la garantía de que es la
+    // nuestra. Solo se descarta la que consta de otro proyecto.
+    const existing = (await medplum.searchResources('Subscription', { _count: '100' })).filter((s) => {
+      const proyecto = proyectoDe(s);
+      return proyecto === undefined || proyecto === projectId;
+    });
     for (const wanted of subsWanted) {
       const endpoint = wanted.channel?.endpoint;
-      const actual = existing.find((s) => s.channel?.endpoint === endpoint);
+      const mismas = existing.filter((s) => s.channel?.endpoint === endpoint);
+      const actual = mismas[0];
+      if (mismas.length > 1) {
+        console.log(
+          `  ⚠ ${wanted.reason}: hay ${mismas.length} Subscriptions al mismo bot (${mismas
+            .map((s) => s.id)
+            .join(', ')}).`
+        );
+        console.log('     Cada una dispara el bot por separado. Limpialas con:');
+        console.log('       npm run ckm-bots-doctor -- --dedupe-subs');
+      }
       if (!actual) {
         const created = await medplum.createResource(wanted);
         console.log(`  + creada ${wanted.reason}: ${created.id} -> ${endpoint}`);
