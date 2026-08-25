@@ -1,5 +1,5 @@
 import type { Bundle } from '@medplum/fhirtypes';
-import { codigoDelBundle, compararCodigo } from './ckm-bots-doctor';
+import { codigoDelBundle, compararCodigo, resumirSalida } from './ckm-bots-doctor';
 
 // "✓ desplegado" no prueba que el servidor esté ejecutando este código: el
 // $deploy puede aceptarse y el bot seguir sirviendo otro. Comparar los dos es
@@ -59,5 +59,23 @@ describe('Extracción del código desde el bundle', () => {
 
   test('un bot que no está en el bundle no aparece', () => {
     expect(codigoDelBundle(bundle).get('favaloro-refeps-verify')).toBeUndefined();
+  });
+});
+
+// Un $execute que no falla no prueba que el bot haya hecho algo: si el handler
+// sale por un early-return, devuelve undefined y el POST igual reporta éxito.
+describe('Salida de un $execute', () => {
+  test('sin salida, el bot no procesó nada', () => {
+    expect(resumirSalida(undefined)).toMatch(/nada/);
+    expect(resumirSalida(null)).toMatch(/nada/);
+    expect(resumirSalida('')).toMatch(/nada/);
+  });
+
+  test('un recurso devuelto se identifica', () => {
+    expect(resumirSalida({ resourceType: 'Patient', id: 'p1' })).toBe('Patient/p1');
+  });
+
+  test('cualquier otra cosa se muestra recortada', () => {
+    expect(resumirSalida({ verdict: 'verificado' })).toBe('{"verdict":"verificado"}');
   });
 });
