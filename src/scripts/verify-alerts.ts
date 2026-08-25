@@ -1,4 +1,11 @@
-// Valida EN EL SERVIDOR la regla de alertas "3 strikes" del bot ckm-recalculate.
+// Valida EN EL SERVIDOR la regla de alertas "3 strikes".
+//
+// La regla vive en el bot ckm-alerts, NO en ckm-recalculate: se separaron a
+// propósito para que un fallo de las alertas no pueda frenar el recálculo del
+// estadío. Los dos escuchan los mismos códigos, con una Subscription cada uno,
+// así que este smoke-test los mira a los dos: recalculate persiste el estadío
+// en el Patient (la señal de que la entrega de Subscriptions funciona) y alerts
+// crea el DetectedIssue + Task + Communication.
 //
 // Usa un paciente de prueba dedicado (identificado por un identifier propio),
 // limpia su estado en cada corrida (para no chocar con el cooldown de 30 días),
@@ -24,7 +31,7 @@ import {
   PREVENT_INPUTS_URL,
 } from '../ckm/constants';
 import { buscarBotPropio } from '../bot-lookup';
-import { BOT_CKM_RECALCULATE } from '../bot-names';
+import { BOT_CKM_ALERTS, BOT_CKM_RECALCULATE } from '../bot-names';
 import { ALERT_RULE_SYSTEM } from '../ckm/alert-rules';
 import { upsertUnico } from './lib/upsert';
 
@@ -183,65 +190,77 @@ async function diagnose(medplum: MedplumClient, patientId: string): Promise<void
       );
     } else {
       console.log(
-        '  → El bot SÍ se ejecutó pero NO creó la alerta de tendencia. Causas probables:\n' +
-          '    a) El bot tiene CÓDIGO VIEJO (sin la regla 3 strikes): redesplegá\n' +
-          '         npm run build:bots && npm run deploy-bots-server\n' +
-          '    b) La AccessPolicy del bot le impide crear DetectedIssue/Task (el bot\n' +
-          '       traga el error). Mirá el accessPolicy en: npm run ckm-bots-doctor'
+        '  → ckm-recalculate SÍ se ejecutó, así que la entrega de Subscriptions funciona.\n' +
+          '    Lo que no alertó es ckm-alerts. Mirá abajo SUS AuditEvents:\n' +
+          '    a) sin AuditEvents propios -> su Subscription no dispara (es otra, aparte).\n' +
+          '    b) con AuditEvents en error -> la AccessPolicy del bot no lo deja crear\n' +
+          '       DetectedIssue/Task. Mirá el accessPolicy en: npm run ckm-bots-doctor\n' +
+          '    c) sin la regla en el código desplegado -> ahí sí, redesplegá.'
       );
     }
   } catch (err) {
     console.log(`  No pude releer el Patient de prueba: ${(err as Error).message}`);
   }
 
-  // 2. AuditEvents recientes del bot: ¿corrió?, ¿con qué error?
+  // 2. AuditEvents de LOS DOS bots. El que crea la alerta es ckm-alerts; si
+  //    recalculate corrió y alerts no, el problema es la Subscription de alerts
+  //    y no hay por qué redesplegar nada.
+  await dumpBot(medplum, BOT_CKM_RECALCULATE, false);
+  await dumpBot(medplum, BOT_CKM_ALERTS, true);
+}
+
+/**
+ * Estado desplegado de un bot: código presente, si trae la regla 3 strikes y
+ * sus AuditEvents recientes (outcome + descripción del error).
+ *
+ * `esperaRegla` distingue a los dos bots. El chequeo de la regla se hacía sobre
+ * ckm-recalculate, que no la tiene desde que las alertas se separaron a su
+ * propio bot: siempre daba "NO ✗ → es código VIEJO" y mandaba a redesplegar un
+ * bot que estaba perfecto. Buscar la regla donde vive es el chequeo real.
+ */
+async function dumpBot(medplum: MedplumClient, nombre: string, esperaRegla: boolean): Promise<void> {
   try {
-    const bot = await buscarBotPropio(medplum, BOT_CKM_RECALCULATE);
+    const bot = await buscarBotPropio(medplum, nombre);
     if (!bot) {
-      console.log(`  Bot ${BOT_CKM_RECALCULATE}: NO existe en este proyecto.`);
+      console.log(`  Bot ${nombre}: NO existe en este proyecto.`);
       return;
     }
+    const codeUrl = bot.executableCode?.url;
     console.log(
-      `  Bot ${BOT_CKM_RECALCULATE}: Bot/${bot.id} — código ejecutable ${bot.executableCode?.url ? 'presente' : 'AUSENTE (no desplegado)'}`
+      `  Bot ${nombre}: Bot/${bot.id} — código ejecutable ${codeUrl ? 'presente' : 'AUSENTE (no desplegado)'}`
     );
 
-    // Chequeo DEFINITIVO de versión: bajar el código desplegado y ver si tiene
-    // la regla 3 strikes. Si no la tiene, el Lambda quedó con código viejo.
-    const codeUrl = bot.executableCode?.url;
-    if (codeUrl) {
+    if (esperaRegla && codeUrl) {
       try {
-        const blob = await medplum.download(codeUrl);
-        const code = await blob.text();
-        const hasRule = code.includes(ALERT_RULE_SYSTEM) || code.includes('ckm-alert-rule');
+        const code = await (await medplum.download(codeUrl)).text();
+        const tieneRegla = code.includes(ALERT_RULE_SYSTEM) || code.includes('ckm-alert-rule');
         console.log(
-          `  Código DESPLEGADO tiene la regla 3 strikes: ${hasRule ? 'SÍ ✓' : 'NO ✗  → es código VIEJO, redesplegá'}`
+          `     código desplegado con la regla 3 strikes: ${tieneRegla ? 'SÍ ✓' : 'NO ✗  → es código VIEJO, redesplegá'}`
         );
-        if (!hasRule) {
-          console.log(
-            '      npm run build:bots && npm run deploy-bots-server   (y verificá "✓ ckm-recalculate desplegado")'
-          );
+        if (!tieneRegla) {
+          console.log('       npm run build:bots && npm run deploy-bots-server');
         }
       } catch (err) {
-        console.log(`  (no pude bajar el código desplegado para verificar versión: ${(err as Error).message})`);
+        console.log(`     (no pude bajar el código desplegado: ${(err as Error).message})`);
       }
     }
 
     const audits = await medplum.searchResources('AuditEvent', {
       entity: `Bot/${bot.id}`,
-      _count: '5',
+      _count: '10',
       _sort: '-_lastUpdated',
     });
-    console.log(`  AuditEvents recientes del bot: ${audits.length}`);
+    console.log(`     AuditEvents recientes: ${audits.length}`);
     for (const a of audits) {
       console.log(
-        `    ${a.recorded} outcome=${a.outcome ?? '?'} ${a.outcomeDesc ? '— ' + a.outcomeDesc.slice(0, 300) : ''}`
+        `       ${a.recorded} outcome=${a.outcome ?? '?'} ${a.outcomeDesc ? '— ' + a.outcomeDesc.slice(0, 300) : ''}`
       );
     }
     if (audits.length === 0) {
-      console.log('    (sin AuditEvents: el bot no se está ejecutando; revisá la Subscription)');
+      console.log('       (sin AuditEvents: este bot no se está ejecutando; revisá SU Subscription)');
     }
   } catch (err) {
-    console.log(`  No pude leer AuditEvents del bot: ${(err as Error).message}`);
+    console.log(`  No pude leer el estado de ${nombre}: ${(err as Error).message}`);
   }
 }
 
