@@ -21,7 +21,7 @@
 //
 // Después: npm run build:bots && npm run deploy-bots-server
 import { MedplumClient } from '@medplum/core';
-import type { Bot, Subscription } from '@medplum/fhirtypes';
+import type { Bot, ProjectMembership, Subscription } from '@medplum/fhirtypes';
 import { pathToFileURL } from 'url';
 import { proyectoDe } from '../bot-lookup';
 import type { IdentidadBot } from '../bot-names';
@@ -72,6 +72,44 @@ export function planearRenombres(botsPropios: Bot[], identidades: IdentidadBot[]
 export function botsAjenosAlRepo(botsPropios: Bot[], identidades: IdentidadBot[] = BOTS): Bot[] {
   const conocidos = new Set(identidades.flatMap((i) => [i.nombre, i.legado]));
   return botsPropios.filter((b) => !conocidos.has(b.name ?? ''));
+}
+
+/**
+ * Membresías del proyecto cuyo Bot NO es de este proyecto.
+ *
+ * Esto es lo que se ve en app.medplum.com.ar/admin/bots como una fila cruda
+ * `Bot/<id>` en vez de un nombre: el admin no puede resolver el recurso porque
+ * vive en otro proyecto. No es cosmético — una membership le da a un bot AJENO
+ * identidad dentro de este proyecto.
+ *
+ * Las creaba `ckm-bots-doctor --fix-bot-membership` cuando buscaba el bot por
+ * nombre a secas y el nombre resolvía al del proyecto linkeado. Ese camino ya
+ * usa `buscarBotPropio`, así que no vuelven a aparecer; las que quedaron hay
+ * que borrarlas a mano.
+ */
+export function membresiasHuerfanas(memberships: ProjectMembership[], botsPropios: Bot[]): ProjectMembership[] {
+  const propios = new Set(botsPropios.map((b) => b.id));
+  return memberships.filter((m) => {
+    const ref = m.profile?.reference ?? '';
+    return ref.startsWith('Bot/') && !propios.has(ref.slice('Bot/'.length));
+  });
+}
+
+/**
+ * Subscriptions de este proyecto que disparan un Bot que NO es de este
+ * proyecto.
+ *
+ * Es el caso peligroso de verdad: la Subscription es nuestra, el criteria matea
+ * los recursos de NUESTROS pacientes, y el bot que se ejecuta es el de otro
+ * consultorio. Una Observation de un paciente de Favaloro entrando al bot de
+ * Biowellness no da ningún error: simplemente pasa.
+ */
+export function subscripcionesQueDisparanAfuera(subs: Subscription[], botsPropios: Bot[]): Subscription[] {
+  const propios = new Set(botsPropios.map((b) => b.id));
+  return subs.filter((s) => {
+    const ref = s.channel?.endpoint ?? '';
+    return ref.startsWith('Bot/') && !propios.has(ref.slice('Bot/'.length));
+  });
 }
 
 async function main(): Promise<void> {
@@ -135,6 +173,39 @@ async function main(): Promise<void> {
     }
   }
 
+  // Una Subscription nuestra apuntando a un bot ajeno es peor que una
+  // membership huérfana: los recursos de nuestros pacientes se van a ejecutar
+  // en el bot de otro proyecto, sin error.
+  const subs = (await medplum.searchResources('Subscription', { _count: '200' })) as Subscription[];
+  const subsPropias = subs.filter((s) => proyectoDe(s) === projectId);
+  const afuera = subscripcionesQueDisparanAfuera(subsPropias, propios);
+  if (afuera.length > 0) {
+    console.log('\n── SUBSCRIPTIONS QUE DISPARAN UN BOT DE OTRO PROYECTO ──');
+    console.log('  (los recursos de NUESTROS pacientes se ejecutan en el bot de otro: desactivalas ya)');
+    for (const s of afuera) {
+      console.log(`  ! Subscription/${s.id} (${s.reason ?? 'sin reason'}) -> ${s.channel?.endpoint}`);
+      console.log(`     status=${s.status} criteria=${s.criteria}`);
+    }
+  }
+
+  // Membresías que apuntan a bots de otro proyecto: son las filas `Bot/<id>`
+  // sin nombre del admin, y explican por qué un bot "aparece" en el proyecto
+  // sin estar en el inventario.
+  const membresias = (await medplum
+    .searchResources('ProjectMembership', { _count: '200' })
+    .catch(() => [])) as ProjectMembership[];
+  const huerfanas = membresiasHuerfanas(
+    membresias.filter((m) => m.project?.reference === `Project/${projectId}`),
+    propios
+  );
+  if (huerfanas.length > 0) {
+    console.log('\n── MEMBRESÍAS QUE APUNTAN A BOTS DE OTRO PROYECTO ──');
+    console.log('  (le dan identidad en ESTE proyecto a un bot ajeno; revisalas y borralas desde el admin)');
+    for (const m of huerfanas) {
+      console.log(`  ! ProjectMembership/${m.id} -> ${m.profile?.reference}`);
+    }
+  }
+
   const restos = botsAjenosAlRepo(propios);
   if (restos.length > 0) {
     console.log('\n── BOTS DEL PROYECTO QUE ESTE REPO NO DESPLIEGA ──');
@@ -155,7 +226,6 @@ async function main(): Promise<void> {
 
   // Renombrar. Un PUT del recurso: NO toca executableCode ni el Lambda.
   console.log('\n── APLICANDO ──');
-  const subs = (await medplum.searchResources('Subscription', { _count: '200' })) as Subscription[];
   for (const paso of aRenombrar) {
     const bot = paso.bot as Bot;
     await medplum.updateResource({ ...bot, name: paso.identidad.nombre });
@@ -164,7 +234,7 @@ async function main(): Promise<void> {
     // Subscription.reason guarda el nombre del bot, y los scripts de
     // verificación filtran por ahí. Se busca por endpoint (Bot/id), que es lo
     // único que no cambió.
-    const propias = subs.filter((s) => proyectoDe(s) === projectId && s.channel?.endpoint === `Bot/${bot.id}`);
+    const propias = subsPropias.filter((s) => s.channel?.endpoint === `Bot/${bot.id}`);
     for (const sub of propias) {
       if (sub.reason === paso.identidad.nombre) {
         continue;
