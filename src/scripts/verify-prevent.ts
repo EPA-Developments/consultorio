@@ -90,6 +90,10 @@ async function main(): Promise<void> {
     `identifier=${SYSTEM}|${TEST_ID}`
   );
   const pid = patient.id as string;
+  // El id se imprime porque el paso siguiente cuando el bot no escribe es
+  // ejecutarlo a mano sobre ESTE paciente:
+  //   npm run ckm-bots-doctor -- --reprocess <pid>
+  console.log(`Paciente de prueba: Patient/${pid}`);
 
   if (process.argv.includes('--cleanup')) {
     await medplum.deleteResource('Patient', pid);
@@ -181,6 +185,9 @@ async function main(): Promise<void> {
     console.log('\n✗ El bot NO se ejecutó (no escribió métricas). Causas probables:');
     console.log('  - El bot/Subscription no están desplegados o la Subscription no está activa.');
     console.log('  - El AccessPolicy del bot no le permite leer/escribir Patient u Observation.');
+    console.log('\n  Si ARRIBA no hay AuditEvents, la Subscription no disparó y el problema no es');
+    console.log('  el código del bot. Ejecutalo a mano para separar las dos causas:');
+    console.log(`    npm run ckm-bots-doctor -- --reprocess ${pid}`);
   } else if (!serverPrevent) {
     console.log('\n✗ El bot corrió (escribió métricas) pero NO calculó PREVENT. Causas probables:');
     console.log('  - El AccessPolicy del bot no permite leer Condition o MedicationRequest.');
