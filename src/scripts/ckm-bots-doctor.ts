@@ -279,26 +279,31 @@ async function reprocess(medplum: MedplumClient, patientId: string): Promise<voi
     console.log(`  · CKM: ${ckmBot ? 'sin Observation CKM para este paciente' : 'bot no encontrado'}`);
   }
 
-  // El veredicto, acá y no "verificá el Patient a mano": un $execute que no
-  // falla no prueba que el bot haya hecho algo. Lo que lo prueba es que las
-  // extensiones estén y que el Patient tenga lastUpdated nuevo.
+  // El veredicto, acá y no "verificá el Patient a mano".
+  //
+  // OJO con leer solo lastUpdated: Medplum NO crea una versión nueva si el
+  // contenido no cambió, así que un recálculo correcto que da el mismo
+  // resultado deja lastUpdated igual. Eso no es "no escribió", es idempotencia.
+  // Lo que prueba que el bot hizo su trabajo son las extensiones.
   const despues = await medplum.readResource('Patient', patientId);
   const tiene = (url: string): boolean => Boolean(despues.extension?.some((e) => e.url === url));
-  const escribio = despues.meta?.lastUpdated !== antes;
+  const nuevaVersion = despues.meta?.lastUpdated !== antes;
   console.log('\n── ¿Escribió el bot? ──');
-  console.log(
-    `  Patient.meta.lastUpdated: ${antes} -> ${despues.meta?.lastUpdated} ${escribio ? '(cambió ✓)' : '(igual ✗)'}`
-  );
+  console.log(`  Patient.meta.lastUpdated: ${antes} -> ${despues.meta?.lastUpdated}`);
   console.log(`  Extensiones: CKMStage=${tiene(CKM_STAGE_URL)} hGraphData=${tiene(HGRAPH_DATA_URL)}`);
-  if (escribio && tiene(HGRAPH_DATA_URL)) {
+  if (tiene(HGRAPH_DATA_URL)) {
     console.log('\n  ✓ El bot FUNCIONA cuando se lo ejecuta a mano.');
-    console.log('    Entonces el código desplegado está bien y lo que falla es el disparo por');
-    console.log('    Subscription. Compará con: npm run verify-prevent');
+    if (!nuevaVersion) {
+      console.log('    (lastUpdated no cambió porque el recálculo dio lo mismo que ya estaba:');
+      console.log('     Medplum no versiona un update que no cambia nada. Es idempotencia, no un fallo.)');
+    }
+    console.log('    El código desplegado está bien. Si el circuito automático igual no');
+    console.log('    persiste, lo que falla es el disparo por Subscription, no el bot.');
   } else {
-    console.log('\n  ✗ El bot corrió sin error y NO escribió.');
-    console.log('    Con el $execute directo no hay Subscription ni indexación de por medio,');
-    console.log('    así que el problema es el bot: código desplegado viejo, o su AccessPolicy');
-    console.log('    no lo deja escribir el Patient (el bot se traga ese error).');
+    console.log('\n  ✗ El bot corrió y NO dejó las extensiones.');
+    console.log('    Con el $execute directo no hay Subscription de por medio, así que el');
+    console.log('    problema es el bot: su AccessPolicy no lo deja escribir el Patient (el bot');
+    console.log('    se traga ese error), o salió por un early-return — mirá qué devolvió arriba.');
   }
 }
 
